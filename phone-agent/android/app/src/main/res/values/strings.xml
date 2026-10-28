@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="service_description">Phone Agent lets Claude Code (running in Termux on this phone) see the screen, tap, swipe and type. It only listens on 127.0.0.1 and every request needs your secret token.</string>
+</resources>

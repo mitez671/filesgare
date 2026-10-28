@@ -1,0 +1,47 @@
+name: Build Phone Agent APK
+
+on:
+  push:
+    paths:
+      - "phone-agent/**"
+      - ".github/workflows/build-phone-agent.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+
+      - name: Build
+        working-directory: phone-agent/android
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Rename
+        run: cp phone-agent/android/app/build/outputs/apk/release/app-release.apk PhoneAgent.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PhoneAgent-apk
+          path: PhoneAgent.apk
+
+      - name: Publish release (direct download link)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="phone-agent-${{ github.run_number }}"
+          gh release create "$TAG" PhoneAgent.apk \
+            --title "Phone Agent build ${{ github.run_number }}" \
+            --notes "Android app for Claude Code phone control. See phone-agent/README.md"
