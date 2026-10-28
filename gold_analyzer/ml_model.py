@@ -149,7 +149,7 @@ def train_and_predict(X, y, fwd, horizon=10, splits=5, warmup=200):
     labeled = y.notna()
     Xl, yl, fl = X[labeled], y[labeled].astype(int), fwd[labeled]
     if len(Xl) < 400:
-        raise RuntimeError("not enough daily history for ML (need ~600+ daily bars)")
+        raise RuntimeError(f"not enough daily history for ML: {len(Xl) + warmup} daily bars, need ~600+")
 
     # ---- walk-forward validation
     preds, truth, moves = [], [], []

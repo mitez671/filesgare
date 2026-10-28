@@ -46,12 +46,11 @@ def _yahoo_chart(symbol, rng, interval, timeout=30):
     import urllib.parse
     import urllib.request
 
-    params = {"interval": interval, "includePrePost": "false"}
-    if rng == "max":
-        params["range"] = "max"
-    else:  # intraday history is capped at ~730 days -> ask with explicit timestamps
-        now = int(pd.Timestamp.now(tz="UTC").timestamp())
-        params.update(period1=now - int(rng) * 86400, period2=now)
+    # Always ask with explicit timestamps: with range=max Yahoo silently returns
+    # coarse (monthly/quarterly) bars instead of daily ones. Intraday is capped at ~730 days.
+    now = int(pd.Timestamp.now(tz="UTC").timestamp())
+    start = -2208994789 if rng == "max" else now - int(rng) * 86400  # 1900-01-01 like yfinance
+    params = {"interval": interval, "includePrePost": "false", "period1": start, "period2": now}
     q = urllib.parse.urlencode(params)
     last_err = None
     for host in ("query1", "query2"):
@@ -64,10 +63,22 @@ def _yahoo_chart(symbol, rng, interval, timeout=30):
             quote = res["indicators"]["quote"][0]
             df = pd.DataFrame({k: quote.get(k) for k in OHLCV},
                               index=pd.to_datetime(res["timestamp"], unit="s"))
-            return _clean(df)
+            df = _clean(df)
+            _check_spacing(df, interval)
+            return df
         except Exception as e:
             last_err = e
     raise RuntimeError(f"Yahoo download failed for {symbol!r}: {last_err}")
+
+
+def _check_spacing(df, interval):
+    """Refuse data whose bars are much coarser than requested (e.g. monthly instead of daily)."""
+    if df is None or len(df) < 3:
+        return
+    step = df.index.to_series().diff().median()
+    limit = {"1h": pd.Timedelta(hours=3), "1d": pd.Timedelta(days=4)}.get(interval)
+    if limit is not None and step > limit:
+        raise RuntimeError(f"Yahoo returned {step} bars instead of {interval}")
 
 
 def _yahoo(symbol, rng, interval):
