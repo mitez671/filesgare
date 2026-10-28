@@ -40,6 +40,9 @@ class PhoneError(Exception):
 # ----------------------------------------------------------------- HTTP
 
 def _call(method, path, body=None, query=None, raw=False, timeout=20):
+    if not TOKEN or not TOKEN.isascii() or " " in TOKEN:
+        raise PhoneError("PHONE_TOKEN is missing or invalid. Copy the real token "
+                         "(32 letters/digits) from the Phone Agent app.")
     url = URL + path
     if query:
         url += "?" + urllib.parse.urlencode(query)
