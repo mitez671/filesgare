@@ -115,7 +115,8 @@ def print_report(symbol, res, decision, ml=None, hit_rates=None):
         print(f"   ⚠ {w}")
     p = decision["plan"]
     if p:
-        print(f"   ورود ≈ {p['entry']:.2f}   حد ضرر {p['stop_loss']:.2f} (۱.۵ ATR روزانه)")
-        print(f"   تارگت‌ها: TP1 {p['tp1']:.2f}   TP2 {p['tp2']:.2f}   TP3 {p['tp3']:.2f}")
+        d = 5 if p["entry"] < 2 else 4 if p["entry"] < 20 else 2
+        print(f"   ورود ≈ {p['entry']:.{d}f}   حد ضرر {p['stop_loss']:.{d}f} (۱.۵ ATR روزانه)")
+        print(f"   تارگت‌ها: TP1 {p['tp1']:.{d}f}   TP2 {p['tp2']:.{d}f}   TP3 {p['tp3']:.{d}f}")
     print(line)
     print(" این خروجی صرفاً تحلیل الگوریتمی است و توصیه سرمایه‌گذاری نیست؛ مدیریت سرمایه را رعایت کنید.")

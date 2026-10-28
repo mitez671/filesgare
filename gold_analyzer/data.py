@@ -8,8 +8,6 @@ import pandas as pd
 
 OHLCV = ["open", "high", "low", "close", "volume"]
 
-# Yahoo tickers used for inter-market analysis of gold
-INTERMARKET_TICKERS = {"dxy": "DX-Y.NYB", "us10y": "^TNX", "silver": "SI=F"}
 
 
 def _clean(df):
@@ -109,9 +107,12 @@ def load_yahoo(symbol):
     return hourly, daily
 
 
-def load_intermarket_yahoo():
+def load_intermarket_yahoo(profile):
+    """Daily data of the related markets of an inter-market profile (see intermarket.PROFILES)."""
+    from .intermarket import PROFILES
+
     out = {}
-    for key, tk in INTERMARKET_TICKERS.items():
+    for key, tk, *_ in PROFILES.get(profile, []):
         try:
             d = _yahoo(tk, "max", "1d")
             if d is not None:

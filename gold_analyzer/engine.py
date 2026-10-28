@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from . import indicators as ind
-from .intermarket import INTERMARKET
+from .intermarket import PROFILES
 from .registry import ANALYZERS, CATEGORIES
 
 # medium-term (swing) profile: daily is the anchor, weekly the bias, 4h/1h the timing
@@ -13,7 +13,7 @@ TF_WEIGHTS = {"1h": 0.10, "4h": 0.25, "1d": 0.40, "1w": 0.25}
 TF_NAMES = {"1h": "یک‌ساعته", "4h": "چهارساعته", "1d": "روزانه", "1w": "هفتگی"}
 
 
-def run_timeframe(df, intermarket=None, use_intermarket=False):
+def run_timeframe(df, intermarket=None, use_intermarket=False, profile=None):
     """Run every analyzer on one timeframe.
 
     Returns (votes DataFrame [bars x analyzers], info dict per analyzer).
@@ -27,8 +27,8 @@ def run_timeframe(df, intermarket=None, use_intermarket=False):
         votes[key] = v.reindex(df.index).fillna(0).clip(-1, 1)
         info[key] = {"name": name, "category": cat, "note": note,
                      "available": note != "no volume data" and not note.startswith("error")}
-    if use_intermarket and intermarket:
-        for src, (key, name, fn) in INTERMARKET.items():
+    if use_intermarket and intermarket and profile in PROFILES:
+        for src, _ticker, key, name, fn in PROFILES[profile]:
             if src not in intermarket:
                 continue
             try:
@@ -64,14 +64,14 @@ def score_series(votes, info):
     return num / den if den else votes.iloc[:, 0] * 0
 
 
-def analyze(timeframes, intermarket=None):
+def analyze(timeframes, intermarket=None, profile="gold"):
     """Run all analyzers on all timeframes and aggregate the latest votes."""
     result = {"timeframes": {}, "votes_history": {}}
     total, wsum = 0.0, 0.0
     counts = {"buy": 0, "sell": 0, "wait": 0}
     for tf, df in timeframes.items():
         use_im = tf in ("1d", "1w")
-        votes, info = run_timeframe(df, intermarket, use_intermarket=use_im)
+        votes, info = run_timeframe(df, intermarket, use_intermarket=use_im, profile=profile)
         last = votes.iloc[-1]
         score, cats = score_row(last, info)
         rows = []

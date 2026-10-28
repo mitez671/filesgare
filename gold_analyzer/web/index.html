@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0f1115">
-<title>تحلیلگر طلا</title>
+<title>تحلیلگر بازار</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
 <script src="vendor/lightweight-charts.standalone.production.js"></script>
@@ -111,7 +111,7 @@ details.an .nm{flex:1;font-size:.88rem}
 
 <div class="toolbar">
   <div>
-    <h1>تحلیلگر جامع طلا</h1>
+    <h1>تحلیلگر جامع بازار</h1>
     <div class="sub">۴۲ ابزار تحلیلی × ۴ تایم‌فریم + یادگیری ماشین — افق میان‌مدت</div>
   </div>
   <button id="themeBtn" class="chip" title="تم">◐ تم</button>
@@ -130,14 +130,16 @@ details.an .nm{flex:1;font-size:.88rem}
   <div class="chips" id="presets">
     <button class="chip on" data-s="GC=F">طلا</button>
     <button class="chip" data-s="SI=F">نقره</button>
+    <button class="chip" data-s="HG=F">مس</button>
+    <button class="chip" data-s="CL=F">نفت WTI</button>
+    <button class="chip" data-s="BZ=F">نفت برنت</button>
     <button class="chip" data-s="BTC-USD">بیت‌کوین</button>
     <button class="chip" data-s="EURUSD=X">یورو/دلار</button>
-    <button class="chip" data-s="CL=F">نفت</button>
     <button class="chip" data-s="^GSPC">S&amp;P 500</button>
   </div>
   <div class="row" style="margin-top:10px">
     <label class="ck"><input type="checkbox" id="ml" checked> یادگیری ماشین</label>
-    <label class="ck"><input type="checkbox" id="im" checked> بین‌بازاری (دلار، اوراق، نقره)</label>
+    <label class="ck"><input type="checkbox" id="im" checked> بازارهای مرتبط (دلار، اوراق، سهام، ...)</label>
     <label class="ck" id="autoWrap"><input type="checkbox" id="auto"> به‌روزرسانی خودکار (هر ۵ دقیقه)</label>
     <label class="ck">افق
       <select id="horizon"><option>5</option><option selected>10</option><option>15</option><option>20</option></select> روز</label>
@@ -238,6 +240,8 @@ let DATA = null, curTf = "1d", charts = [], timer = null;
 function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
 function cls(x){ return x > 0 ? "buy" : x < 0 ? "sell" : "wait"; }
 function fmt(x, d=2){ return x == null ? "–" : Number(x).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function pdec(x){ const a = Math.abs(x || 0); return a < 2 ? 5 : a < 20 ? 4 : 2; }
+function fp(x){ return x == null ? "–" : fmt(x, pdec(x)); }
 function pct(x, d=1){ return x == null ? "–" : (x*100).toFixed(d) + "%"; }
 function esc(s){ return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
@@ -303,7 +307,7 @@ function render(d){
   $("#out").style.display = "block";
   const tfs = TF_ORDER.filter(t => d.timeframes[t]);
   if (!d.timeframes[curTf]) curTf = tfs.includes("1d") ? "1d" : tfs[0];
-  $("#meta").innerHTML = `<span class="ltr">${esc(d.symbol)}</span> · ${esc(d.generated)} · افق ${d.horizon} روز · ${fmt(d.elapsed,1)} ثانیه`;
+  $("#meta").innerHTML = `${d.name && d.name !== d.symbol ? esc(d.name) + " " : ""}<span class="ltr">${esc(d.symbol)}</span> · ${esc(d.generated)} · افق ${d.horizon} روز · ${fmt(d.elapsed,1)} ثانیه`;
   renderFresh(d); renderSignal(d); renderVotes(d, tfs); renderHeat(d, tfs); renderTabs(tfs); renderChart(); renderML(d); renderAnalyzers(d, tfs);
 }
 
@@ -326,7 +330,7 @@ function ago(iso){
 }
 function renderFresh(d){
   const lv = d.live && ago(d.live.time_utc), lb = ago(d.last_bar_utc);
-  if (lv) $("#fresh").innerHTML = `قیمت لحظه‌ای <b class="num ltr">${fmt(d.live.price)}</b> · آخرین معامله ${lv.when} (${lv.rel})`;
+  if (lv) $("#fresh").innerHTML = `قیمت لحظه‌ای <b class="num ltr">${fp(d.live.price)}</b> · آخرین معامله ${lv.when} (${lv.rel})`;
   else if (lb) $("#fresh").innerHTML = `آخرین کندل داده: ${lb.when} (${lb.rel})`;
   else $("#fresh").textContent = "";
 }
@@ -344,7 +348,7 @@ function renderSignal(d){
   if (p) {
     const e = p.entry, dist = x => `${x>e?"+":""}${((x/e-1)*100).toFixed(2)}%`;
     $("#plan").innerHTML = [["ورود", p.entry, ""], ["حد ضرر", p.stop_loss, "sell"], ["TP1", p.tp1, "buy"], ["TP2", p.tp2, "buy"], ["TP3", p.tp3, "buy"]]
-      .map(([n,v,c]) => `<div><small>${n}</small><b class="num ltr ${c}">${fmt(v)}</b><small class="ltr">${n==="ورود"?"قیمت فعلی":dist(v)}</small></div>`).join("");
+      .map(([n,v,c]) => `<div><small>${n}</small><b class="num ltr ${c}">${fp(v)}</b><small class="ltr">${n==="ورود"?"قیمت فعلی":dist(v)}</small></div>`).join("");
   } else $("#plan").innerHTML = `<div style="grid-column:1/-1"><small>سیگنال به اندازه کافی قوی نیست؛ فعلاً معامله‌ای پیشنهاد نمی‌شود.</small></div>`;
 
   const w = dec.ml_weight || 0, c = dec.confidence;
@@ -355,7 +359,7 @@ function renderSignal(d){
     w > 0 ? `این امتیاز ${Math.round((1-w)*100)}٪ از رأی ابزارهای تحلیلی و ${Math.round(w*100)}٪ از مدل یادگیری ماشین آمده.`
           : `مدل یادگیری ماشین در این تصمیم سهمی ندارد؛ امتیاز فقط از رأی ابزارهای تحلیلی است.`,
     `اطمینان ${pct(c,0)} یعنی سیگنال ${c < 0.3 ? "ضعیف است؛ اگر وارد می‌شوید حجم را کم بگیرید" : c < 0.6 ? "متوسط است" : "قوی است و ابزارها توافق بالایی دارند"}.`,
-    p ? `حد ضرر ${fmt(p.stop_loss)} است؛ یعنی اگر قیمت به آن رسید تحلیل اشتباه بوده و باید خارج شوید. فاصله آن ۱٫۵ برابر نوسان متوسط روزانه (ATR) است. TP1 هم‌اندازه ریسک (۱ به ۱)، TP2 دو برابر و TP3 سه برابر آن است. روش رایج: بخشی از معامله را در TP1 ببندید و حد ضرر را به نقطه ورود ببرید.`
+    p ? `حد ضرر ${fp(p.stop_loss)} است؛ یعنی اگر قیمت به آن رسید تحلیل اشتباه بوده و باید خارج شوید. فاصله آن ۱٫۵ برابر نوسان متوسط روزانه (ATR) است. TP1 هم‌اندازه ریسک (۱ به ۱)، TP2 دو برابر و TP3 سه برابر آن است. روش رایج: بخشی از معامله را در TP1 ببندید و حد ضرر را به نقطه ورود ببرید.`
       : `چون امتیاز در محدوده خنثی است، ورود به معامله پیشنهاد نمی‌شود. صبر کنید تا ابزارها هم‌جهت شوند.`,
     `داده‌ها با هر بار زدن «تحلیل کن» یا «به‌روزرسانی» تازه از Yahoo دریافت می‌شوند${lv ? ` (آخرین قیمت مربوط به ${lv.rel})` : ""}. Yahoo معمولاً چند تا ۱۵ دقیقه تأخیر دارد و آخرین کندل هر تایم‌فریم هنوز بسته نشده است.`,
   ]);
@@ -470,6 +474,8 @@ function renderChart(){
   const main = LC.createChart($("#c-main"), base);
   const candles = main.addCandlestickSeries({upColor: css("--buy"), downColor: css("--sell"), borderVisible: false,
     wickUpColor: css("--buy"), wickDownColor: css("--sell")});
+  const prec = pdec(ch.candles[ch.candles.length - 1].close);
+  candles.applyOptions({priceFormat: {type: "price", precision: prec, minMove: 1 / 10 ** prec}});
   candles.setData(ch.candles);
   const line = (data, color, w=1.5, style=0) => { const s = main.addLineSeries({color, lineWidth: w, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false}); s.setData(data); };
   if ($("#tEma").checked) { line(ch.ema20, "#3b82f6"); line(ch.ema50, "#f59e0b"); line(ch.ema200, "#a855f7", 2); }
@@ -512,7 +518,7 @@ function renderChart(){
     syncing = false;
   }));
   main.timeScale().setVisibleLogicalRange({from: ch.candles.length - 120, to: ch.candles.length + 3});
-  $("#chartNote").innerHTML = `پیکان‌ها (B/S): لحظه‌ای که امتیاز ترکیبی ابزارها از ۰٫۳+ (خرید) یا ۰٫۳- (فروش) عبور کرده. سوپرترند ${tf.chart.supertrend>0?'<b class="buy">صعودی</b>':'<b class="sell">نزولی</b>'} · ATR ${fmt(tf.atr)}`;
+  $("#chartNote").innerHTML = `پیکان‌ها (B/S): لحظه‌ای که امتیاز ترکیبی ابزارها از ۰٫۳+ (خرید) یا ۰٫۳- (فروش) عبور کرده. سوپرترند ${tf.chart.supertrend>0?'<b class="buy">صعودی</b>':'<b class="sell">نزولی</b>'} · ATR ${fp(tf.atr)}`;
   explainChart(tf);
 }
 
@@ -526,12 +532,12 @@ function explainChart(tf){
   const dist = p => `${((p / close - 1) * 100).toFixed(2)}٪`;
   explain("#exChart", [
     `نمودار ${tf.name}: هر شمع یک کندل است (سبز = بسته شدن بالاتر، قرمز = پایین‌تر).`,
-    e200 != null ? `قیمت ${fmt(close)} ${close > e200 ? '<b class="buy">بالای</b>' : '<b class="sell">زیر</b>'} EMA200 (خط بنفش) است؛ یعنی روند بلندمدتِ این تایم‌فریم ${close > e200 ? "صعودی" : "نزولی"} است.` : "",
+    e200 != null ? `قیمت ${fp(close)} ${close > e200 ? '<b class="buy">بالای</b>' : '<b class="sell">زیر</b>'} EMA200 (خط بنفش) است؛ یعنی روند بلندمدتِ این تایم‌فریم ${close > e200 ? "صعودی" : "نزولی"} است.` : "",
     e20 != null && e50 != null ? `EMA20 (آبی) ${e20 > e50 ? "بالای" : "زیر"} EMA50 (نارنجی) است؛ یعنی روند کوتاه‌مدت ${e20 > e50 ? '<b class="buy">صعودی</b>' : '<b class="sell">نزولی</b>'} است.` : "",
     r != null ? `RSI روی ${fmt(r,1)} است: ${r > 70 ? "اشباع خرید؛ قیمت زیاد بالا رفته و احتمال اصلاح نزولی هست." : r < 30 ? "اشباع فروش؛ قیمت زیاد پایین آمده و احتمال برگشت صعودی هست." : r >= 50 ? "قدرت با خریدارهاست (بالای ۵۰)." : "قدرت با فروشنده‌هاست (زیر ۵۰)."}` : "",
     mk ? `آخرین فلش ${mk.text === "B" ? '<b class="buy">خرید</b>' : '<b class="sell">فروش</b>'} بوده، ${barsAgo} کندل پیش.` : "",
     sc != null ? `پنل «امتیاز ترکیبی» نظر همه ابزارها را برای هر کندل نشان می‌دهد. الان ${n2(sc)} است. ستون‌های سبز بلند یعنی توافق روی خرید و ستون‌های قرمز بلند یعنی توافق روی فروش.` : "",
-    (sup || res) ? `نزدیک‌ترین ${sup ? `حمایت ${fmt(sup.price)} (${dist(sup.price)})` : ""}${sup && res ? " و " : ""}${res ? `مقاومت ${fmt(res.price)} (${dist(res.price)})` : ""} است. قیمت معمولاً روی حمایت واکنش مثبت و زیر مقاومت واکنش منفی نشان می‌دهد؛ شکستن آن‌ها اغلب حرکت را تقویت می‌کند.` : "",
+    (sup || res) ? `نزدیک‌ترین ${sup ? `حمایت ${fp(sup.price)} (${dist(sup.price)})` : ""}${sup && res ? " و " : ""}${res ? `مقاومت ${fp(res.price)} (${dist(res.price)})` : ""} است. قیمت معمولاً روی حمایت واکنش مثبت و زیر مقاومت واکنش منفی نشان می‌دهد؛ شکستن آن‌ها اغلب حرکت را تقویت می‌کند.` : "",
     `خطوط بنفش نقطه‌چین سطوح فیبوناچی‌اند (جاهای احتمالی پایان اصلاح). «Bull OB» و «Bear OB» اوردر بلاک‌اند: ناحیه‌ای که سفارش‌های بزرگ در آن ثبت شده و قیمت معمولاً با برگشت به آن واکنش نشان می‌دهد.${curTf === "1d" && DATA.decision.plan ? " خطوط SL و TP حد ضرر و تارگت‌های معامله پیشنهادی‌اند." : ""}`,
   ]);
 }

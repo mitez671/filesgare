@@ -24,7 +24,7 @@ def main():
     ap.add_argument("--csv")
     ap.add_argument("--horizon", type=int, default=10, help="ML horizon in daily bars (default 10 ≈ 2 weeks)")
     ap.add_argument("--no-ml", action="store_true")
-    ap.add_argument("--no-intermarket", action="store_true", help="skip DXY / US10Y / silver")
+    ap.add_argument("--no-intermarket", action="store_true", help="skip related markets (DXY, yields, stocks, ...)")
     ap.add_argument("--json", help="also save the full result to this JSON file")
     ap.add_argument("--html", help="write a graphical HTML report to this file")
     ap.add_argument("--web", action="store_true", help="run the graphical dashboard server")

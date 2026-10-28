@@ -8,8 +8,9 @@
 ```bash
 pip install -r requirements.txt
 python -m gold_analyzer                       # طلا از Yahoo (GC=F)
-python -m gold_analyzer --symbol SI=F         # نقره، یا BTC-USD، EURUSD=X ...
-python -m gold_analyzer --source mt5 --symbol XAUUSD   # مستقیم از متاتریدر ۵ (ویندوز)
+python -m gold_analyzer --symbol HG=F         # مس
+python -m gold_analyzer --symbol CL=F         # نفت WTI   (برنت: BZ=F، نقره: SI=F، یا BTC-USD، EURUSD=X ...)
+python -m gold_analyzer --source mt5 --symbol XAUUSD   # مستقیم از متاتریدر ۵ (ویندوز) — مس: XCUUSD/COPPER، نفت: USOIL/UKOIL
 python -m gold_analyzer --source csv --csv xauusd_h1.csv
 python -m gold_analyzer --source demo         # داده ساختگی برای تست بدون اینترنت
 python -m gold_analyzer --web                 # داشبورد گرافیکی (پایین‌تر را ببینید)
@@ -62,7 +63,7 @@ python -m gold_analyzer --web        # پورت از متغیر PORT خواند�
 | چارت‌های جایگزین | هیکن آشی، رنکو |
 | پرایس اکشن | الگوهای کندلی (انگالفینگ، چکش، ستاره صبحگاهی/عصرگاهی، ...)، سقف/کف داو، سقف/کف دوقلو، حمایت/مقاومت، فیبوناچی، پیوت |
 | پول هوشمند (SMC) | BOS / CHoCH، اوردر بلاک، FVG، شکار نقدینگی، پریمیوم/دیسکانت |
-| بین‌بازاری (طلا) | شاخص دلار DXY، بازده اوراق ۱۰ ساله، تأیید نقره |
+| بین‌بازاری (بازارهای مرتبط) | طلا: دلار DXY، اوراق ۱۰ ساله، نقره · نقره: دلار، اوراق، طلا · مس: دلار، S&P 500، سهام چین (FXI) · نفت WTI/برنت: دلار، S&P 500، مس، و نفت دیگر |
 
 ## منطق تصمیم
 1. هر ابزار برای هر کندل رأی می‌دهد: `+1` خرید، `-1` فروش، `0` صبر (فقط با داده‌های گذشته، بدون نگاه به آینده).

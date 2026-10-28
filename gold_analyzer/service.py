@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from . import data, engine, ml_model, report
+from .intermarket import NAMES, profile_for
 from . import indicators as ind
 from .engine import TF_NAMES
 from .registry import CATEGORIES
@@ -22,24 +23,26 @@ def run(symbol="GC=F", source="yahoo", csv=None, horizon=10, use_ml=True, use_in
     t0 = time.time()
     intermarket = {}
     log("در حال دریافت داده...")
+    profile = profile_for(symbol)
     if source == "demo":
         hourly, daily, intermarket = data.synthetic()
-        symbol = "DEMO (synthetic)"
+        symbol, profile = "DEMO (synthetic)", "gold"
     elif source == "csv":
         hourly, daily = data.load_csv(csv)
     elif source == "mt5":
         hourly, daily = data.load_mt5(symbol)
     else:
         hourly, daily = data.load_yahoo(symbol)
-    if source != "demo" and use_intermarket:
-        intermarket = data.load_intermarket_yahoo()
+    if source != "demo" and use_intermarket and profile:
+        log("دریافت بازارهای مرتبط (" + NAMES[profile] + ") ...")
+        intermarket = data.load_intermarket_yahoo(profile)
     if not use_intermarket:
         intermarket = {}
 
     live = (hourly.attrs.get("live") if hourly is not None else None) or daily.attrs.get("live")
     tfs = data.build_timeframes(hourly, daily)
     log("در حال اجرای اندیکاتورها و تحلیل‌ها روی تایم‌فریم‌های " + ", ".join(tfs) + " ...")
-    res = engine.analyze(tfs, intermarket)
+    res = engine.analyze(tfs, intermarket, profile)
     d_votes, _ = res["votes_history"]["1d"]
     hit = engine.analyzer_hit_rates(tfs["1d"], d_votes, horizon)
 
@@ -57,7 +60,8 @@ def run(symbol="GC=F", source="yahoo", csv=None, horizon=10, use_ml=True, use_in
             ml_error = str(e)
             log(f"(ML اجرا نشد: {e})")
     decision = report.decide(res, ml, w_ml)
-    return {"symbol": symbol, "horizon": horizon, "tfs": tfs, "live": live, "res": res, "hit": hit, "ml": ml,
+    return {"symbol": symbol, "name": NAMES.get(profile, symbol), "profile": profile,
+            "horizon": horizon, "tfs": tfs, "live": live, "res": res, "hit": hit, "ml": ml,
             "ml_error": ml_error, "decision": decision, "elapsed": time.time() - t0}
 
 
@@ -167,7 +171,7 @@ def to_payload(r):
             "chart": _chart(r["tfs"][tf], votes, info, CHART_BARS.get(tf, 300)),
         }
     return _js({
-        "symbol": r["symbol"], "horizon": r["horizon"], "generated": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
+        "symbol": r["symbol"], "name": r.get("name"), "profile": r.get("profile"), "horizon": r["horizon"], "generated": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
         "fetched_utc": pd.Timestamp.now(tz="UTC").isoformat(), "live": r.get("live"),
         "last_bar_utc": pd.Timestamp(r["tfs"][next(iter(r["tfs"]))].index[-1]).isoformat() + "Z",
         "elapsed": r["elapsed"], "decision": dec, "vote_score": res["vote_score"], "counts": res["counts"],
