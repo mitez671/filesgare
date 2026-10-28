@@ -7,7 +7,8 @@ pkg install -y python python-numpy git
 # prebuilt scientific packages (much faster than compiling on the phone)
 pkg install -y tur-repo || true
 pkg install -y python-pandas 2>/dev/null || pip install pandas
-# optional: stronger ML models; if it fails the built-in NumPy model is used
-pkg install -y python-scikit-learn 2>/dev/null || pip install scikit-learn || echo "scikit-learn skipped (NumPy model will be used)"
+# optional: scikit-learn only if a prebuilt package exists. Compiling it with pip on a
+# phone takes an hour+, so we skip it; the built-in NumPy model is used instead.
+pkg install -y python-scikit-learn 2>/dev/null || echo "scikit-learn not available as a package -> built-in NumPy model will be used"
 termux-wake-lock 2>/dev/null || true   # keep running while the screen is off
 python -m gold_analyzer --web --open
