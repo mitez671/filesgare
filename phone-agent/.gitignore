@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+phone-agent/android/.gradle/
+phone-agent/android/build/
+phone-agent/android/app/build/
