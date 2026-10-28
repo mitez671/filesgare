@@ -65,6 +65,10 @@ def _yahoo_chart(symbol, rng, interval, timeout=30):
                               index=pd.to_datetime(res["timestamp"], unit="s"))
             df = _clean(df)
             _check_spacing(df, interval)
+            meta = res.get("meta", {})
+            if meta.get("regularMarketTime"):  # latest traded price + its time (UTC)
+                df.attrs["live"] = {"price": meta.get("regularMarketPrice"),
+                                    "time_utc": pd.Timestamp(meta["regularMarketTime"], unit="s").isoformat() + "Z"}
             return df
         except Exception as e:
             last_err = e

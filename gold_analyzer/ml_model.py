@@ -165,6 +165,7 @@ def train_and_predict(X, y, fwd, horizon=10, splits=5, warmup=200):
         moves.append(fl.iloc[te].values)
         base_hits.append((yl.iloc[te] == yl.iloc[tr].mode()[0]).mean())
     p, t, mv = np.concatenate(preds), np.concatenate(truth), np.concatenate(moves)
+    up_rate = float((mv > 0).mean())  # how often price simply went up (what a "buy" is up against)
     acc = float((p == t).mean())
     buy_prec = float((mv[p == 1] > 0).mean()) if (p == 1).any() else np.nan
     sell_prec = float((mv[p == -1] < 0).mean()) if (p == -1).any() else np.nan
@@ -183,7 +184,7 @@ def train_and_predict(X, y, fwd, horizon=10, splits=5, warmup=200):
     return {
         "model": model_name(),
         "p_buy": float(proba.get(1, 0)), "p_wait": float(proba.get(0, 0)), "p_sell": float(proba.get(-1, 0)),
-        "cv_accuracy": acc, "baseline_accuracy": float(np.mean(base_hits)),
+        "cv_accuracy": acc, "up_rate": up_rate, "baseline_accuracy": float(np.mean(base_hits)),
         "buy_precision": buy_prec, "sell_precision": sell_prec, "avg_trade_pct": avg_trade,
         "n_buy_calls": int((p == 1).sum()), "n_sell_calls": int((p == -1).sum()),
         "n_samples": int(len(Xl)), "n_features": int(X.shape[1]),
@@ -192,15 +193,36 @@ def train_and_predict(X, y, fwd, horizon=10, splits=5, warmup=200):
     }
 
 
-def ml_weight(res):
-    """Trust the model more when its out-of-sample directional precision is better."""
-    precs = [x for x in (res["buy_precision"], res["sell_precision"]) if not np.isnan(x)]
-    if not precs:
-        return 0.15
-    prec = float(np.mean(precs))
+def ml_trust(res, direction):
+    """How much weight the model deserves, judged only on its out-of-sample record.
+
+    ``direction`` is the sign of today's prediction (+1 up, -1 down, 0 flat):
+    a model whose past calls in that direction were worse than chance gets 0.
+    Returns {"weight", "reliable", "reasons"}.
+    """
+    reasons = []
     edge = res["cv_accuracy"] - res["baseline_accuracy"]
-    if prec >= 0.56 and edge > 0:
-        return 0.5
-    if prec >= 0.52:
-        return 0.35
-    return 0.15
+    up = res.get("up_rate", 0.5)
+    buy_edge = res["buy_precision"] - up if not np.isnan(res["buy_precision"]) else np.nan
+    sell_edge = res["sell_precision"] - (1 - up) if not np.isnan(res["sell_precision"]) else np.nan
+    if edge <= 0:
+        reasons.append(f"دقت کل مدل ({res['cv_accuracy']*100:.1f}%) از حدس ساده ({res['baseline_accuracy']*100:.1f}%) بهتر نیست")
+    if not np.isnan(res["avg_trade_pct"]) and res["avg_trade_pct"] <= 0:
+        reasons.append("پیروی از سیگنال‌های مدل در گذشته سودی نداشته")
+    dir_edge = buy_edge if direction > 0 else sell_edge if direction < 0 else np.nan
+    if direction != 0 and (np.isnan(dir_edge) or dir_edge <= 0):
+        side = "خرید" if direction > 0 else "فروش"
+        base = up if direction > 0 else 1 - up
+        prec = res["buy_precision"] if direction > 0 else res["sell_precision"]
+        reasons.append(f"سیگنال‌های {side} مدل در گذشته ({prec*100:.1f}% درست) از نرخ پایه بازار ({base*100:.1f}%) بهتر نبوده‌اند")
+    if reasons:
+        return {"weight": 0.0, "reliable": False, "reasons": reasons}
+    edges = [x for x in (buy_edge, sell_edge) if not np.isnan(x)]
+    mean_edge = float(np.mean(edges)) if edges else 0.0
+    if edge > 0.03 and mean_edge > 0.03:
+        w = 0.5
+    elif mean_edge > 0.01:
+        w = 0.35
+    else:
+        w = 0.15
+    return {"weight": w, "reliable": True, "reasons": [f"مدل از حدس ساده {edge*100:.1f} واحد درصد دقیق‌تر بوده"]}

@@ -10,6 +10,11 @@ VOTE_FA = {1: "🟢 خرید", -1: "🔴 فروش", 0: "⚪ صبر"}
 def decide(res, ml=None, w_ml=0.0):
     vote = res["vote_score"]
     ml_score = (ml["p_buy"] - ml["p_sell"]) if ml else 0.0
+    warnings = []
+    if ml and "trust" in ml:
+        w_ml = ml["trust"]["weight"]
+        if not ml["trust"]["reliable"]:
+            warnings.append("مدل ML در آزمون گذشته قابل‌اعتماد نبود → وزن آن صفر شد و سیگنال فقط از رأی ابزارهاست")
     final = (1 - w_ml) * vote + w_ml * ml_score
     if final >= 0.35:
         sig, level = "STRONG BUY", 2
@@ -21,7 +26,6 @@ def decide(res, ml=None, w_ml=0.0):
         sig, level = "SELL", -1
     else:
         sig, level = "WAIT", 0
-    warnings = []
     tfs = res["timeframes"]
     # confluence filter: daily vs weekly disagreement downgrades the signal one step
     if "1d" in tfs and "1w" in tfs:
@@ -30,7 +34,7 @@ def decide(res, ml=None, w_ml=0.0):
             level = int(np.sign(level)) * (abs(level) - 1)
             sig = {2: "STRONG BUY", 1: "BUY", 0: "WAIT", -1: "SELL", -2: "STRONG SELL"}[level]
             warnings.append("روند روزانه و هفتگی هم‌جهت نیستند → سیگنال یک درجه تضعیف شد")
-    if ml and level != 0 and np.sign(ml_score) != np.sign(vote) and abs(ml_score) > 0.2:
+    if ml and w_ml > 0 and level != 0 and np.sign(ml_score) != np.sign(vote) and abs(ml_score) > 0.2:
         warnings.append("مدل ML با رأی‌گیری اندیکاتورها مخالف است → با حجم کمتر وارد شوید")
 
     base_tf = tfs.get("1d") or next(iter(tfs.values()))
@@ -99,6 +103,8 @@ def print_report(symbol, res, decision, ml=None, hit_rates=None):
               f"فروش {sp} ({ml['n_sell_calls']})  میانگین سود هر معامله {at}")
         print("  مهم‌ترین ویژگی‌ها: " + ", ".join(list(ml["top_features"])[:6]))
         print(f"  وزن ML در تصمیم نهایی: {decision['ml_weight']:.2f}")
+        for why in ml.get("trust", {}).get("reasons", []):
+            print(f"    • {why}")
 
     print("\n" + line)
     fa = {"STRONG BUY": "خرید قوی (LONG)", "BUY": "خرید (LONG)", "WAIT": "صبر / بدون معامله",

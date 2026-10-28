@@ -98,6 +98,13 @@ details.an .nm{flex:1;font-size:.88rem}
 .foot{color:var(--muted);font-size:.78rem;text-align:center;margin-top:20px}
 .toolbar{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
 .toggles{display:flex;gap:10px;flex-wrap:wrap}
+.explain{margin-top:12px;background:var(--bg);border-right:3px solid var(--accent);border-radius:10px;padding:10px 12px;font-size:.86rem;line-height:1.95}
+.explain .t{display:block;color:var(--accent);font-weight:700;margin-bottom:2px}
+.explain p{margin:4px 0}
+.verdict{border-radius:10px;padding:8px 12px;margin:8px 0;font-size:.88rem}
+.verdict.good{background:var(--buy-soft)} .verdict.bad{background:var(--sell-soft)}
+.verdict ul{margin:4px 0 0;padding-right:18px}
+.fresh{font-size:.85rem;margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -131,6 +138,7 @@ details.an .nm{flex:1;font-size:.88rem}
   <div class="row" style="margin-top:10px">
     <label class="ck"><input type="checkbox" id="ml" checked> یادگیری ماشین</label>
     <label class="ck"><input type="checkbox" id="im" checked> بین‌بازاری (دلار، اوراق، نقره)</label>
+    <label class="ck" id="autoWrap"><input type="checkbox" id="auto"> به‌روزرسانی خودکار (هر ۵ دقیقه)</label>
     <label class="ck">افق
       <select id="horizon"><option>5</option><option selected>10</option><option>15</option><option>20</option></select> روز</label>
   </div>
@@ -143,6 +151,7 @@ details.an .nm{flex:1;font-size:.88rem}
 <div id="out" style="display:none">
   <div class="card">
     <div class="sub" id="meta"></div>
+    <div class="fresh" id="fresh"></div>
     <div class="signal">
       <svg class="gauge" viewBox="0 0 200 118" id="gauge" role="img" aria-label="امتیاز نهایی"></svg>
       <div>
@@ -153,6 +162,7 @@ details.an .nm{flex:1;font-size:.88rem}
     </div>
     <div id="warns"></div>
     <div class="plan" id="plan"></div>
+    <div class="explain" id="exSignal"></div>
   </div>
 
   <div class="grid two">
@@ -165,10 +175,12 @@ details.an .nm{flex:1;font-size:.88rem}
         <span><i class="dot" style="background:var(--wait)"></i>صبر</span></div>
       <h2 style="margin-top:16px">امتیاز هر تایم‌فریم</h2>
       <div class="bars" id="tfBars"></div>
+      <div class="explain" id="exVotes"></div>
     </div>
     <div class="card">
       <h2>نقشه حرارتی دسته‌ها</h2>
       <table class="heat" id="heat"></table>
+      <div class="explain" id="exHeat"></div>
     </div>
   </div>
 
@@ -191,23 +203,26 @@ details.an .nm{flex:1;font-size:.88rem}
       <div id="c-rsi"></div>
     </div>
     <div class="sub" id="chartNote" style="margin-top:6px"></div>
+    <div class="explain" id="exChart"></div>
   </div>
 
   <div class="card" id="mlCard">
     <h2>یادگیری ماشین</h2>
     <div id="mlBody"></div>
+    <div class="explain" id="exML"></div>
   </div>
 
   <div class="card">
     <div class="toolbar"><h2 style="margin:0">رأی تک‌تک ابزارها</h2>
       <div class="tfhead" id="tfHead"></div></div>
     <div class="sub">روی هر ردیف بزنید تا جزئیات و دقت تاریخی را ببینید.</div>
+    <div class="explain" id="exAn" style="margin-bottom:8px"></div>
     <div id="analyzers"></div>
   </div>
 
   <div class="row" style="justify-content:center">
     <a id="dl" class="chip" href="#" download>⬇ ذخیره گزارش HTML</a>
-    <button class="chip" id="refresh">↻ تحلیل مجدد</button>
+    <button class="chip" id="refresh">↻ به‌روزرسانی</button>
   </div>
 </div>
 
@@ -274,9 +289,13 @@ async function analyze(refresh){
     clearInterval(timer); $("#loader").style.display = "none"; $("#go").disabled = false;
   }
 }
-$("#go").onclick = () => analyze(false);
+// every click downloads fresh prices (the server cache is only used for the HTML report download)
+$("#go").onclick = () => analyze(true);
 $("#refresh").onclick = () => analyze(true);
-$("#symbol").addEventListener("keydown", e => { if (e.key === "Enter") analyze(false); });
+$("#symbol").addEventListener("keydown", e => { if (e.key === "Enter") analyze(true); });
+setInterval(() => {
+  if ($("#auto").checked && !document.hidden && !$("#go").disabled) analyze(true);
+}, 5 * 60 * 1000);
 
 // ------------------------------------------------------------ render
 function render(d){
@@ -285,7 +304,31 @@ function render(d){
   const tfs = TF_ORDER.filter(t => d.timeframes[t]);
   if (!d.timeframes[curTf]) curTf = tfs.includes("1d") ? "1d" : tfs[0];
   $("#meta").innerHTML = `<span class="ltr">${esc(d.symbol)}</span> · ${esc(d.generated)} · افق ${d.horizon} روز · ${fmt(d.elapsed,1)} ثانیه`;
-  renderSignal(d); renderVotes(d, tfs); renderHeat(d, tfs); renderTabs(tfs); renderChart(); renderML(d); renderAnalyzers(d, tfs);
+  renderFresh(d); renderSignal(d); renderVotes(d, tfs); renderHeat(d, tfs); renderTabs(tfs); renderChart(); renderML(d); renderAnalyzers(d, tfs);
+}
+
+// ------------------------------------------------------------ plain-language explanations
+function explain(id, parts){
+  $(id).innerHTML = `<span class="t">💡 این بخش چه می‌گوید؟</span>` + parts.filter(Boolean).map(x => `<p>${x}</p>`).join("");
+}
+const n2 = x => `<bdi class="num ltr">${x>=0?"+":""}${fmt(x)}</bdi>`;
+const dirFa = v => v > 0.1 ? '<b class="buy">صعودی</b>' : v < -0.1 ? '<b class="sell">نزولی</b>' : '<b class="wait">خنثی</b>';
+const listFa = a => a.length <= 1 ? (a[0] || "") : a.slice(0, -1).join("، ") + " و " + a[a.length-1];
+
+function ago(iso){
+  if (!iso) return null;
+  const t = new Date(iso.endsWith("Z") || iso.includes("+") ? iso : iso + "Z");
+  if (isNaN(t)) return null;
+  const m = Math.round((Date.now() - t) / 60000);
+  const when = t.toLocaleString("fa-IR", {hour: "2-digit", minute: "2-digit", day: "numeric", month: "short"});
+  const rel = m < 1 ? "همین الان" : m < 60 ? `${m} دقیقه پیش` : m < 48*60 ? `${Math.round(m/60)} ساعت پیش` : `${Math.round(m/1440)} روز پیش`;
+  return {when, rel, m};
+}
+function renderFresh(d){
+  const lv = d.live && ago(d.live.time_utc), lb = ago(d.last_bar_utc);
+  if (lv) $("#fresh").innerHTML = `قیمت لحظه‌ای <b class="num ltr">${fmt(d.live.price)}</b> · آخرین معامله ${lv.when} (${lv.rel})`;
+  else if (lb) $("#fresh").innerHTML = `آخرین کندل داده: ${lb.when} (${lb.rel})`;
+  else $("#fresh").textContent = "";
 }
 
 function renderSignal(d){
@@ -303,6 +346,19 @@ function renderSignal(d){
     $("#plan").innerHTML = [["ورود", p.entry, ""], ["حد ضرر", p.stop_loss, "sell"], ["TP1", p.tp1, "buy"], ["TP2", p.tp2, "buy"], ["TP3", p.tp3, "buy"]]
       .map(([n,v,c]) => `<div><small>${n}</small><b class="num ltr ${c}">${fmt(v)}</b><small class="ltr">${n==="ورود"?"قیمت فعلی":dist(v)}</small></div>`).join("");
   } else $("#plan").innerHTML = `<div style="grid-column:1/-1"><small>سیگنال به اندازه کافی قوی نیست؛ فعلاً معامله‌ای پیشنهاد نمی‌شود.</small></div>`;
+
+  const w = dec.ml_weight || 0, c = dec.confidence;
+  const lv = d.live && ago(d.live.time_utc);
+  explain("#exSignal", [
+    `جمع‌بندی همه تحلیل‌ها برای ${d.horizon} روز آینده: <b class="${cls(dec.level)}">${SIG_FA[dec.signal]}</b>.`,
+    `عقربه امتیاز نهایی را از ۱- (همه می‌گویند فروش) تا ۱+ (همه می‌گویند خرید) نشان می‌دهد. بین ۰٫۱۵- و ۰٫۱۵+ یعنی «صبر»، و بیرون از ۰٫۳۵± یعنی سیگنال «قوی». امتیاز فعلی ${n2(s)} است.`,
+    w > 0 ? `این امتیاز ${Math.round((1-w)*100)}٪ از رأی ابزارهای تحلیلی و ${Math.round(w*100)}٪ از مدل یادگیری ماشین آمده.`
+          : `مدل یادگیری ماشین در این تصمیم سهمی ندارد؛ امتیاز فقط از رأی ابزارهای تحلیلی است.`,
+    `اطمینان ${pct(c,0)} یعنی سیگنال ${c < 0.3 ? "ضعیف است؛ اگر وارد می‌شوید حجم را کم بگیرید" : c < 0.6 ? "متوسط است" : "قوی است و ابزارها توافق بالایی دارند"}.`,
+    p ? `حد ضرر ${fmt(p.stop_loss)} است؛ یعنی اگر قیمت به آن رسید تحلیل اشتباه بوده و باید خارج شوید. فاصله آن ۱٫۵ برابر نوسان متوسط روزانه (ATR) است. TP1 هم‌اندازه ریسک (۱ به ۱)، TP2 دو برابر و TP3 سه برابر آن است. روش رایج: بخشی از معامله را در TP1 ببندید و حد ضرر را به نقطه ورود ببرید.`
+      : `چون امتیاز در محدوده خنثی است، ورود به معامله پیشنهاد نمی‌شود. صبر کنید تا ابزارها هم‌جهت شوند.`,
+    `داده‌ها با هر بار زدن «تحلیل کن» یا «به‌روزرسانی» تازه از Yahoo دریافت می‌شوند${lv ? ` (آخرین قیمت مربوط به ${lv.rel})` : ""}. Yahoo معمولاً چند تا ۱۵ دقیقه تأخیر دارد و آخرین کندل هر تایم‌فریم هنوز بسته نشده است.`,
+  ]);
 }
 
 function renderGauge(s){
@@ -331,6 +387,21 @@ function renderVotes(d, tfs){
   $("#stack").innerHTML = [["buy",c.buy],["sell",c.sell],["wait",c.wait]]
     .map(([k,n]) => n ? `<div style="width:${n/tot*100}%;background:var(--${k})">${n}</div>` : "").join("");
   $("#tfBars").innerHTML = tfs.map(t => bar(d.timeframes[t].name, d.timeframes[t].score)).join("") + bar("<b>وزنی</b>", d.vote_score);
+
+  const bull = tfs.filter(t => d.timeframes[t].score > 0.1).map(t => d.timeframes[t].name);
+  const bear = tfs.filter(t => d.timeframes[t].score < -0.1).map(t => d.timeframes[t].name);
+  const flat = tfs.filter(t => Math.abs(d.timeframes[t].score) <= 0.1).map(t => d.timeframes[t].name);
+  const big = ["1d","1w"].filter(t => d.timeframes[t]).map(t => Math.sign(Math.round(d.timeframes[t].score*10)));
+  let align;
+  if (!bear.length && !flat.length) align = "همه تایم‌فریم‌ها صعودی‌اند؛ روند کوتاه‌مدت و بلندمدت با هم موافق‌اند. این بهترین حالت برای خرید است.";
+  else if (!bull.length && !flat.length) align = "همه تایم‌فریم‌ها نزولی‌اند؛ روند کوتاه‌مدت و بلندمدت با هم موافق‌اند. این بهترین حالت برای فروش است.";
+  else align = [bull.length && `${listFa(bull)} صعودی`, bear.length && `${listFa(bear)} نزولی`, flat.length && `${listFa(flat)} خنثی`].filter(Boolean).join("، ") + " است."
+    + (big.length === 2 && big[0] !== big[1] ? " روزانه و هفتگی هم‌جهت نیستند؛ برای میان‌مدت این یعنی احتیاط." : " وقتی تایم‌فریم‌های کوچک (۱ و ۴ ساعته) خلاف بزرگ‌ها باشند، معمولاً یک اصلاح موقت داخل روند بزرگ‌تر است. برای معامله میان‌مدت جهت روزانه و هفتگی مهم‌تر است.");
+  explain("#exVotes", [
+    `هر ابزار در هر تایم‌فریم یک رأی می‌دهد. از ${tot} رأی، ${pct(c.buy/tot,0)} خرید، ${pct(c.sell/tot,0)} فروش و ${pct(c.wait/tot,0)} صبر است. رأی «صبر» یعنی آن ابزار الان شرایط مشخصی نمی‌بیند (مثلاً RSI در محدوده میانی است).`,
+    `امتیاز هر تایم‌فریم: ${align}`,
+    `امتیاز «وزنی» ترکیب تایم‌فریم‌هاست: روزانه ۴۰٪، هفتگی ۲۵٪، چهارساعته ۲۵٪ و یک‌ساعته ۱۰٪. الان ${n2(d.vote_score)} است، یعنی جهت کلی ${dirFa(d.vote_score)}.`,
+  ]);
 }
 
 function heatColor(v){
@@ -349,6 +420,33 @@ function renderHeat(d, tfs){
     }).join("") + "</tr>";
   }
   $("#heat").innerHTML = h;
+
+  const cells = [];
+  for (const [cat, name] of Object.entries(d.categories)) tfs.forEach(t => {
+    const v = d.timeframes[t].categories[cat]; if (v != null) cells.push({cat, name, t, v});
+  });
+  const top = cells.reduce((a, b) => b.v > (a?.v ?? -9) ? b : a, null);
+  const low = cells.reduce((a, b) => b.v < (a?.v ?? 9) ? b : a, null);
+  const rows = Object.entries(d.categories).map(([cat, name]) => ({name, vs: tfs.map(t => d.timeframes[t].categories[cat]).filter(v => v != null)}))
+    .filter(r => r.vs.length >= 2);
+  const allUp = rows.filter(r => r.vs.every(v => v >= 0.2)).map(r => r.name);
+  const allDn = rows.filter(r => r.vs.every(v => v <= -0.2)).map(r => r.name);
+  const dc = d.timeframes["1d"]?.categories || {};
+  const dUp = Object.entries(dc).filter(([, v]) => v >= 0.2).map(([k]) => d.categories[k]);
+  const dDn = Object.entries(dc).filter(([, v]) => v <= -0.2).map(([k]) => d.categories[k]);
+  let special = "";
+  if (dc.trend <= -0.2 && dc.momentum >= 0.2) special = "در روزانه روند نزولی است ولی اسیلاتورها خرید می‌دهند؛ معمولاً یعنی قیمت در اشباع فروش است و احتمال یک برگشت یا اصلاح صعودی کوتاه وجود دارد، نه لزوماً پایان روند نزولی.";
+  else if (dc.trend >= 0.2 && dc.momentum <= -0.2) special = "در روزانه روند صعودی است ولی اسیلاتورها فروش می‌دهند؛ معمولاً یعنی قیمت در اشباع خرید است و احتمال یک اصلاح نزولی کوتاه وجود دارد.";
+  else if (dc.trend * (dc.smc ?? 0) < 0 && Math.abs(dc.smc) >= 0.2) special = "در روزانه ابزارهای روندی و پول هوشمند خلاف هم‌اند؛ گاهی پول هوشمند زودتر از اندیکاتورها تغییر جهت را نشان می‌دهد.";
+  explain("#exHeat", [
+    `هر خانه میانگین رأی ابزارهای یک دسته در یک تایم‌فریم است. سبز یعنی خرید و قرمز یعنی فروش؛ هرچه پررنگ‌تر، ابزارهای آن دسته موافق‌ترند (۱± یعنی همه موافق‌اند).`,
+    top && top.v > 0.05 ? `قوی‌ترین نشانه خرید: «${top.name}» در ${d.timeframes[top.t].name} (${n2(top.v)}).` : "",
+    low && low.v < -0.05 ? `قوی‌ترین نشانه فروش: «${low.name}» در ${d.timeframes[low.t].name} (${n2(low.v)}).` : "",
+    allUp.length ? `${listFa(allUp)} در همه تایم‌فریم‌ها خرید ${allUp.length > 1 ? "می‌دهند" : "می‌دهد"}؛ این دیدگاه یکدست صعودی است.` : "",
+    allDn.length ? `${listFa(allDn)} در همه تایم‌فریم‌ها فروش ${allDn.length > 1 ? "می‌دهند" : "می‌دهد"}؛ این دیدگاه یکدست نزولی است.` : "",
+    (dUp.length || dDn.length) ? `در تایم‌فریم روزانه${dUp.length ? ` ${listFa(dUp)} طرف خرید` : ""}${dUp.length && dDn.length ? " و" : ""}${dDn.length ? ` ${listFa(dDn)} طرف فروش` : ""} هستند.` : "",
+    special,
+  ]);
 }
 
 function renderTabs(tfs){
@@ -414,7 +512,28 @@ function renderChart(){
     syncing = false;
   }));
   main.timeScale().setVisibleLogicalRange({from: ch.candles.length - 120, to: ch.candles.length + 3});
-  $("#chartNote").innerHTML = `پیکان‌ها: لحظه‌ای که امتیاز ترکیبی ابزارها از ۰٫۳+ (خرید) یا ۰٫۳- (فروش) عبور کرده. سوپرترند ${tf.chart.supertrend>0?'<b class="buy">صعودی</b>':'<b class="sell">نزولی</b>'} · ATR ${fmt(tf.atr)}`;
+  $("#chartNote").innerHTML = `پیکان‌ها (B/S): لحظه‌ای که امتیاز ترکیبی ابزارها از ۰٫۳+ (خرید) یا ۰٫۳- (فروش) عبور کرده. سوپرترند ${tf.chart.supertrend>0?'<b class="buy">صعودی</b>':'<b class="sell">نزولی</b>'} · ATR ${fmt(tf.atr)}`;
+  explainChart(tf);
+}
+
+function explainChart(tf){
+  const ch = tf.chart, last = a => { for (let i = a.length - 1; i >= 0; i--) if (a[i].value != null) return a[i].value; return null; };
+  const close = ch.candles[ch.candles.length - 1].close;
+  const e20 = last(ch.ema20), e50 = last(ch.ema50), e200 = last(ch.ema200), r = last(ch.rsi), sc = last(ch.score);
+  const mk = ch.markers[ch.markers.length - 1];
+  const barsAgo = mk ? ch.candles.length - 1 - ch.candles.findIndex(c => c.time === mk.time) : null;
+  const sup = ch.levels.find(l => l.label === "Support"), res = ch.levels.find(l => l.label === "Resistance");
+  const dist = p => `${((p / close - 1) * 100).toFixed(2)}٪`;
+  explain("#exChart", [
+    `نمودار ${tf.name}: هر شمع یک کندل است (سبز = بسته شدن بالاتر، قرمز = پایین‌تر).`,
+    e200 != null ? `قیمت ${fmt(close)} ${close > e200 ? '<b class="buy">بالای</b>' : '<b class="sell">زیر</b>'} EMA200 (خط بنفش) است؛ یعنی روند بلندمدتِ این تایم‌فریم ${close > e200 ? "صعودی" : "نزولی"} است.` : "",
+    e20 != null && e50 != null ? `EMA20 (آبی) ${e20 > e50 ? "بالای" : "زیر"} EMA50 (نارنجی) است؛ یعنی روند کوتاه‌مدت ${e20 > e50 ? '<b class="buy">صعودی</b>' : '<b class="sell">نزولی</b>'} است.` : "",
+    r != null ? `RSI روی ${fmt(r,1)} است: ${r > 70 ? "اشباع خرید؛ قیمت زیاد بالا رفته و احتمال اصلاح نزولی هست." : r < 30 ? "اشباع فروش؛ قیمت زیاد پایین آمده و احتمال برگشت صعودی هست." : r >= 50 ? "قدرت با خریدارهاست (بالای ۵۰)." : "قدرت با فروشنده‌هاست (زیر ۵۰)."}` : "",
+    mk ? `آخرین فلش ${mk.text === "B" ? '<b class="buy">خرید</b>' : '<b class="sell">فروش</b>'} بوده، ${barsAgo} کندل پیش.` : "",
+    sc != null ? `پنل «امتیاز ترکیبی» نظر همه ابزارها را برای هر کندل نشان می‌دهد. الان ${n2(sc)} است. ستون‌های سبز بلند یعنی توافق روی خرید و ستون‌های قرمز بلند یعنی توافق روی فروش.` : "",
+    (sup || res) ? `نزدیک‌ترین ${sup ? `حمایت ${fmt(sup.price)} (${dist(sup.price)})` : ""}${sup && res ? " و " : ""}${res ? `مقاومت ${fmt(res.price)} (${dist(res.price)})` : ""} است. قیمت معمولاً روی حمایت واکنش مثبت و زیر مقاومت واکنش منفی نشان می‌دهد؛ شکستن آن‌ها اغلب حرکت را تقویت می‌کند.` : "",
+    `خطوط بنفش نقطه‌چین سطوح فیبوناچی‌اند (جاهای احتمالی پایان اصلاح). «Bull OB» و «Bear OB» اوردر بلاک‌اند: ناحیه‌ای که سفارش‌های بزرگ در آن ثبت شده و قیمت معمولاً با برگشت به آن واکنش نشان می‌دهد.${curTf === "1d" && DATA.decision.plan ? " خطوط SL و TP حد ضرر و تارگت‌های معامله پیشنهادی‌اند." : ""}`,
+  ]);
 }
 
 function renderML(d){
@@ -422,7 +541,11 @@ function renderML(d){
   if (!m) { $("#mlBody").innerHTML = `<div class="sub">${d.ml_error ? "اجرا نشد: " + esc(d.ml_error) : "غیرفعال است."}</div>`; return; }
   const pb = (n, v, c) => `<div class="b"><span>${n}</span><div class="track"><div class="fill" style="right:0;width:${v*100}%;background:var(--${c})"></div></div><span class="num">${pct(v)}</span></div>`;
   const fi = Object.entries(m.top_features), mx = Math.max(...fi.map(x => x[1]));
-  $("#mlBody").innerHTML = `
+  const tr = m.trust;
+  const verdict = !tr ? "" : tr.reliable
+    ? `<div class="verdict good">✅ <b>مدل قابل‌اعتماد است</b>؛ وزن آن در تصمیم نهایی ${pct(tr.weight,0)} است.<ul>${tr.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`
+    : `<div class="verdict bad">⛔ <b>مدل فعلاً قابل‌اعتماد نیست</b>، برای همین وزن آن صفر شد و سیگنال نهایی فقط از رأی ابزارهاست.<ul>${tr.reasons.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`;
+  $("#mlBody").innerHTML = verdict + `
     <div class="sub ltr" style="text-align:right">${esc(m.model)}</div>
     <div class="sub">احتمال حرکت در ${d.horizon} روز آینده:</div>
     <div class="bars">${pb("صعود", m.p_buy, "buy")}${pb("خنثی", m.p_wait, "wait")}${pb("نزول", m.p_sell, "sell")}</div>
@@ -434,6 +557,17 @@ function renderML(d){
     </div>
     <div class="sub">مهم‌ترین ویژگی‌ها برای مدل:</div>
     <div class="bars">${fi.map(([k,v]) => `<div class="b" style="grid-template-columns:130px 1fr 52px"><span class="ltr" style="font-size:.75rem;text-align:left">${esc(k)}</span><div class="track"><div class="fill" style="right:0;width:${v/mx*100}%;background:var(--accent)"></div></div><span class="num">${(v*100).toFixed(1)}</span></div>`).join("")}</div>`;
+
+  const probs = [["صعود", m.p_buy], ["خنثی", m.p_wait], ["نزول", m.p_sell]].sort((a, b) => b[1] - a[1]);
+  const up = m.up_rate;
+  explain("#exML", [
+    `مدل از روی ${m.n_samples} روز سابقه یاد گرفته که هر ترکیب از رأی ابزارها معمولاً چه حرکتی را در ${d.horizon} روز بعد به دنبال داشته. الان بیشترین احتمال را به «${probs[0][0]}» می‌دهد (${pct(probs[0][1])}).`,
+    `«دقت Walk-Forward» یعنی مدل در آزمونی روی گذشته، که هر بار فقط داده‌های قبل از همان روز را می‌دید، چند درصد درست گفته. «مبنا» دقت یک حدس ساده است (همیشه رایج‌ترین حالت). مدل خوب باید از مبنا بالاتر باشد؛ الان ${m.cv_accuracy > m.baseline_accuracy ? `<b class="buy">بالاتر</b> است` : `<b class="sell">بالاتر نیست</b>`}.`,
+    up != null ? `برای «درستی سیگنال‌ها» باید نرخ پایه را در نظر گرفت: در این دوره قیمت ${pct(up)} وقت‌ها بالا رفته. پس سیگنال خرید فقط وقتی ارزش دارد که بیشتر از ${pct(up)} درست باشد (الان ${pct(m.buy_precision)})، و سیگنال فروش وقتی که بیشتر از ${pct(1-up)} درست باشد (الان ${pct(m.sell_precision)}).` : "",
+    `«میانگین سود هر معامله» یعنی اگر در گذشته دقیقاً طبق سیگنال‌های مدل معامله می‌کردید، هر معامله به‌طور میانگین چقدر سود یا زیان داشت.`,
+    `«مهم‌ترین ویژگی‌ها» ورودی‌هایی‌اند که بیشترین اثر را روی تصمیم مدل دارند. <bdi dir="ltr">d_</bdi> یعنی روزانه، <bdi dir="ltr">w_</bdi> یعنی هفتگی و <bdi dir="ltr">raw</bdi> یعنی مقدار خام یک اندیکاتور.`,
+    tr && !tr.reliable ? `پیشنهاد: افق را عوض کنید (مثلاً ${d.horizon === 10 ? "۲۰" : "۱۰"} روز) و دوباره تحلیل کنید. ممکن است مدل در افق دیگری عملکرد بهتری داشته باشد. تا وقتی این کادر قرمز است، احتمال‌های بالا را جدی نگیرید.` : "",
+  ]);
 }
 
 function renderAnalyzers(d, tfs){
@@ -457,11 +591,24 @@ function renderAnalyzers(d, tfs){
     }).join("");
   }
   $("#analyzers").innerHTML = html;
+
+  const items = Object.values(byKey);
+  const good = items.filter(it => it.tf["1d"] && it.tf["1d"].hit != null && it.tf["1d"].hit >= 0.55 && it.tf["1d"].vote !== 0)
+    .sort((a, b) => b.tf["1d"].hit - a.tf["1d"].hit);
+  const gb = good.filter(it => it.tf["1d"].vote > 0), gs = good.filter(it => it.tf["1d"].vote < 0);
+  const same = items.filter(it => { const v = tfs.map(t => it.tf[t]?.vote); return v.every(x => x === 1) || v.every(x => x === -1); });
+  explain("#exAn", [
+    `هر ردیف یک ابزار است و مربع‌ها رأی آن را در تایم‌فریم‌های ${tfs.map(t => `<span class="ltr">${t}</span>`).join("، ")} نشان می‌دهند: ▲ خرید، ▼ فروش، ● صبر.`,
+    good.length ? `ابزارهایی که در گذشته روی همین نماد بیشتر از ۵۵٪ درست گفته‌اند، الان در روزانه <b class="buy">${gb.length} خرید</b> و <b class="sell">${gs.length} فروش</b> می‌دهند: ${listFa(good.slice(0, 5).map(it => `${it.name} (${pct(it.tf["1d"].hit,0)}، ${it.tf["1d"].vote > 0 ? "خرید" : "فروش"})`))}.`
+                : `هیچ‌کدام از ابزارهایی که الان رأی خرید یا فروش داده‌اند، در گذشته بیش از ۵۵٪ درست نبوده‌اند؛ پس به سیگنال‌ها با احتیاط نگاه کنید.`,
+    same.length ? `این ابزارها در همه تایم‌فریم‌ها یک رأی دارند و نشانه قوی‌تری‌اند: ${listFa(same.map(it => `${it.name} (${it.tf[tfs[0]].vote > 0 ? "خرید" : "فروش"})`))}.` : "",
+    `«دقت تاریخی» (با زدن روی هر ردیف) یعنی رأی آن ابزار در گذشته چند درصد مواقع با حرکت ${d.horizon} روز بعد هم‌جهت بوده. ۵۰٪ یعنی هم‌اندازه شانس؛ به ابزارهای زیر ۵۰٪ کمتر اعتماد کنید.`,
+  ]);
 }
 
 // ------------------------------------------------------------ boot
 const embedded = JSON.parse($("#payload").textContent);
-if (embedded) { $("#formCard").style.display = "none"; $("#dl").parentElement.style.display = "none"; render(embedded); }
+if (embedded) { $("#formCard").style.display = "none"; $("#autoWrap").style.display = "none"; $("#dl").parentElement.style.display = "none"; render(embedded); }
 else if (location.protocol.startsWith("http")) {
   // ?symbol=SI=F&source=demo&horizon=15&ml=0 pre-fills the form (links are shareable)
   const u = new URLSearchParams(location.search);
@@ -471,7 +618,7 @@ else if (location.protocol.startsWith("http")) {
   if (u.get("ml")) $("#ml").checked = u.get("ml") !== "0";
   if (u.get("im")) $("#im").checked = u.get("im") !== "0";
   document.querySelectorAll("#presets .chip").forEach(x => x.classList.toggle("on", x.dataset.s === $("#symbol").value));
-  analyze(false);
+  analyze(true);
 }
 </script>
 </body>

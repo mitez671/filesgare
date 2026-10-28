@@ -36,6 +36,7 @@ def run(symbol="GC=F", source="yahoo", csv=None, horizon=10, use_ml=True, use_in
     if not use_intermarket:
         intermarket = {}
 
+    live = (hourly.attrs.get("live") if hourly is not None else None) or daily.attrs.get("live")
     tfs = data.build_timeframes(hourly, daily)
     log("در حال اجرای اندیکاتورها و تحلیل‌ها روی تایم‌فریم‌های " + ", ".join(tfs) + " ...")
     res = engine.analyze(tfs, intermarket)
@@ -49,12 +50,14 @@ def run(symbol="GC=F", source="yahoo", csv=None, horizon=10, use_ml=True, use_in
             w_votes, _ = res["votes_history"]["1w"]
             X, y, fwd = ml_model.build_dataset(tfs["1d"], d_votes, tfs["1w"], w_votes, intermarket, horizon=horizon)
             ml = ml_model.train_and_predict(X, y, fwd, horizon=horizon)
-            w_ml = ml_model.ml_weight(ml)
+            score = ml["p_buy"] - ml["p_sell"]
+            ml["trust"] = ml_model.ml_trust(ml, 1 if score > 0.1 else -1 if score < -0.1 else 0)
+            w_ml = ml["trust"]["weight"]
         except Exception as e:
             ml_error = str(e)
             log(f"(ML اجرا نشد: {e})")
     decision = report.decide(res, ml, w_ml)
-    return {"symbol": symbol, "horizon": horizon, "tfs": tfs, "res": res, "hit": hit, "ml": ml,
+    return {"symbol": symbol, "horizon": horizon, "tfs": tfs, "live": live, "res": res, "hit": hit, "ml": ml,
             "ml_error": ml_error, "decision": decision, "elapsed": time.time() - t0}
 
 
@@ -165,6 +168,8 @@ def to_payload(r):
         }
     return _js({
         "symbol": r["symbol"], "horizon": r["horizon"], "generated": pd.Timestamp.now().strftime("%Y-%m-%d %H:%M"),
+        "fetched_utc": pd.Timestamp.now(tz="UTC").isoformat(), "live": r.get("live"),
+        "last_bar_utc": pd.Timestamp(r["tfs"][next(iter(r["tfs"]))].index[-1]).isoformat() + "Z",
         "elapsed": r["elapsed"], "decision": dec, "vote_score": res["vote_score"], "counts": res["counts"],
         "categories": {k: v[0] for k, v in CATEGORIES.items()}, "timeframes": tfs,
         "ml": r["ml"], "ml_error": r["ml_error"],
