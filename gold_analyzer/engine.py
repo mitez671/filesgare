@@ -6,11 +6,14 @@ import pandas as pd
 
 from . import indicators as ind
 from .intermarket import PROFILES
-from .registry import ANALYZERS, CATEGORIES
+from .registry import ANALYZERS, CATEGORIES, MIN_BARS
 
 # medium-term (swing) profile: daily is the anchor, weekly the bias, 4h/1h the timing
-TF_WEIGHTS = {"1h": 0.10, "4h": 0.25, "1d": 0.40, "1w": 0.25}
-TF_NAMES = {"1h": "یک‌ساعته", "4h": "چهارساعته", "1d": "روزانه", "1w": "هفتگی"}
+# long-term frames (monthly/quarterly/yearly) only tilt the bias, they do not drive the trade
+TF_WEIGHTS = {"1h": 0.08, "4h": 0.20, "1d": 0.32, "1w": 0.20, "1M": 0.12, "3M": 0.05, "1Y": 0.03}
+TF_NAMES = {"1h": "یک‌ساعته", "4h": "چهارساعته", "1d": "روزانه", "1w": "هفتگی",
+            "1M": "ماهانه", "3M": "فصلی", "1Y": "سالانه"}
+LONG_TFS = ("1M", "3M", "1Y")
 
 
 def run_timeframe(df, intermarket=None, use_intermarket=False, profile=None):
@@ -24,9 +27,12 @@ def run_timeframe(df, intermarket=None, use_intermarket=False, profile=None):
             v, note = fn(df)
         except Exception as e:  # one broken analyzer must not kill the report
             v, note = pd.Series(0.0, index=df.index), f"error: {e}"
+        need = MIN_BARS.get(key, 30)
+        if len(df) < need:  # e.g. EMA200 on ~26 yearly bars: not a "wait" vote, just no data
+            note = f"not enough bars (needs {need}, has {len(df)})"
         votes[key] = v.reindex(df.index).fillna(0).clip(-1, 1)
         info[key] = {"name": name, "category": cat, "note": note,
-                     "available": note != "no volume data" and not note.startswith("error")}
+                     "available": note != "no volume data" and not note.startswith(("error", "not enough"))}
     if use_intermarket and intermarket and profile in PROFILES:
         for src, _ticker, key, name, fn in PROFILES[profile]:
             if src not in intermarket:

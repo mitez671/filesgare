@@ -28,8 +28,13 @@ def _clean(df):
 
 
 def resample(df, rule):
-    # weekly bars are stamped with their (Friday) close date, intraday/daily bars with their open time
-    side = "right" if rule.startswith("W") else "left"
+    # weekly/monthly/quarterly/yearly bars are stamped with their closing date,
+    # intraday/daily bars with their open time
+    side = "right" if rule.startswith(("W", "M", "Q", "Y", "A")) else "left"
+    if side == "right":
+        # daily bars may carry an exchange-open time (e.g. 04:00 UTC); use the plain date so
+        # Friday / month-end bars land in their own week / month and not the next one
+        df = df.set_axis(df.index.normalize())
     out = df.resample(rule, label=side, closed=side).agg(
         {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"})
     return out.dropna(subset=["close"])
@@ -193,12 +198,28 @@ def synthetic(seed=7, years=8):
     return hourly, daily, {"dxy": dxy}
 
 
-def build_timeframes(hourly, daily, intraday_bars=3000):
-    """Medium-term stack: 1h (timing), 4h, daily, weekly."""
+# long-term timeframes: (pandas >= 2.2 rule, older pandas rule)
+LONG_TERM = {"1M": ("ME", "M"), "3M": ("QE", "Q"), "1Y": ("YE", "A")}
+
+
+def _rule(new, old):
+    try:
+        pd.tseries.frequencies.to_offset(new)
+        return new
+    except ValueError:
+        return old
+
+
+def build_timeframes(hourly, daily, intraday_bars=3000, min_long_bars=12):
+    """1h / 4h (timing), daily (anchor), weekly, plus monthly / quarterly / yearly (long-term bias)."""
     tfs = {}
     if hourly is not None and len(hourly) > 300:
         tfs["1h"] = hourly.tail(intraday_bars)
         tfs["4h"] = resample(hourly, "4h").tail(intraday_bars)
     tfs["1d"] = daily
     tfs["1w"] = resample(daily, "W-FRI")
+    for tf, (new, old) in LONG_TERM.items():
+        bars = resample(daily, _rule(new, old))
+        if len(bars) >= min_long_bars:  # skip when the history is too short (e.g. hourly-only CSV)
+            tfs[tf] = bars
     return tfs

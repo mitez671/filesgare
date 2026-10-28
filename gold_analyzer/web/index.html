@@ -76,22 +76,23 @@ label.ck{display:flex;gap:4px;align-items:center;font-size:.85rem;color:var(--mu
 #c-main{height:360px} #c-score{height:110px} #c-rsi{height:100px}
 @media(max-width:600px){#c-main{height:300px}}
 .pane-label{font-size:.75rem;color:var(--muted);margin:6px 2px 2px}
-.heat{width:100%;border-collapse:separate;border-spacing:3px;font-size:.8rem}
+.heatwrap{overflow-x:auto}
+.heat{width:100%;border-collapse:separate;border-spacing:3px;font-size:.74rem}
 .heat th{font-weight:500;color:var(--muted);text-align:center;padding:4px}
 .heat th:first-child{text-align:right}
-.heat td{text-align:center;border-radius:6px;padding:7px 2px;font-weight:700}
+.heat td{text-align:center;border-radius:6px;padding:7px 1px;font-weight:700;min-width:38px}
 .heat td:first-child{text-align:right;font-weight:500;background:transparent!important}
 details.an{border-top:1px solid var(--line);padding:6px 0}
 details.an summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none}
 details.an summary::-webkit-details-marker{display:none}
 details.an .nm{flex:1;font-size:.88rem}
-.v{display:inline-flex;width:26px;height:22px;align-items:center;justify-content:center;border-radius:6px;font-size:.72rem;font-weight:700;color:#fff}
+.v{display:inline-flex;width:22px;height:22px;align-items:center;justify-content:center;border-radius:6px;font-size:.72rem;font-weight:700;color:#fff}
 .v.b{background:var(--buy)} .v.s{background:var(--sell)} .v.w{background:var(--wait)} .v.n{background:transparent;color:var(--muted);border:1px dashed var(--line)}
 .notes{font-size:.8rem;color:var(--muted);padding:6px 4px 2px}
 .notes div{direction:ltr;text-align:left}
 .cat-h{margin:14px 0 4px;font-weight:700;font-size:.9rem;color:var(--accent)}
-.tfhead{display:flex;gap:8px;justify-content:flex-end;font-size:.72rem;color:var(--muted)}
-.tfhead span{width:26px;text-align:center}
+.tfhead{display:flex;gap:8px;justify-content:flex-end;font-size:.66rem;color:var(--muted)}
+.tfhead span{width:22px;text-align:center}
 .metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
 .metrics div{background:var(--bg);border-radius:10px;padding:8px}
 .metrics small{color:var(--muted);display:block;font-size:.75rem}
@@ -181,7 +182,7 @@ details.an .nm{flex:1;font-size:.88rem}
     </div>
     <div class="card">
       <h2>نقشه حرارتی دسته‌ها</h2>
-      <table class="heat" id="heat"></table>
+      <div class="heatwrap"><table class="heat" id="heat"></table></div>
       <div class="explain" id="exHeat"></div>
     </div>
   </div>
@@ -233,7 +234,8 @@ details.an .nm{flex:1;font-size:.88rem}
 <script id="payload" type="application/json">null</script>
 <script>
 const $ = s => document.querySelector(s);
-const TF_ORDER = ["1h","4h","1d","1w"];
+const TF_ORDER = ["1h","4h","1d","1w","1M","3M","1Y"];
+const LONG_TF = ["1M","3M","1Y"];
 const SIG_FA = {"STRONG BUY":"خرید قوی (LONG)","BUY":"خرید (LONG)","WAIT":"صبر / بدون معامله","SELL":"فروش (SHORT)","STRONG SELL":"فروش قوی (SHORT)"};
 let DATA = null, curTf = "1d", charts = [], timer = null;
 
@@ -385,6 +387,19 @@ function bar(label, v){
     <span class="num ltr ${cls(v)}">${v>=0?"+":""}${fmt(v)}</span></div>`;
 }
 
+function longTerm(d, tfs){
+  const lt = tfs.filter(t => LONG_TF.includes(t));
+  if (!lt.length) return "";
+  const avg = lt.reduce((a, t) => a + d.timeframes[t].score, 0) / lt.length;
+  const mid = ["1d","1w"].filter(t => d.timeframes[t]);
+  const midAvg = mid.length ? mid.reduce((a, t) => a + d.timeframes[t].score, 0) / mid.length : 0;
+  let rel = "";
+  if (Math.abs(avg) > 0.1 && Math.abs(midAvg) > 0.1)
+    rel = avg * midAvg > 0 ? " جهت میان‌مدت (روزانه و هفتگی) با روند بلندمدت هم‌سوست؛ معامله در جهت روند بزرگ معمولاً کم‌ریسک‌تر است."
+                           : " جهت میان‌مدت خلاف روند بلندمدت است؛ یعنی حرکت فعلی احتمالاً یک اصلاح داخل روند بزرگ است. در این حالت هدف‌های نزدیک‌تر و حجم کمتر منطقی‌تر است.";
+  return `دید بلندمدت (${listFa(lt.map(t => d.timeframes[t].name))}): ${dirFa(avg)} (${n2(avg)}). این تایم‌فریم‌ها فقط جهت کلی بازار در ماه‌ها و سال‌ها را نشان می‌دهند و وزن کمی در سیگنال دارند.${lt.includes("1Y") ? " در سالانه چون تعداد کندل‌ها کم است، بعضی ابزارها (مثل EMA200) اجرا نمی‌شوند." : ""}${rel}`;
+}
+
 function renderVotes(d, tfs){
   const c = d.counts, tot = c.buy + c.sell + c.wait;
   $("#countsText").innerHTML = `<b class="buy">${c.buy}</b> ابزار می‌گویند بخر · <b class="sell">${c.sell}</b> می‌گویند بفروش · <b class="wait">${c.wait}</b> می‌گویند صبر کن <span class="sub">(از ${tot})</span>`;
@@ -404,7 +419,8 @@ function renderVotes(d, tfs){
   explain("#exVotes", [
     `هر ابزار در هر تایم‌فریم یک رأی می‌دهد. از ${tot} رأی، ${pct(c.buy/tot,0)} خرید، ${pct(c.sell/tot,0)} فروش و ${pct(c.wait/tot,0)} صبر است. رأی «صبر» یعنی آن ابزار الان شرایط مشخصی نمی‌بیند (مثلاً RSI در محدوده میانی است).`,
     `امتیاز هر تایم‌فریم: ${align}`,
-    `امتیاز «وزنی» ترکیب تایم‌فریم‌هاست: روزانه ۴۰٪، هفتگی ۲۵٪، چهارساعته ۲۵٪ و یک‌ساعته ۱۰٪. الان ${n2(d.vote_score)} است، یعنی جهت کلی ${dirFa(d.vote_score)}.`,
+    `امتیاز «وزنی» ترکیب تایم‌فریم‌هاست با این وزن‌ها: ${listFa(tfs.map(t => `${d.timeframes[t].name} ${Math.round(d.timeframes[t].weight / tfs.reduce((a, x) => a + d.timeframes[x].weight, 0) * 100)}٪`))}. الان ${n2(d.vote_score)} است، یعنی جهت کلی ${dirFa(d.vote_score)}.`,
+    longTerm(d, tfs),
   ]);
 }
 
@@ -471,7 +487,8 @@ function renderChart(){
     timeScale: {borderColor: css("--line"), timeVisible: curTf === "1h" || curTf === "4h"},
     crosshair: {mode: 0},
   };
-  const main = LC.createChart($("#c-main"), base);
+  // long-term frames span decades of growth: a log price scale keeps old candles readable
+  const main = LC.createChart($("#c-main"), {...base, rightPriceScale: {...base.rightPriceScale, mode: LONG_TF.includes(curTf) ? 1 : 0}});
   const candles = main.addCandlestickSeries({upColor: css("--buy"), downColor: css("--sell"), borderVisible: false,
     wickUpColor: css("--buy"), wickDownColor: css("--sell")});
   const prec = pdec(ch.candles[ch.candles.length - 1].close);
@@ -517,7 +534,8 @@ function renderChart(){
     charts.forEach(o => o !== c && o.timeScale().setVisibleLogicalRange(r));
     syncing = false;
   }));
-  main.timeScale().setVisibleLogicalRange({from: ch.candles.length - 120, to: ch.candles.length + 3});
+  if (ch.candles.length > 120) main.timeScale().setVisibleLogicalRange({from: ch.candles.length - 120, to: ch.candles.length + 3});
+  else main.timeScale().fitContent();
   $("#chartNote").innerHTML = `پیکان‌ها (B/S): لحظه‌ای که امتیاز ترکیبی ابزارها از ۰٫۳+ (خرید) یا ۰٫۳- (فروش) عبور کرده. سوپرترند ${tf.chart.supertrend>0?'<b class="buy">صعودی</b>':'<b class="sell">نزولی</b>'} · ATR ${fp(tf.atr)}`;
   explainChart(tf);
 }

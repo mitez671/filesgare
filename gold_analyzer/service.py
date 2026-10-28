@@ -16,7 +16,7 @@ from .engine import TF_NAMES
 from .registry import CATEGORIES
 from .smc import order_block_zones
 
-CHART_BARS = {"1h": 300, "4h": 300, "1d": 300, "1w": 260}
+CHART_BARS = {"1h": 300, "4h": 300, "1d": 300, "1w": 260, "1M": 400, "3M": 200, "1Y": 100}
 
 
 def run(symbol="GC=F", source="yahoo", csv=None, horizon=10, use_ml=True, use_intermarket=True, log=print):

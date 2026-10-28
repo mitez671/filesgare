@@ -14,6 +14,16 @@ CATEGORIES = {
     "intermarket": ("بین‌بازاری", 0.8),
 }
 
+# bars an analyzer needs before its latest vote means anything (default 30)
+MIN_BARS = {
+    "ema_cross": 55, "golden_cross": 205, "ema200": 205, "macd": 40, "adx": 30, "ichimoku": 80,
+    "psar": 5, "supertrend": 15, "hull": 25, "aroon": 27, "trix": 55, "linreg": 52, "donchian": 22,
+    "rsi": 16, "rsi_div": 20, "stoch": 20, "stoch_rsi": 32, "cci": 21, "williams": 15, "roc": 14, "ao": 35,
+    "bollinger": 21, "squeeze": 22, "zscore": 51, "obv": 21, "mfi": 16, "cmf": 21, "vwap": 21, "vprofile": 121,
+    "heikin": 5, "renko": 16, "candles": 12, "dow": 16, "double": 20, "sr": 15, "fib": 100, "pivot": 3,
+    "structure": 12, "order_block": 20, "fvg": 5, "liquidity": 12, "pd_zone": 60,
+}
+
 # key: (persian name, category, function)
 ANALYZERS = {
     # trend
