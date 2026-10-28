@@ -53,6 +53,17 @@ def score_row(row, info):
     return total, cat_scores
 
 
+def score_series(votes, info):
+    """Same weighting as ``score_row`` but for every bar at once (for charts)."""
+    num = den = 0
+    for cat, (_, w) in CATEGORIES.items():
+        keys = [k for k in votes if info[k]["category"] == cat and info[k]["available"]]
+        if keys:
+            num = num + w * votes[keys].mean(axis=1)
+            den += w
+    return num / den if den else votes.iloc[:, 0] * 0
+
+
 def analyze(timeframes, intermarket=None):
     """Run all analyzers on all timeframes and aggregate the latest votes."""
     result = {"timeframes": {}, "votes_history": {}}

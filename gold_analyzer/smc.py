@@ -55,8 +55,8 @@ def market_structure(df):
     return s["trend"].astype(float), f"last event: {last}"
 
 
-def order_blocks(df, max_age=60):
-    """Price returning into the last unmitigated order block, in trend direction."""
+def order_block_zones(df, max_age=60):
+    """Votes plus the currently active (bullish, bearish) order blocks as (low, high, created_at) or None."""
     s = _structure(df)
     o, h, l, c = (df[x].values for x in ("open", "high", "low", "close"))
     a = ind.atr(df).values
@@ -86,12 +86,18 @@ def order_blocks(df, max_age=60):
             votes[i] = BUY
         elif bear_ob and i > bear_ob[2] and h[i] >= bear_ob[0] - tol and c[i] <= bear_ob[1]:
             votes[i] = SELL
+    return pd.Series(votes, index=df.index), bull_ob, bear_ob
+
+
+def order_blocks(df, max_age=60):
+    """Price returning into the last unmitigated order block, in trend direction."""
+    votes, bull_ob, bear_ob = order_block_zones(df, max_age)
     note = []
     if bull_ob:
         note.append(f"bullish OB {bull_ob[0]:.2f}-{bull_ob[1]:.2f}")
     if bear_ob:
         note.append(f"bearish OB {bear_ob[0]:.2f}-{bear_ob[1]:.2f}")
-    return pd.Series(votes, index=df.index), ", ".join(note) or "no active OB"
+    return votes, ", ".join(note) or "no active OB"
 
 
 def fair_value_gaps(df, max_age=40):

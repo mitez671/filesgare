@@ -1,0 +1,478 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>تحلیلگر طلا</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="vendor/lightweight-charts.standalone.production.js"></script>
+<script>window.LightweightCharts || document.write('<script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"><\/script>')</script>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#ffffff; --text:#14161a; --muted:#6b7280; --line:#e5e7eb;
+  --buy:#16a34a; --sell:#dc2626; --wait:#9ca3af; --accent:#b8860b; --fib:#7c3aed;
+  --buy-soft:rgba(22,163,74,.12); --sell-soft:rgba(220,38,38,.12);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1115; --card:#171a21; --text:#e8eaed; --muted:#9aa0aa; --line:#272b35;
+    --buy:#22c55e; --sell:#ef4444; --wait:#6b7280; --accent:#e0b13a; --fib:#a78bfa;
+    --buy-soft:rgba(34,197,94,.14); --sell-soft:rgba(239,68,68,.14);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1115; --card:#171a21; --text:#e8eaed; --muted:#9aa0aa; --line:#272b35;
+  --buy:#22c55e; --sell:#ef4444; --wait:#6b7280; --accent:#e0b13a; --fib:#a78bfa;
+  --buy-soft:rgba(34,197,94,.14); --sell-soft:rgba(239,68,68,.14);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Vazirmatn,Tahoma,sans-serif;font-size:15px;line-height:1.6}
+body{padding:12px 16px 40px;max-width:1100px;margin:0 auto}
+h1{font-size:1.25rem;margin:4px 0 2px;font-weight:800}
+h2{font-size:1rem;margin:0 0 10px;font-weight:700}
+.sub{color:var(--muted);font-size:.82rem}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid{display:grid;gap:12px}
+@media(min-width:820px){.grid.two{grid-template-columns:1fr 1fr}}
+input,select,button{font:inherit;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+input[type=text]{flex:1;min-width:120px;direction:ltr;text-align:left}
+button{cursor:pointer}
+button.primary{background:var(--accent);color:#111;border:none;font-weight:700;padding:10px 18px}
+button:disabled{opacity:.5}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{font-size:.8rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent}
+.chip.on{border-color:var(--accent);color:var(--accent)}
+label.ck{display:flex;gap:4px;align-items:center;font-size:.85rem;color:var(--muted)}
+.ltr{direction:ltr;unicode-bidi:isolate}
+.num{font-variant-numeric:tabular-nums}
+#loader{display:none;text-align:center;padding:28px 8px}
+.spin{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:s 1s linear infinite;margin:0 auto 10px}
+@keyframes s{to{transform:rotate(360deg)}}
+.err{color:var(--sell);white-space:pre-wrap}
+.signal{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.sig-big{font-size:1.7rem;font-weight:800;line-height:1.2}
+.buy{color:var(--buy)} .sell{color:var(--sell)} .wait{color:var(--wait)}
+.gauge{width:190px;max-width:48vw;direction:ltr}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:8px;margin-top:10px}
+.plan div{background:var(--bg);border-radius:10px;padding:8px;text-align:center}
+.plan b{display:block;font-size:1rem}
+.plan small{color:var(--muted)}
+.warn{background:rgba(234,179,8,.12);border-radius:10px;padding:6px 10px;margin-top:8px;font-size:.85rem}
+.stack{display:flex;height:26px;border-radius:8px;overflow:hidden;margin:8px 0 4px}
+.stack div{display:flex;align-items:center;justify-content:center;color:#fff;font-size:.8rem;font-weight:700;min-width:0}
+.legend{display:flex;gap:14px;font-size:.85rem;flex-wrap:wrap}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-left:4px;vertical-align:middle}
+.bars .b{display:grid;grid-template-columns:78px 1fr 52px;gap:8px;align-items:center;margin:6px 0;font-size:.85rem}
+.track{position:relative;height:12px;background:var(--bg);border-radius:6px;overflow:hidden}
+.track .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--line)}
+.track .fill{position:absolute;top:0;bottom:0;border-radius:6px}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:8px}
+.tab{padding:6px 14px;border-radius:999px;border:1px solid var(--line);background:transparent;white-space:nowrap}
+.tab.on{background:var(--accent);color:#111;border-color:var(--accent);font-weight:700}
+.chartbox{direction:ltr;position:relative}
+#c-main{height:360px} #c-score{height:110px} #c-rsi{height:100px}
+@media(max-width:600px){#c-main{height:300px}}
+.pane-label{font-size:.75rem;color:var(--muted);margin:6px 2px 2px}
+.heat{width:100%;border-collapse:separate;border-spacing:3px;font-size:.8rem}
+.heat th{font-weight:500;color:var(--muted);text-align:center;padding:4px}
+.heat th:first-child{text-align:right}
+.heat td{text-align:center;border-radius:6px;padding:7px 2px;font-weight:700}
+.heat td:first-child{text-align:right;font-weight:500;background:transparent!important}
+details.an{border-top:1px solid var(--line);padding:6px 0}
+details.an summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none}
+details.an summary::-webkit-details-marker{display:none}
+details.an .nm{flex:1;font-size:.88rem}
+.v{display:inline-flex;width:26px;height:22px;align-items:center;justify-content:center;border-radius:6px;font-size:.72rem;font-weight:700;color:#fff}
+.v.b{background:var(--buy)} .v.s{background:var(--sell)} .v.w{background:var(--wait)} .v.n{background:transparent;color:var(--muted);border:1px dashed var(--line)}
+.notes{font-size:.8rem;color:var(--muted);padding:6px 4px 2px}
+.notes div{direction:ltr;text-align:left}
+.cat-h{margin:14px 0 4px;font-weight:700;font-size:.9rem;color:var(--accent)}
+.tfhead{display:flex;gap:8px;justify-content:flex-end;font-size:.72rem;color:var(--muted)}
+.tfhead span{width:26px;text-align:center}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
+.metrics div{background:var(--bg);border-radius:10px;padding:8px}
+.metrics small{color:var(--muted);display:block;font-size:.75rem}
+.foot{color:var(--muted);font-size:.78rem;text-align:center;margin-top:20px}
+.toolbar{display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap}
+.toggles{display:flex;gap:10px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div>
+    <h1>تحلیلگر جامع طلا</h1>
+    <div class="sub">۴۲ ابزار تحلیلی × ۴ تایم‌فریم + یادگیری ماشین — افق میان‌مدت</div>
+  </div>
+  <button id="themeBtn" class="chip" title="تم">◐ تم</button>
+</div>
+
+<div class="card" id="formCard">
+  <div class="row">
+    <input type="text" id="symbol" value="GC=F" aria-label="نماد" placeholder="GC=F">
+    <select id="source" aria-label="منبع داده">
+      <option value="yahoo">Yahoo</option>
+      <option value="mt5">MetaTrader 5</option>
+      <option value="demo">داده آزمایشی</option>
+    </select>
+    <button class="primary" id="go">تحلیل کن</button>
+  </div>
+  <div class="chips" id="presets">
+    <button class="chip on" data-s="GC=F">طلا</button>
+    <button class="chip" data-s="SI=F">نقره</button>
+    <button class="chip" data-s="BTC-USD">بیت‌کوین</button>
+    <button class="chip" data-s="EURUSD=X">یورو/دلار</button>
+    <button class="chip" data-s="CL=F">نفت</button>
+    <button class="chip" data-s="^GSPC">S&amp;P 500</button>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <label class="ck"><input type="checkbox" id="ml" checked> یادگیری ماشین</label>
+    <label class="ck"><input type="checkbox" id="im" checked> بین‌بازاری (دلار، اوراق، نقره)</label>
+    <label class="ck">افق
+      <select id="horizon"><option>5</option><option selected>10</option><option>15</option><option>20</option></select> روز</label>
+  </div>
+</div>
+
+<div id="loader" class="card"><div class="spin"></div><div id="loadMsg">در حال دریافت داده و اجرای تحلیل‌ها…</div>
+  <div class="sub" id="loadSec"></div></div>
+<div id="error" class="card err" style="display:none"></div>
+
+<div id="out" style="display:none">
+  <div class="card">
+    <div class="sub" id="meta"></div>
+    <div class="signal">
+      <svg class="gauge" viewBox="0 0 200 118" id="gauge" role="img" aria-label="امتیاز نهایی"></svg>
+      <div>
+        <div class="sig-big" id="sigText"></div>
+        <div id="sigFa"></div>
+        <div class="sub" id="sigScore"></div>
+      </div>
+    </div>
+    <div id="warns"></div>
+    <div class="plan" id="plan"></div>
+  </div>
+
+  <div class="grid two">
+    <div class="card">
+      <h2>جمع رأی ابزارها</h2>
+      <div id="countsText"></div>
+      <div class="stack" id="stack"></div>
+      <div class="legend"><span><i class="dot" style="background:var(--buy)"></i>خرید</span>
+        <span><i class="dot" style="background:var(--sell)"></i>فروش</span>
+        <span><i class="dot" style="background:var(--wait)"></i>صبر</span></div>
+      <h2 style="margin-top:16px">امتیاز هر تایم‌فریم</h2>
+      <div class="bars" id="tfBars"></div>
+    </div>
+    <div class="card">
+      <h2>نقشه حرارتی دسته‌ها</h2>
+      <table class="heat" id="heat"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <h2 style="margin:0">نمودار</h2>
+      <div class="toggles">
+        <label class="ck"><input type="checkbox" id="tEma" checked> EMA</label>
+        <label class="ck"><input type="checkbox" id="tBb"> بولینگر</label>
+        <label class="ck"><input type="checkbox" id="tLv" checked> سطوح</label>
+        <label class="ck"><input type="checkbox" id="tMk" checked> سیگنال‌ها</label>
+      </div>
+    </div>
+    <div class="tabs" id="tfTabs" style="margin-top:8px"></div>
+    <div class="chartbox">
+      <div id="c-main"></div>
+      <div class="pane-label" dir="rtl">امتیاز ترکیبی ابزارها (۱+ خرید / ۱- فروش)</div>
+      <div id="c-score"></div>
+      <div class="pane-label" dir="rtl">RSI 14</div>
+      <div id="c-rsi"></div>
+    </div>
+    <div class="sub" id="chartNote" style="margin-top:6px"></div>
+  </div>
+
+  <div class="card" id="mlCard">
+    <h2>یادگیری ماشین</h2>
+    <div id="mlBody"></div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar"><h2 style="margin:0">رأی تک‌تک ابزارها</h2>
+      <div class="tfhead" id="tfHead"></div></div>
+    <div class="sub">روی هر ردیف بزنید تا جزئیات و دقت تاریخی را ببینید.</div>
+    <div id="analyzers"></div>
+  </div>
+
+  <div class="row" style="justify-content:center">
+    <a id="dl" class="chip" href="#" download>⬇ ذخیره گزارش HTML</a>
+    <button class="chip" id="refresh">↻ تحلیل مجدد</button>
+  </div>
+</div>
+
+<div class="foot">این خروجی تحلیل الگوریتمی است و توصیه سرمایه‌گذاری نیست؛ مدیریت سرمایه را رعایت کنید.</div>
+
+<script id="payload" type="application/json">null</script>
+<script>
+const $ = s => document.querySelector(s);
+const TF_ORDER = ["1h","4h","1d","1w"];
+const SIG_FA = {"STRONG BUY":"خرید قوی (LONG)","BUY":"خرید (LONG)","WAIT":"صبر / بدون معامله","SELL":"فروش (SHORT)","STRONG SELL":"فروش قوی (SHORT)"};
+let DATA = null, curTf = "1d", charts = [], timer = null;
+
+function css(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+function cls(x){ return x > 0 ? "buy" : x < 0 ? "sell" : "wait"; }
+function fmt(x, d=2){ return x == null ? "–" : Number(x).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function pct(x, d=1){ return x == null ? "–" : (x*100).toFixed(d) + "%"; }
+function esc(s){ return String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+// ------------------------------------------------------------ theme
+(function(){
+  let t = null; try { t = localStorage.getItem("theme"); } catch(e){}
+  if (t) document.documentElement.dataset.theme = t;
+  $("#themeBtn").onclick = () => {
+    const dark = matchMedia("(prefers-color-scheme: dark)").matches;
+    const cur = document.documentElement.dataset.theme || (dark ? "dark" : "light");
+    const next = cur === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem("theme", next); } catch(e){}
+    if (DATA) { renderGauge(DATA.decision.final_score); renderChart(); }
+  };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => DATA && renderChart());
+})();
+
+// ------------------------------------------------------------ form
+document.querySelectorAll("#presets .chip").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#presets .chip").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); $("#symbol").value = b.dataset.s;
+});
+function query(refresh){
+  const p = new URLSearchParams({symbol: $("#symbol").value.trim(), source: $("#source").value,
+    horizon: $("#horizon").value, ml: $("#ml").checked ? "1" : "0", im: $("#im").checked ? "1" : "0"});
+  if (refresh) p.set("refresh", "1");
+  return p;
+}
+async function analyze(refresh){
+  $("#go").disabled = true; $("#error").style.display = "none"; $("#loader").style.display = "block";
+  const t0 = Date.now();
+  timer = setInterval(() => {
+    const s = Math.round((Date.now()-t0)/1000);
+    $("#loadSec").textContent = s + " ثانیه" + (s > 15 && $("#ml").checked ? " — آموزش مدل ML روی گوشی ممکن است ۱ تا ۲ دقیقه طول بکشد" : "");
+  }, 500);
+  try {
+    const q = query(refresh);
+    const r = await fetch("api/analyze?" + q);
+    const d = await r.json();
+    if (!r.ok || d.error) throw new Error(d.error || ("HTTP " + r.status));
+    q.delete("refresh"); $("#dl").href = "report.html?" + q;
+    history.replaceState(null, "", "?" + q);
+    render(d);
+  } catch (e) {
+    $("#error").textContent = "خطا: " + e.message + "\nاتصال اینترنت/VPN و نماد را بررسی کنید، یا «داده آزمایشی» را امتحان کنید.";
+    $("#error").style.display = "block";
+  } finally {
+    clearInterval(timer); $("#loader").style.display = "none"; $("#go").disabled = false;
+  }
+}
+$("#go").onclick = () => analyze(false);
+$("#refresh").onclick = () => analyze(true);
+$("#symbol").addEventListener("keydown", e => { if (e.key === "Enter") analyze(false); });
+
+// ------------------------------------------------------------ render
+function render(d){
+  DATA = d;
+  $("#out").style.display = "block";
+  const tfs = TF_ORDER.filter(t => d.timeframes[t]);
+  if (!d.timeframes[curTf]) curTf = tfs.includes("1d") ? "1d" : tfs[0];
+  $("#meta").innerHTML = `<span class="ltr">${esc(d.symbol)}</span> · ${esc(d.generated)} · افق ${d.horizon} روز · ${fmt(d.elapsed,1)} ثانیه`;
+  renderSignal(d); renderVotes(d, tfs); renderHeat(d, tfs); renderTabs(tfs); renderChart(); renderML(d); renderAnalyzers(d, tfs);
+}
+
+function renderSignal(d){
+  const dec = d.decision, s = dec.final_score;
+  $("#sigText").textContent = dec.signal;
+  $("#sigText").className = "sig-big ltr " + cls(dec.level);
+  $("#sigFa").textContent = SIG_FA[dec.signal];
+  const sg = (x, d=2) => `<bdi class="num ltr">${x>=0?"+":""}${fmt(x,d)}</bdi>`;
+  $("#sigScore").innerHTML = `امتیاز نهایی <b>${sg(s,3)}</b> · اطمینان ${pct(dec.confidence,0)} · رأی‌گیری ${sg(dec.vote_score)} · ML ${sg(dec.ml_score)} (وزن ${fmt(dec.ml_weight,2)})`;
+  renderGauge(s);
+  $("#warns").innerHTML = dec.warnings.map(w => `<div class="warn">⚠ ${esc(w)}</div>`).join("");
+  const p = dec.plan;
+  if (p) {
+    const e = p.entry, dist = x => `${x>e?"+":""}${((x/e-1)*100).toFixed(2)}%`;
+    $("#plan").innerHTML = [["ورود", p.entry, ""], ["حد ضرر", p.stop_loss, "sell"], ["TP1", p.tp1, "buy"], ["TP2", p.tp2, "buy"], ["TP3", p.tp3, "buy"]]
+      .map(([n,v,c]) => `<div><small>${n}</small><b class="num ltr ${c}">${fmt(v)}</b><small class="ltr">${n==="ورود"?"قیمت فعلی":dist(v)}</small></div>`).join("");
+  } else $("#plan").innerHTML = `<div style="grid-column:1/-1"><small>سیگنال به اندازه کافی قوی نیست؛ فعلاً معامله‌ای پیشنهاد نمی‌شود.</small></div>`;
+}
+
+function renderGauge(s){
+  const cx=100, cy=100, r=80, ang = v => Math.PI * (1 - (v+1)/2);
+  const pt = (v, rr=r) => [cx + rr*Math.cos(ang(v)), cy - rr*Math.sin(ang(v))];
+  const arc = (a,b,col) => { const [x1,y1]=pt(a),[x2,y2]=pt(b); return `<path d="M${x1} ${y1} A${r} ${r} 0 0 1 ${x2} ${y2}" stroke="${col}" stroke-width="14" fill="none"/>`; };
+  const v = Math.max(-1, Math.min(1, s)); const [nx,ny] = pt(v, r-18);
+  $("#gauge").innerHTML =
+    arc(-1,-0.35,css("--sell")) + arc(-0.35,-0.15,css("--sell")+"88") + arc(-0.15,0.15,css("--wait")) +
+    arc(0.15,0.35,css("--buy")+"88") + arc(0.35,1,css("--buy")) +
+    `<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${css("--text")}" stroke-width="3" stroke-linecap="round"/>` +
+    `<circle cx="${cx}" cy="${cy}" r="6" fill="${css("--text")}"/>` +
+    `<text x="18" y="116" font-size="11" fill="${css("--muted")}">SELL</text><text x="160" y="116" font-size="11" fill="${css("--muted")}">BUY</text>`;
+}
+
+function bar(label, v){
+  const w = Math.abs(v)*50, left = v >= 0 ? 50 : 50 - w;
+  return `<div class="b"><span>${label}</span><div class="track ltr"><div class="mid"></div>
+    <div class="fill" style="left:${left}%;width:${w}%;background:var(--${v>=0?"buy":"sell"})"></div></div>
+    <span class="num ltr ${cls(v)}">${v>=0?"+":""}${fmt(v)}</span></div>`;
+}
+
+function renderVotes(d, tfs){
+  const c = d.counts, tot = c.buy + c.sell + c.wait;
+  $("#countsText").innerHTML = `<b class="buy">${c.buy}</b> ابزار می‌گویند بخر · <b class="sell">${c.sell}</b> می‌گویند بفروش · <b class="wait">${c.wait}</b> می‌گویند صبر کن <span class="sub">(از ${tot})</span>`;
+  $("#stack").innerHTML = [["buy",c.buy],["sell",c.sell],["wait",c.wait]]
+    .map(([k,n]) => n ? `<div style="width:${n/tot*100}%;background:var(--${k})">${n}</div>` : "").join("");
+  $("#tfBars").innerHTML = tfs.map(t => bar(d.timeframes[t].name, d.timeframes[t].score)).join("") + bar("<b>وزنی</b>", d.vote_score);
+}
+
+function heatColor(v){
+  if (v == null) return "transparent";
+  if (Math.abs(v) < 0.05) return "rgba(128,128,128,.25)";
+  const a = Math.min(Math.abs(v), 1) * 0.85 + 0.08;
+  return v >= 0 ? `rgba(34,197,94,${a})` : `rgba(239,68,68,${a})`;
+}
+function renderHeat(d, tfs){
+  let h = `<tr><th></th>${tfs.map(t => `<th>${d.timeframes[t].name}</th>`).join("")}</tr>`;
+  for (const [cat, name] of Object.entries(d.categories)) {
+    if (!tfs.some(t => d.timeframes[t].categories[cat] != null)) continue;
+    h += `<tr><td>${name}</td>` + tfs.map(t => {
+      const v = d.timeframes[t].categories[cat];
+      return `<td class="num ltr" style="background:${heatColor(v)};color:${v==null?"var(--muted)":"#fff"}">${v==null?"–":(v>=0?"+":"")+v.toFixed(2)}</td>`;
+    }).join("") + "</tr>";
+  }
+  $("#heat").innerHTML = h;
+}
+
+function renderTabs(tfs){
+  $("#tfTabs").innerHTML = tfs.map(t => `<button class="tab ${t===curTf?"on":""}" data-t="${t}">${DATA.timeframes[t].name}</button>`).join("");
+  document.querySelectorAll("#tfTabs .tab").forEach(b => b.onclick = () => { curTf = b.dataset.t; renderTabs(tfs); renderChart(); });
+}
+["#tEma","#tBb","#tLv","#tMk"].forEach(id => $(id).onchange = () => renderChart());
+
+function renderChart(){
+  charts.forEach(c => c.remove()); charts = [];
+  if (!window.LightweightCharts) { $("#chartNote").textContent = "کتابخانه نمودار بارگذاری نشد (اینترنت لازم است)."; return; }
+  const tf = DATA.timeframes[curTf], ch = tf.chart, LC = LightweightCharts;
+  const base = {
+    autoSize: true,
+    layout: {background: {type: "solid", color: css("--card")}, textColor: css("--muted"), fontFamily: "Vazirmatn, Tahoma"},
+    grid: {vertLines: {color: css("--line")}, horzLines: {color: css("--line")}},
+    rightPriceScale: {borderColor: css("--line")},
+    timeScale: {borderColor: css("--line"), timeVisible: curTf === "1h" || curTf === "4h"},
+    crosshair: {mode: 0},
+  };
+  const main = LC.createChart($("#c-main"), base);
+  const candles = main.addCandlestickSeries({upColor: css("--buy"), downColor: css("--sell"), borderVisible: false,
+    wickUpColor: css("--buy"), wickDownColor: css("--sell")});
+  candles.setData(ch.candles);
+  const line = (data, color, w=1.5, style=0) => { const s = main.addLineSeries({color, lineWidth: w, lineStyle: style, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false}); s.setData(data); };
+  if ($("#tEma").checked) { line(ch.ema20, "#3b82f6"); line(ch.ema50, "#f59e0b"); line(ch.ema200, "#a855f7", 2); }
+  if ($("#tBb").checked) { line(ch.bb_up, css("--muted"), 1, 2); line(ch.bb_lo, css("--muted"), 1, 2); }
+  if ($("#tMk").checked) candles.setMarkers(ch.markers);
+  if ($("#tLv").checked) {
+    const col = k => k === "buy" ? css("--buy") : k === "sell" ? css("--sell") : css("--fib");
+    ch.levels.forEach(l => {
+      candles.createPriceLine({price: l.price, color: col(l.kind), lineWidth: 1, lineStyle: l.kind === "fib" ? 3 : 2, axisLabelVisible: true, title: l.label});
+      const other = l.low ?? l.high;
+      if (other != null) candles.createPriceLine({price: other, color: col(l.kind), lineWidth: 1, lineStyle: 2, axisLabelVisible: false, title: ""});
+    });
+    const p = DATA.decision.plan;
+    if (p && curTf === "1d") {
+      candles.createPriceLine({price: p.stop_loss, color: css("--sell"), lineWidth: 2, lineStyle: 0, title: "SL"});
+      [["TP1",p.tp1],["TP2",p.tp2],["TP3",p.tp3]].forEach(([n,v]) => candles.createPriceLine({price: v, color: css("--buy"), lineWidth: 1, lineStyle: 0, title: n}));
+      // stretch the price scale so SL and TP2 stay visible
+      const lo = Math.min(p.stop_loss, p.tp2), hi = Math.max(p.stop_loss, p.tp2);
+      candles.applyOptions({autoscaleInfoProvider: orig => { const r = orig(); if (!r) return r;
+        return {...r, priceRange: {minValue: Math.min(r.priceRange.minValue, lo), maxValue: Math.max(r.priceRange.maxValue, hi)}}; }});
+    }
+  }
+  const sub = {...base, layout: {...base.layout, attributionLogo: false}};
+  const sc = LC.createChart($("#c-score"), {...sub, timeScale: {...base.timeScale, visible: false}});
+  const hs = sc.addHistogramSeries({priceLineVisible: false, lastValueVisible: true, base: 0});
+  hs.setData(ch.score.map(p => p.value == null ? p : {...p, color: p.value >= 0 ? css("--buy") : css("--sell")}));
+  hs.applyOptions({autoscaleInfoProvider: () => ({priceRange: {minValue: -1, maxValue: 1}})});
+  const rc = LC.createChart($("#c-rsi"), {...sub, timeScale: {...base.timeScale, visible: false}});
+  const rs = rc.addLineSeries({color: css("--accent"), lineWidth: 1.5, priceLineVisible: false});
+  rs.setData(ch.rsi);
+  rs.createPriceLine({price: 70, color: css("--sell"), lineWidth: 1, lineStyle: 2, title: ""});
+  rs.createPriceLine({price: 30, color: css("--buy"), lineWidth: 1, lineStyle: 2, title: ""});
+  rs.applyOptions({autoscaleInfoProvider: () => ({priceRange: {minValue: 0, maxValue: 100}})});
+  charts = [main, sc, rc];
+  // keep the three panes scrolled / zoomed together
+  let syncing = false;
+  charts.forEach(c => c.timeScale().subscribeVisibleLogicalRangeChange(r => {
+    if (syncing || !r) return; syncing = true;
+    charts.forEach(o => o !== c && o.timeScale().setVisibleLogicalRange(r));
+    syncing = false;
+  }));
+  main.timeScale().setVisibleLogicalRange({from: ch.candles.length - 120, to: ch.candles.length + 3});
+  $("#chartNote").innerHTML = `پیکان‌ها: لحظه‌ای که امتیاز ترکیبی ابزارها از ۰٫۳+ (خرید) یا ۰٫۳- (فروش) عبور کرده. سوپرترند ${tf.chart.supertrend>0?'<b class="buy">صعودی</b>':'<b class="sell">نزولی</b>'} · ATR ${fmt(tf.atr)}`;
+}
+
+function renderML(d){
+  const m = d.ml;
+  if (!m) { $("#mlBody").innerHTML = `<div class="sub">${d.ml_error ? "اجرا نشد: " + esc(d.ml_error) : "غیرفعال است."}</div>`; return; }
+  const pb = (n, v, c) => `<div class="b"><span>${n}</span><div class="track"><div class="fill" style="right:0;width:${v*100}%;background:var(--${c})"></div></div><span class="num">${pct(v)}</span></div>`;
+  const fi = Object.entries(m.top_features), mx = Math.max(...fi.map(x => x[1]));
+  $("#mlBody").innerHTML = `
+    <div class="sub ltr" style="text-align:right">${esc(m.model)}</div>
+    <div class="sub">احتمال حرکت در ${d.horizon} روز آینده:</div>
+    <div class="bars">${pb("صعود", m.p_buy, "buy")}${pb("خنثی", m.p_wait, "wait")}${pb("نزول", m.p_sell, "sell")}</div>
+    <div class="metrics">
+      <div><small>دقت Walk-Forward</small><b class="num">${pct(m.cv_accuracy)}</b> <small>مبنا ${pct(m.baseline_accuracy)}</small></div>
+      <div><small>درستی سیگنال‌های خرید</small><b class="num">${pct(m.buy_precision)}</b> <small>${m.n_buy_calls} سیگنال</small></div>
+      <div><small>درستی سیگنال‌های فروش</small><b class="num">${pct(m.sell_precision)}</b> <small>${m.n_sell_calls} سیگنال</small></div>
+      <div><small>میانگین سود هر معامله</small><b class="num ltr ${cls(m.avg_trade_pct)}">${m.avg_trade_pct==null?"–":(m.avg_trade_pct>0?"+":"")+m.avg_trade_pct.toFixed(2)+"%"}</b> <small>${m.n_samples} روز، ${m.n_features} ویژگی</small></div>
+    </div>
+    <div class="sub">مهم‌ترین ویژگی‌ها برای مدل:</div>
+    <div class="bars">${fi.map(([k,v]) => `<div class="b" style="grid-template-columns:130px 1fr 52px"><span class="ltr" style="font-size:.75rem;text-align:left">${esc(k)}</span><div class="track"><div class="fill" style="right:0;width:${v/mx*100}%;background:var(--accent)"></div></div><span class="num">${(v*100).toFixed(1)}</span></div>`).join("")}</div>`;
+}
+
+function renderAnalyzers(d, tfs){
+  $("#tfHead").innerHTML = tfs.map(t => `<span class="ltr">${t}</span>`).join("");
+  const byKey = {};
+  tfs.forEach(t => d.timeframes[t].rows.forEach(r => {
+    (byKey[r.key] ??= {name: r.name, category: r.category, tf: {}}).tf[t] = r;
+  }));
+  let html = "";
+  for (const [cat, cname] of Object.entries(d.categories)) {
+    const items = Object.values(byKey).filter(x => x.category === cat);
+    if (!items.length) continue;
+    html += `<div class="cat-h">${cname}</div>`;
+    html += items.map(it => {
+      const chips = tfs.map(t => { const r = it.tf[t]; if (!r) return `<span class="v n">–</span>`;
+        return `<span class="v ${r.vote>0?"b":r.vote<0?"s":"w"}">${r.vote>0?"▲":r.vote<0?"▼":"●"}</span>`; }).join("");
+      const hit = it.tf["1d"]?.hit;
+      const notes = tfs.filter(t => it.tf[t]).map(t => `<div><b>${t}</b>: ${esc(it.tf[t].note)}</div>`).join("");
+      return `<details class="an"><summary><span class="nm">${esc(it.name)}</span>${chips}</summary>
+        <div class="notes">${notes}${hit!=null?`<div style="direction:rtl;text-align:right">دقت تاریخی (روزانه): <b>${pct(hit,0)}</b></div>`:""}</div></details>`;
+    }).join("");
+  }
+  $("#analyzers").innerHTML = html;
+}
+
+// ------------------------------------------------------------ boot
+const embedded = JSON.parse($("#payload").textContent);
+if (embedded) { $("#formCard").style.display = "none"; $("#dl").parentElement.style.display = "none"; render(embedded); }
+else if (location.protocol.startsWith("http")) {
+  // ?symbol=SI=F&source=demo&horizon=15&ml=0 pre-fills the form (links are shareable)
+  const u = new URLSearchParams(location.search);
+  if (u.get("symbol")) $("#symbol").value = u.get("symbol");
+  if (u.get("source")) $("#source").value = u.get("source");
+  if (u.get("horizon")) $("#horizon").value = u.get("horizon");
+  if (u.get("ml")) $("#ml").checked = u.get("ml") !== "0";
+  if (u.get("im")) $("#im").checked = u.get("im") !== "0";
+  document.querySelectorAll("#presets .chip").forEach(x => x.classList.toggle("on", x.dataset.s === $("#symbol").value));
+  analyze(false);
+}
+</script>
+</body>
+</html>

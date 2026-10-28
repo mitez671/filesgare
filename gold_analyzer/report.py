@@ -86,7 +86,7 @@ def print_report(symbol, res, decision, ml=None, hit_rates=None):
 
     if ml:
         print("\n" + line)
-        print(" مدل یادگیری ماشین (RandomForest + GradientBoosting + Logistic، رأی نرم)")
+        print(f" مدل یادگیری ماشین ({ml['model']})")
         print(line)
         print(f"  احتمال‌ها برای ۱۰ روز آینده →  خرید {ml['p_buy']*100:.1f}%   "
               f"صبر {ml['p_wait']*100:.1f}%   فروش {ml['p_sell']*100:.1f}%")

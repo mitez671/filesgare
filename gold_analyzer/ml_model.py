@@ -4,20 +4,27 @@ Learns, from history, how the votes of all analyzers (daily + weekly) and a
 few raw indicator values translate into the market move over the next
 ``horizon`` daily bars, then gives BUY / SELL / WAIT probabilities for today.
 
-Validation is walk-forward (TimeSeriesSplit with a gap = horizon) so no
+Validation is walk-forward (expanding window with a gap = horizon) so no
 future information leaks into the reported accuracy.
+
+scikit-learn is optional: without it (e.g. on Termux) a pure-NumPy
+softmax regression is used instead.
 """
 import warnings
 
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier, VotingClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import TimeSeriesSplit
-from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import StandardScaler
 
 from . import indicators as ind
+
+try:
+    from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassifier, VotingClassifier
+    from sklearn.linear_model import LogisticRegression
+    from sklearn.pipeline import make_pipeline
+    from sklearn.preprocessing import StandardScaler
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
 
 LABELS = {1: "BUY", 0: "WAIT", -1: "SELL"}
 
@@ -63,7 +70,67 @@ def build_dataset(daily, d_votes, weekly=None, w_votes=None, intermarket=None, h
     return X, y, fwd
 
 
+class NumpySoftmax:
+    """Multinomial logistic regression (L2, full-batch gradient descent) – sklearn-free fallback."""
+
+    def __init__(self, l2=0.1, lr=0.3, epochs=400):
+        self.l2, self.lr, self.epochs = l2, lr, epochs
+
+    def fit(self, X, y):
+        X = np.asarray(X, float)
+        self.mu, self.sd = X.mean(0), X.std(0)
+        self.sd[self.sd < 1e-6] = 1.0  # constant columns must not explode at predict time
+        Z = self._z(X)
+        self.classes_ = np.unique(y)
+        Y = (np.asarray(y)[:, None] == self.classes_[None]).astype(float)
+        cw = len(Y) / (len(self.classes_) * Y.sum(0))  # balanced class weights
+        W = np.zeros((Z.shape[1], len(self.classes_)))
+        b = np.zeros(len(self.classes_))
+        for _ in range(self.epochs):
+            P = self._softmax(Z @ W + b)
+            G = (P - Y) * (Y @ cw)[:, None] / len(Z)
+            W -= self.lr * (Z.T @ G + self.l2 * W)
+            b -= self.lr * G.sum(0)
+        self.W, self.b = W, b
+        self.feature_importances_ = np.abs(W).mean(1) / np.abs(W).mean(1).sum()
+        return self
+
+    @staticmethod
+    def _softmax(a):
+        a = a - a.max(1, keepdims=True)
+        e = np.exp(a)
+        return e / e.sum(1, keepdims=True)
+
+    def _z(self, X):
+        return np.clip((np.asarray(X, float) - self.mu) / self.sd, -5, 5)
+
+    def predict_proba(self, X):
+        return self._softmax(self._z(X) @ self.W + self.b)
+
+    def predict(self, X):
+        return self.classes_[self.predict_proba(X).argmax(1)]
+
+
+def walk_forward_splits(n, splits=5, gap=10):
+    """Expanding-window train/test index pairs (like sklearn's TimeSeriesSplit with gap)."""
+    test = n // (splits + 1)
+    for k in range(splits):
+        start = n - (splits - k) * test
+        yield np.arange(0, max(start - gap, 1)), np.arange(start, start + test)
+
+
+def model_name():
+    return "RandomForest + GradientBoosting + Logistic (soft vote)" if HAS_SKLEARN else "NumPy softmax regression"
+
+
+def _importances(mdl, columns):
+    est = mdl.named_estimators_["rf"] if HAS_SKLEARN else mdl
+    return pd.Series(est.feature_importances_, index=columns).sort_values(ascending=False)
+
+
 def make_model():
+    if not HAS_SKLEARN:
+        return NumpySoftmax()
     return VotingClassifier(
         estimators=[
             ("rf", RandomForestClassifier(n_estimators=300, max_depth=6, min_samples_leaf=20,
@@ -87,7 +154,7 @@ def train_and_predict(X, y, fwd, horizon=10, splits=5, warmup=200):
     # ---- walk-forward validation
     preds, truth, moves = [], [], []
     base_hits = []
-    for tr, te in TimeSeriesSplit(n_splits=splits, gap=horizon).split(Xl):
+    for tr, te in walk_forward_splits(len(Xl), splits, horizon):
         mdl = make_model()
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
@@ -111,10 +178,10 @@ def train_and_predict(X, y, fwd, horizon=10, splits=5, warmup=200):
         warnings.simplefilter("ignore")
         mdl.fit(Xl, yl)
     proba = dict(zip(mdl.classes_, mdl.predict_proba(X.iloc[[-1]])[0]))
-    rf = mdl.named_estimators_["rf"]
-    imp = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False)
+    imp = _importances(mdl, X.columns)
 
     return {
+        "model": model_name(),
         "p_buy": float(proba.get(1, 0)), "p_wait": float(proba.get(0, 0)), "p_sell": float(proba.get(-1, 0)),
         "cv_accuracy": acc, "baseline_accuracy": float(np.mean(base_hits)),
         "buy_precision": buy_prec, "sell_precision": sell_prec, "avg_trade_pct": avg_trade,

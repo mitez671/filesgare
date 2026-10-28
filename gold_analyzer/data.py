@@ -38,23 +38,67 @@ def resample(df, rule):
 
 
 # ---------------------------------------------------------------- yahoo
-def load_yahoo(symbol):
-    import yfinance as yf
+def _yahoo_chart(symbol, rng, interval, timeout=30):
+    """Download bars straight from Yahoo's chart API with urllib.
 
-    daily = _clean(yf.download(symbol, period="max", interval="1d", auto_adjust=False, progress=False))
-    hourly = _clean(yf.download(symbol, period="730d", interval="1h", auto_adjust=False, progress=False))
+    Needs no yfinance/curl_cffi, so it also runs on Termux (Android)."""
+    import json
+    import urllib.parse
+    import urllib.request
+
+    params = {"interval": interval, "includePrePost": "false"}
+    if rng == "max":
+        params["range"] = "max"
+    else:  # intraday history is capped at ~730 days -> ask with explicit timestamps
+        now = int(pd.Timestamp.now(tz="UTC").timestamp())
+        params.update(period1=now - int(rng) * 86400, period2=now)
+    q = urllib.parse.urlencode(params)
+    last_err = None
+    for host in ("query1", "query2"):
+        url = f"https://{host}.finance.yahoo.com/v8/finance/chart/{urllib.parse.quote(symbol)}?{q}"
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36"})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                payload = json.load(r)
+            res = payload["chart"]["result"][0]
+            quote = res["indicators"]["quote"][0]
+            df = pd.DataFrame({k: quote.get(k) for k in OHLCV},
+                              index=pd.to_datetime(res["timestamp"], unit="s"))
+            return _clean(df)
+        except Exception as e:
+            last_err = e
+    raise RuntimeError(f"Yahoo download failed for {symbol!r}: {last_err}")
+
+
+def _yahoo(symbol, rng, interval):
+    """``rng`` is "max" or a number of days."""
+    try:
+        return _yahoo_chart(symbol, rng, interval)
+    except Exception as err:
+        try:  # fall back to yfinance when it is installed
+            import yfinance as yf
+        except ImportError:
+            raise err
+        period = "max" if rng == "max" else f"{rng}d"
+        return _clean(yf.download(symbol, period=period, interval=interval, auto_adjust=False, progress=False))
+
+
+def load_yahoo(symbol):
+    daily = _yahoo(symbol, "max", "1d")
+    try:
+        hourly = _yahoo(symbol, "729", "1h")
+    except Exception:
+        hourly = None  # daily/weekly analysis still works
     if daily is None:
         raise RuntimeError(f"No data from Yahoo for {symbol!r} (check the ticker / internet / VPN).")
     return hourly, daily
 
 
 def load_intermarket_yahoo():
-    import yfinance as yf
-
     out = {}
     for key, tk in INTERMARKET_TICKERS.items():
         try:
-            d = _clean(yf.download(tk, period="max", interval="1d", auto_adjust=False, progress=False))
+            d = _yahoo(tk, "max", "1d")
             if d is not None:
                 out[key] = d
         except Exception:  # an optional extra; never fatal
