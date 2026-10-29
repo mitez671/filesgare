@@ -6,6 +6,7 @@
 Works on Termux: binds 0.0.0.0, so other devices on the same Wi-Fi can open
 it too, and honours $PORT so it can be deployed to any Python host.
 """
+import errno
 import json
 import os
 import shutil
@@ -117,9 +118,23 @@ def _lan_ip():
         return None
 
 
+def _bind(host, port, tries=20):
+    """Bind the server; if the port is taken (e.g. an older copy is still running) use the next free one."""
+    for p in range(port, port + tries):
+        try:
+            return ThreadingHTTPServer((host, p), Handler), p
+        except OSError as e:
+            if e.errno not in (errno.EADDRINUSE, errno.EACCES):
+                raise
+            print(f"پورت {p} اشغال است (احتمالاً نسخه قبلی برنامه هنوز در حال اجراست).")
+    raise OSError(f"no free port in {port}-{port + tries - 1}; stop old copies with:  pkill -f gold_analyzer")
+
+
 def serve(host="0.0.0.0", port=None, open_browser=False):
-    port = int(port or os.environ.get("PORT", 8000))
-    httpd = ThreadingHTTPServer((host, port), Handler)
+    wanted = int(port or os.environ.get("PORT", 8000))
+    httpd, port = _bind(host, wanted)
+    if port != wanted:
+        print(f"از پورت {port} استفاده شد. برای بستن نسخه قدیمی:  pkill -f gold_analyzer")
     url = f"http://localhost:{port}"
     print(f"داشبورد آماده است →  {url}")
     ip = _lan_ip()
