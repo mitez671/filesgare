@@ -488,7 +488,7 @@ function drawTitle(){
   x.font = '400 190px Lalezar, Vazirmatn, sans-serif';
   const gr = x.createLinearGradient(220,0,804,0); gr.addColorStop(0,'#19b3ff'); gr.addColorStop(.5,'#b9a6ff'); gr.addColorStop(1,'#ff2d55');
   x.shadowColor = 'rgba(139,92,255,.9)'; x.shadowBlur = 30; x.fillStyle = gr; x.fillText('ضرب‌شمشیر',512,170); x.shadowBlur = 0;
-  x.font = '600 42px Vazirmatn, Tahoma, sans-serif'; x.fillStyle = '#ece9ff'; x.fillText('برای شروع، یکی از سه مکعب را با شمشیر بزن',512,320);
+  x.font = '600 42px Vazirmatn, Tahoma, sans-serif'; x.fillStyle = '#ece9ff'; x.fillText('برای شروع، یکی از سه مکعب را با شمشیر بزن',512,300); x.font = '400 32px Vazirmatn, Tahoma, sans-serif'; x.fillStyle = '#9a93cf'; x.fillText('دکمهٔ B یا Y: برگشت به فهرست بازی‌ها',512,365);
   p.tex.needsUpdate = true;
 }
 function accNow(){ return processed ? cutSum/(115*processed)*100 : 100; }
@@ -696,6 +696,7 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), .05); clockT += dt;
   pump();
   if (mode==='desk'){ placeDesk(); updSaber(deskSaber, dt); }
+  if (mode==='vr' && state!=='play') for (const s of sabers){ const gp = s.src && s.src.gamepad; if (gp && gp.buttons[5] && gp.buttons[5].pressed){ location.href = '../index.html'; break; } }
   else if (mode==='vr'){ for (const s of sabers) if (s.active) updSaber(s, dt); }
   updateEnv(dt);
   if (state==='play') updatePlay(dt); else updateMenu(dt);
@@ -717,7 +718,8 @@ function hideOverlay(){ overlay.hidden = true; }
   else note.textContent = 'این مرورگر از WebXR پشتیبانی نمی‌کند. صفحه را در مرورگر هدست کوئست باز کن. با موس یا لمس هم می‌توانی تمرین کنی.';
 })();
 
-btnVR.addEventListener('click', async () => {
+async function enterVR(){
+  if (renderer.xr.isPresenting) return;
   ensureAudio();
   try {
     const session = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']});
@@ -725,11 +727,14 @@ btnVR.addEventListener('click', async () => {
     if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
     mode = 'vr'; deskSaber.group.visible = false; deskSaber.trail.mesh.visible = false; hideOverlay(); toMenu();
     session.addEventListener('visibilitychange', () => { if (!actx) return; if (session.visibilityState === 'visible') actx.resume(); else actx.suspend(); });
+    session.addEventListener('select', () => ensureAudio());
     session.addEventListener('end', () => { mode = 'none'; toMenu(); sabers.forEach(s => s.trail.mesh.visible = false); renderer.setSize(innerWidth, innerHeight); resetCamera(); showOverlay(); });
   } catch(e){
     note.textContent = 'ورود به VR انجام نشد: ' + (e && e.message ? e.message : e) + '. نسخهٔ مستقل را مستقیم در مرورگر کوئست باز کن.';
   }
-});
+}
+btnVR.addEventListener('click', enterVR);
+if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
 btnDesk.addEventListener('click', () => {
   ensureAudio(); mode = 'desk'; deskSaber.group.visible = true; deskSaber.init = false; deskSaber.trail.init = false;
   hideOverlay(); btnMenu.hidden = false; hint.hidden = false; toMenu();

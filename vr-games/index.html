@@ -36,6 +36,12 @@ a.game:focus-visible{outline:2px solid var(--c);outline-offset:3px}
 .game p{margin:0;font-size:13.5px;line-height:1.7;color:var(--muted)}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .tag{font-size:11.5px;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);border-radius:999px;padding:2px 9px}
+.vrrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:4px}
+.vrbtn{font:800 16px/1 var(--body);color:#1d1404;background:#ffc857;border:0;border-radius:12px;padding:14px 20px;cursor:pointer}
+.vrbtn[disabled]{opacity:.4;cursor:not-allowed}
+.vrbtn:focus-visible{outline:2px solid #fff;outline-offset:3px}
+.vrnote{font-size:13px;color:var(--muted);line-height:1.7;max-width:60ch}
+#xr{position:fixed;inset:0;pointer-events:none}
 footer{margin-top:36px;color:var(--muted);font-size:12.5px;line-height:1.8}
 @media (prefers-reduced-motion:reduce){a.game{transition:none}a.game:hover{transform:none}}
 </style>
@@ -46,6 +52,7 @@ footer{margin-top:36px;color:var(--muted);font-size:12.5px;line-height:1.8}
     <p class="eyebrow">۱۵ بازی و یک نقشهٔ سه‌بعدی WebXR برای Meta Quest 3S · بدون نصب، مستقیم در مرورگر</p>
     <h1>بازی‌خانهٔ <span>کوئست</span></h1>
     <p class="lede">هر بازی را در مرورگر کوئست باز کن و «ورود به واقعیت مجازی» را بزن. همه با کنترلرها کار می‌کنند و روی کامپیوتر هم با موس قابل تمرین‌اند.</p>
+    <div class="vrrow"><button id="bVR" class="vrbtn" type="button" disabled>ورود به سالن VR</button><span id="vrNote" class="vrnote">در حال بررسی هدست…</span></div>
     <p class="tip">قبل از بازی‌های پرتحرک مثل بوکس، شمشیرزنی و دروازه‌بانی، محدودهٔ ایمنی (Guardian) را در حالت ایستاده و با حداقل ۲×۲ متر جای خالی تنظیم کن.</p>
   </header>
 
@@ -103,5 +110,86 @@ footer{margin-top:36px;color:var(--muted);font-size:12.5px;line-height:1.8}
 
   <footer>صداها و مدل‌های بازی‌ها با کد ساخته شده‌اند. داده‌های زمین‌نما از © OpenStreetMap contributors، OpenMapTiles و OpenFreeMap می‌آید. بهترین امتیاز هر بازی در همان مرورگر ذخیره می‌شود.</footer>
 </div>
+
+<div id="xr"></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+/* VR lobby: entering VR here shows every game as a card; picking one navigates while the session stays active,
+   and each game page enters VR by itself (WebXR navigation / "sessiongranted" in Quest Browser). */
+(() => {
+'use strict';
+const cards = [...document.querySelectorAll('a.game')].map(a => ({href:a.getAttribute('href'), title:a.querySelector('h3').textContent, desc:a.querySelector('p').textContent, glyph:a.querySelector('.glyph').textContent, color:getComputedStyle(a).getPropertyValue('--c').trim() || '#ffc857', section:a.closest('section').querySelector('h2').textContent}));
+const bVR = document.getElementById('bVR'), note = document.getElementById('vrNote');
+let xrOK = false;
+(async () => { try { xrOK = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){}
+  bVR.disabled = !xrOK;
+  note.textContent = xrOK ? 'روی هر بازی بزنی، مستقیم وارد VR همان بازی می‌شوی. در منوی بازی، «فهرست بازی‌ها» تو را به این سالن برمی‌گرداند.' : 'برای VR این صفحه را در مرورگر کوئست باز کن. اینجا با کلیک، صفحهٔ بازی باز می‌شود.'; })();
+
+let renderer = null, scene, camera, panels = [], hovered = null, pending = null;
+function V(x=0,y=0,z=0){ return new THREE.Vector3(x,y,z); }
+function rr(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); }
+function wrap(x, text, maxW){ const words = text.split(' '), lines = []; let cur = ''; for (const w of words){ const t = cur ? cur + ' ' + w : w; if (x.measureText(t).width > maxW && cur){ lines.push(cur); cur = w; } else cur = t; } if (cur) lines.push(cur); return lines; }
+function cardPanel(c){
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 320; const tex = new THREE.CanvasTexture(cv);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(.5, .3125), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+  const draw = (hov) => { const x = cv.getContext('2d'); x.clearRect(0,0,512,320); rr(x,6,6,500,308,30); x.fillStyle = hov ? '#26223a' : '#16141f'; x.fill(); x.lineWidth = hov ? 8 : 3; x.strokeStyle = hov ? c.color : 'rgba(255,255,255,.18)'; x.stroke();
+    x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+    rr(x,404,30,78,78,20); x.fillStyle = c.color + '33'; x.fill(); x.fillStyle = c.color; x.font = '400 54px Lalezar, Vazirmatn, sans-serif'; x.textAlign = 'center'; x.fillText(c.glyph, 443, 88);
+    x.textAlign = 'right'; x.fillStyle = '#ffffff'; x.font = '400 50px Lalezar, Vazirmatn, sans-serif'; x.fillText(c.title, 386, 82);
+    x.fillStyle = '#a49fbe'; x.font = '600 25px Vazirmatn, Tahoma, sans-serif'; x.fillText(c.section, 386, 120);
+    x.fillStyle = '#d8d4ec'; x.font = '400 27px Vazirmatn, Tahoma, sans-serif'; wrap(x, c.desc, 450).slice(0,4).forEach((l,i) => x.fillText(l, 482, 178 + i*38));
+    tex.needsUpdate = true; };
+  draw(false); m.userData = {c, draw}; return m;
+}
+function build(){
+  renderer = new THREE.WebGLRenderer({antialias:true}); renderer.setPixelRatio(1); renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+  renderer.domElement.style.display = 'none'; document.getElementById('xr').appendChild(renderer.domElement);
+  scene = new THREE.Scene(); scene.background = new THREE.Color(0x0c0b14);
+  camera = new THREE.PerspectiveCamera(70, 1, .05, 200);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(6,64), new THREE.MeshBasicMaterial({color:0x14121f})); floor.rotation.x = -Math.PI/2; scene.add(floor);
+  [1.5, 3, 4.5].forEach((r,i) => { const ring = new THREE.Mesh(new THREE.RingGeometry(r, r+.02, 96), new THREE.MeshBasicMaterial({color:[0xff4d6d,0xffc857,0x3fb6ff][i]})); ring.rotation.x = -Math.PI/2; ring.position.y = .003; scene.add(ring); });
+  const n = 600, p = new Float32Array(n*3); for (let i=0;i<n;i++){ const a = Math.random()*Math.PI*2, e = Math.random()*1.2 + .05, r = 60; p[i*3] = Math.cos(a)*Math.cos(e)*r; p[i*3+1] = Math.sin(e)*r; p[i*3+2] = Math.sin(a)*Math.cos(e)*r; }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(p,3)); scene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xdcd6ff, size:.25})));
+  // title
+  const tc = document.createElement('canvas'); tc.width = 1024; tc.height = 200; const tx = tc.getContext('2d'); tx.direction = 'rtl'; tx.textAlign = 'center'; tx.textBaseline = 'middle';
+  tx.font = '400 110px Lalezar, Vazirmatn, sans-serif'; tx.fillStyle = '#ffffff'; tx.fillText('بازی‌خانهٔ کوئست', 512, 80); tx.font = '600 36px Vazirmatn, Tahoma, sans-serif'; tx.fillStyle = '#a49fbe'; tx.fillText('دسته را روی یک کارت بگیر و ماشه را بزن', 512, 165);
+  const title = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .3125), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(tc), transparent:true})); title.position.set(0, 2.35, -2.1); scene.add(title);
+  // cards on an arc: 2 rows
+  const perRow = Math.ceil(cards.length/2), span = 2.3, R = 2.1;
+  cards.forEach((c,i) => { const row = Math.floor(i/perRow), col = i % perRow; const a = (perRow === 1 ? 0 : (col/(perRow-1) - .5))*span; const m = cardPanel(c);
+    m.position.set(-Math.sin(a)*R, 1.72 - row*.38, -Math.cos(a)*R); m.lookAt(0, m.position.y, 0); scene.add(m); panels.push(m); });
+  // controllers
+  for (let i=0;i<2;i++){ const ctrl = renderer.xr.getController(i); scene.add(ctrl);
+    const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(), V(0,0,-1)]), new THREE.LineBasicMaterial({color:0xffffff})); line.scale.z = 4; ctrl.add(line);
+    ctrl.addEventListener('selectstart', () => { if (ctrl.userData.hover) launch(ctrl.userData.hover.userData.c.href); }); ctrl.userData.ray = new THREE.Raycaster(); }
+  const ctrls = [renderer.xr.getController(0), renderer.xr.getController(1)], q = new THREE.Quaternion(), o = V(), d = V();
+  renderer.setAnimationLoop(() => {
+    let hov = null;
+    for (const ctrl of ctrls){ ctrl.getWorldPosition(o); ctrl.getWorldQuaternion(q); d.set(0,0,-1).applyQuaternion(q); ctrl.userData.ray.set(o, d); const hit = ctrl.userData.ray.intersectObjects(panels, false)[0]; ctrl.userData.hover = hit ? hit.object : null; if (hit) hov = hit.object; }
+    if (hov !== hovered){ if (hovered){ hovered.userData.draw(false); hovered.scale.setScalar(1); } if (hov){ hov.userData.draw(true); hov.scale.setScalar(1.06); } hovered = hov; }
+    renderer.render(scene, camera);
+  });
+}
+async function startSession(){
+  if (!renderer) build();
+  if (renderer.xr.isPresenting) return renderer.xr.getSession();
+  const session = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']});
+  await renderer.xr.setSession(session);
+  return session;
+}
+function launch(href){ if (pending) return; pending = href; location.href = href; }
+// card click in 2D: start VR on this page, then navigate so the game opens straight in VR
+document.querySelectorAll('a.game').forEach(a => a.addEventListener('click', async e => {
+  if (!xrOK) return;
+  e.preventDefault();
+  try { await startSession(); requestAnimationFrame(() => setTimeout(() => launch(a.getAttribute('href')), 150)); }
+  catch(err){ location.href = a.getAttribute('href'); }
+}));
+bVR.addEventListener('click', () => { startSession().catch(err => { note.textContent = 'ورود به VR انجام نشد: ' + (err && err.message || err); }); });
+// coming back from a game while still in VR
+if (navigator.xr) navigator.xr.addEventListener('sessiongranted', () => { startSession().catch(() => {}); });
+})();
+</script>
 </body>
 </html>

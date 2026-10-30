@@ -223,11 +223,11 @@ K.init = function(cfg){
     b.draw(); p.m.userData.btn = b; K.buttons.push(b); return b;
   }
   const modeBtns = cfg.modes.map(md => makeButton(md.label, md.color || '#7c5cff', () => K.start(md.key)));
-  const exitBtn = makeButton('خروج از VR', '#8a8aa0', () => { const s = renderer.xr.getSession(); s && s.end(); }, .5);
+  const exitBtn = makeButton('→ فهرست بازی‌ها', '#8a8aa0', () => { location.href = cfg.hubUrl || '../index.html'; }, .62);
   const all = modeBtns.length;
   modeBtns.forEach((b,i) => b.p.m.position.set(mp[0] + ((all-1)/2 - i)*.7, mp[1]-.55, mp[2]+.05));
   exitBtn.p.m.position.set(mp[0], mp[1]-.95, mp[2]+.05);
-  function showButtons(v){ modeBtns.forEach(b => b.p.m.visible = v); exitBtn.p.m.visible = v && K.mode === 'vr'; }
+  function showButtons(v){ modeBtns.forEach(b => b.p.m.visible = v); exitBtn.p.m.visible = v && cfg.hub !== false; }
 
   const hudL = K.panel(512,256,.9); const hp = cfg.hudPos || [-1.25,1.95,-2.1]; hudL.m.position.set(...hp); hudL.m.rotation.y = hp[0] < 0 ? .45 : -.45;
   const hudR = K.panel(512,256,.9); hudR.m.position.set(-hp[0], hp[1], hp[2]); hudR.m.rotation.y = -hudL.m.rotation.y;
@@ -393,7 +393,8 @@ K.init = function(cfg){
     else if (navigator.xr && inFrame) note.textContent = 'این صفحه داخل یک قاب امن نمایش داده می‌شود و ورود به VR از داخل قاب ممکن نیست. صفحه را مستقیم در مرورگر کوئست باز کن.';
     else note.textContent = 'این مرورگر از WebXR پشتیبانی نمی‌کند. صفحه را در مرورگر هدست کوئست باز کن. با موس هم می‌توانی تمرین کنی.';
   })();
-  bVR.addEventListener('click', async () => {
+  async function enterVR(){
+    if (renderer.xr.isPresenting) return;
     K.audio();
     try {
       const session = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']});
@@ -403,8 +404,12 @@ K.init = function(cfg){
       K.R.holder.visible = K.L.holder.visible = true; K.toMenu(); cfg.onEnter && cfg.onEnter(K);
       session.addEventListener('visibilitychange', () => { if (K.ac) session.visibilityState === 'visible' ? K.ac.resume() : K.ac.suspend(); });
       session.addEventListener('end', () => { rig.position.set(0,0,0); rig.rotation.set(0,0,0); renderer.setSize(innerWidth, innerHeight); K.resetCamera(); toOverlay(); });
+      session.addEventListener('select', () => K.audio());
     } catch(e){ note.textContent = 'ورود به VR انجام نشد: ' + (e && e.message ? e.message : e); }
-  });
+  }
+  bVR.addEventListener('click', enterVR);
+  // arriving from the hub while already in VR: enter immediately
+  if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
   bDesk.addEventListener('click', () => {
     K.audio(); K.mode = 'desk'; ov.hidden = true; bMenu.hidden = false; hint.hidden = !cfg.deskRules;
     scene.add(K.R.holder); K.R.holder.visible = true; K.R.init = false;
