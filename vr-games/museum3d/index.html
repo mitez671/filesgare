@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>گنجینه</title>
+<meta name="description" content="موزهٔ VR با مدل‌های سه‌بعدی اسکن‌شدهٔ اشیای واقعی اسمیتسونین: تی‌رکس، ماموت، هواپیمای برادران رایت، کپسول آپولو ۱۱ و شاتل دیسکاوری.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
+<style>
+/* Layout: full-bleed 3D stage; RTL lobby card over it; thin top bar while touring. Look: museum at night, stone + brass. */
+:root{--bg:#101215;--panel:rgba(18,21,26,.9);--ink:#eef1f4;--muted:#a6afba;--line:rgba(238,241,244,.16);--accent:#e8b04b;--accent2:#7fb7e8;
+--display:Lalezar,Vazirmatn,Tahoma,sans-serif;--body:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;color-scheme:dark}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#ov{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(16,18,21,.74);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.card{width:100%;max-width:580px;display:flex;flex-direction:column;gap:14px;text-align:right}
+.hub{align-self:flex-start;color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.hub:hover{color:var(--ink);border-color:var(--accent)}
+h1{margin:0;font:400 clamp(52px,14vw,92px)/1.05 var(--display);color:var(--accent)}
+.lede{margin:0;line-height:1.9;font-size:15.5px;max-width:62ch}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:600 15px/1 var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1.5px solid var(--line);border-radius:12px;padding:14px 18px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,.hub:focus-visible,.chip:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1d1406;font-weight:800}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.halls{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 13.5px/1 var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:999px;padding:9px 12px;cursor:pointer}
+.chip.on{background:var(--accent2);border-color:var(--accent2);color:#08131d}
+.note{margin:0;font-size:13px;line-height:1.8;color:var(--muted);border-right:3px solid var(--accent2);padding-right:10px}
+.note a{color:var(--ink)}
+.how{margin:0;padding:0 18px 0 0;font-size:14px;line-height:1.8}
+#bar{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-block:calc(8px + env(safe-area-inset-top,0px)) 8px;
+  padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));background:linear-gradient(rgba(16,18,21,.9),rgba(16,18,21,0))}
+#status{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));right:max(12px,env(safe-area-inset-right,0px));max-width:calc(100% - 24px);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--muted)}
+</style>
+<script type="importmap">{"imports":{"three":"./lib/three.module.js"}}</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="ov" dir="rtl">
+  <main class="card">
+    <a class="hub" href="../index.html">→ همهٔ بازی‌ها</a>
+    <h1>گنجینه</h1>
+    <p class="lede">اشیای واقعی موزه‌های اسمیتسونین آمریکا، با اندازهٔ واقعی. کنار پای تی‌رکس بایست، زیر بال هواپیمای برادران رایت راه برو و ببین شاتل دیسکاوری چقدر بزرگ است. همهٔ این‌ها اسکن سه‌بعدی خود اشیاست، نه مدل‌سازی.</p>
+    <div class="actions"><button class="btn primary" id="bVR" type="button" disabled>ورود به واقعیت مجازی</button><button class="btn" id="bDesk" type="button">گشت با موس</button></div>
+    <div class="halls" id="halls"></div>
+    <ul class="how">
+      <li>در VR: ماشه روی زمین جای پرش را نشان می‌دهد و با رها کردن می‌پری. ماشه روی هر شیء تو را کنار تابلوی توضیحش می‌برد. استیک چپ راه می‌برد و استیک راست می‌چرخاند. B یا Y منوی تالارها را باز می‌کند.</li>
+      <li>با موس: W، A، S و D راه می‌برند (Shift برای تند رفتن)، کشیدن موس نگاه می‌کند و کلیک روی هر شیء تو را کنارش می‌برد.</li>
+    </ul>
+    <p class="note" id="srcNote">در حال بررسی مدل‌ها…</p>
+  </main>
+</div>
+<div id="bar" hidden dir="rtl"><button class="btn" id="bMenu" type="button">منو</button><div class="halls" id="halls2"></div></div>
+<div id="status" hidden dir="rtl"></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from './lib/GLTFLoader.js';
+import { DRACOLoader } from './lib/DRACOLoader.js';
+
+const $ = s => document.querySelector(s);
+const V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const fa = n => Math.round(n).toLocaleString('fa-IR');
+const HUB = '../index.html', TOOL = '../tools/fetch-images.php', LIVE = 'https://3d-api.si.edu/content/document/3d_package:';
+const UNIT = {mm:.001, cm:.01, m:1, km:1000, in:.0254, ft:.3048, yd:.9144, mi:1609.344};
+let DATA = {halls:[], objects:[]}, MAN = null, curHall = -1;
+
+/* ================= data ================= */
+async function loadData(){
+  try { DATA = await (await fetch('objects.json', {cache:'no-cache'})).json(); } catch(e){ $('#srcNote').textContent = 'فهرست اشیا (objects.json) پیدا نشد.'; return; }
+  try { const r = await fetch('models/manifest.json', {cache:'no-cache'}); if (r.ok){ const m = await r.json(); if (m.objects && Object.keys(m.objects).length) MAN = m; } } catch(e){}
+  const n = MAN ? Object.keys(MAN.objects).length : 0, all = DATA.objects.length;
+  $('#srcNote').innerHTML = (MAN
+    ? `${fa(n)} از ${fa(all)} مدل از همین سایت بارگذاری می‌شوند` + (n < all ? ' و بقیه مستقیم از سرور اسمیتسونین. برای گرفتن جامانده‌ها <a href="' + TOOL + '?job=models">ابزار بارگذاری</a> را دوباره اجرا کن.' : '.')
+    : 'مدل‌ها هنوز روی این سایت نیستند و مستقیم از سرور اسمیتسونین می‌آیند؛ ممکن است کند باشد یا از ایران باز نشود. <a href="' + TOOL + '?job=models">ابزار بارگذاری مدل‌ها</a> را یک بار اجرا کن تا روی سایت خودت بنشینند.')
+    + ' مدل‌ها اسکن‌های «دسترسی آزاد» (CC0) برنامهٔ دیجیتال‌سازی سه‌بعدی اسمیتسونین هستند.';
+  renderChips();
+}
+function renderChips(){
+  for (const id of ['#halls', '#halls2']){ const box = $(id); box.innerHTML = ''; DATA.halls.forEach((h, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (i === curHall ? ' on' : ''); b.textContent = h.name + '، ' + fa(DATA.objects.filter(o => o.hall === h.key).length) + ' شیء'; b.onclick = () => { if (id === '#halls') startDesk(); openHall(i); }; box.appendChild(b); }); }
+}
+
+/* ================= renderer ================= */
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+$('#stage').appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0c0d10);
+const rig = new THREE.Group(); scene.add(rig);
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .05, 400); camera.position.set(0, 1.6, 0); rig.add(camera);
+scene.add(new THREE.HemisphereLight(0xf4f1ea, 0x3b3631, 1.05));
+const sun = new THREE.DirectionalLight(0xfff4e2, .9); sun.position.set(6, 20, 10); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xcfe0ff, .35); fill.position.set(-8, 6, -12); scene.add(fill);
+const hall = new THREE.Group(); scene.add(hall);
+
+const loader = new GLTFLoader();
+const draco = new DRACOLoader(); draco.setDecoderPath('./lib/draco/'); loader.setDRACOLoader(draco);
+
+function canvasTex(w, h, draw, rep){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; if (rep){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); } return t; }
+const stone = (W, D) => canvasTex(512, 512, (x) => { for (let r=0;r<4;r++) for (let c=0;c<4;c++){ const v = 150 + ((r*5 + c*11) % 7)*7; x.fillStyle = `rgb(${v},${v-6},${v-16})`; x.fillRect(c*128, r*128, 128, 128); for (let k=0;k<40;k++){ x.fillStyle = `rgba(80,70,60,${Math.random()*.08})`; x.fillRect(c*128 + Math.random()*128, r*128 + Math.random()*128, 2 + Math.random()*10, 1 + Math.random()*3); } x.strokeStyle = 'rgba(60,52,44,.55)'; x.lineWidth = 3; x.strokeRect(c*128, r*128, 128, 128); } }, [W/4, D/4]);
+function rr(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); }
+function wrapRTL(x, text, maxW){ const out = []; let line = ''; for (const w of (text || '').split(/\s+/)){ const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line){ out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
+
+/* ================= hall ================= */
+const exhibits = [];   // {o, holder, inner, pick, plaque, plaqueTex, state, pct, err, box}
+let HW = 30, HD = 40, Z0 = 2.5, opening = 0;
+const loadQueue = []; let loadingNow = null;
+
+function disposeTree(root){ root.traverse(o => { if (o.geometry) o.geometry.dispose(); const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms){ for (const k in m){ const v = m[k]; if (v && v.isTexture) v.dispose(); } m.dispose(); } }); }
+
+function buildHall(H){
+  disposeTree(hall); hall.clear(); exhibits.length = 0; loadQueue.length = 0;
+  HW = H.w; HD = H.d; const W = HW, D = HD, zb = Z0 - D, zc = (Z0 + zb)/2, Ht = H.h;
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({map:stone(W, D)})); fl.rotation.x = -Math.PI/2; fl.position.set(0, 0, zc); hall.add(fl);
+  const ce = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({color:0x1c1e22})); ce.rotation.x = Math.PI/2; ce.position.set(0, Ht, zc); hall.add(ce);
+  const wallMat = new THREE.MeshLambertMaterial({color:new THREE.Color(H.wall || '#333')});
+  const wall = (w, x, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, Ht), wallMat); m.position.set(x, Ht/2, z); m.rotation.y = ry; hall.add(m); };
+  wall(D, -W/2, zc, Math.PI/2); wall(D, W/2, zc, -Math.PI/2); wall(W, 0, zb, 0); wall(W, 0, Z0, Math.PI);
+  const sk = new THREE.MeshLambertMaterial({color:0x15161a});
+  [[D, -W/2 + .01, zc, Math.PI/2], [D, W/2 - .01, zc, -Math.PI/2], [W, 0, zb + .01, 0], [W, 0, Z0 - .01, Math.PI]].forEach(([w,x,z,r]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, .3), sk); m.position.set(x, .15, z); m.rotation.y = r; hall.add(m); });
+  const skyMat = new THREE.MeshBasicMaterial({color:0xf6f0e2});
+  for (let z = Z0 - 5; z > zb + 3; z -= 9){ const l = new THREE.Mesh(new THREE.PlaneGeometry(W*.7, 1.2), skyMat); l.rotation.x = Math.PI/2; l.position.set(0, Ht - .02, z); hall.add(l); }
+  // banner on the back wall + entrance sign
+  const ban = canvasTex(1024, 300, (x, w, h) => { x.fillStyle = 'rgba(0,0,0,0)'; x.clearRect(0,0,w,h); x.direction = 'rtl'; x.textAlign = 'center'; x.fillStyle = H.accent || '#e8b04b'; x.font = '400 120px Lalezar, Vazirmatn, Tahoma'; x.fillText(H.name, w/2, 140); x.fillStyle = '#e9ecef'; x.font = '600 52px Vazirmatn, Tahoma'; x.fillText(H.sub || '', w/2, 235); });
+  const bw = Math.min(W*.6, 22), bm = new THREE.Mesh(new THREE.PlaneGeometry(bw, bw*300/1024), new THREE.MeshBasicMaterial({map:ban, transparent:true})); bm.position.set(0, Ht*.72, zb + .05); hall.add(bm);
+  const b2 = new THREE.Mesh(new THREE.PlaneGeometry(6, 6*300/1024), new THREE.MeshBasicMaterial({map:ban, transparent:true})); b2.position.set(0, 4.2, Z0 - .05); b2.rotation.y = Math.PI; hall.add(b2);
+  // exhibits
+  const objs = DATA.objects.filter(o => o.hall === H.key);
+  for (const o of objs){
+    const holder = new THREE.Group(); holder.position.set(o.pos[0], o.lift || 0, o.pos[1]); hall.add(holder);
+    const s = o.size;
+    const ph = new THREE.Mesh(new THREE.BoxGeometry(s*.8, Math.min(s*.5, 4), s*.5), new THREE.MeshBasicMaterial({color:0x7fb7e8, wireframe:true, transparent:true, opacity:.25}));
+    ph.position.y = Math.min(s*.5, 4)/2; ph.rotation.y = THREE.MathUtils.degToRad(o.rot || 0); holder.add(ph);
+    const pick = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({visible:false})); pick.scale.set(s*.8, Math.min(s*.5, 4), s*.5); pick.position.y = pick.scale.y/2; pick.rotation.y = ph.rotation.y; holder.add(pick);
+    const ex = {o, holder, ph, pick, inner:null, state:'wait', pct:0, err:'', plaque:null, plaqueTex:null, box:null};
+    pick.userData.ex = ex;
+    makePlaque(ex); placePlaque(ex, o.pos[0], o.pos[1] + s*.35 + 1.2);
+    exhibits.push(ex);
+  }
+  // smaller objects first so something appears quickly
+  loadQueue.push(...exhibits.slice().sort((a, b) => a.o.size - b.o.size));
+  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); deskLook.yaw = 0; deskLook.pitch = 0;
+  pumpLoad();
+}
+
+/* ================= plaques ================= */
+function makePlaque(ex){
+  const g = new THREE.Group();
+  const post = new THREE.Mesh(new THREE.BoxGeometry(.12, .95, .12), new THREE.MeshLambertMaterial({color:0x2a2b30})); post.position.y = .475; g.add(post);
+  const c = document.createElement('canvas'); c.width = 1024; c.height = 680; const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15*680/1024), new THREE.MeshBasicMaterial({map:t})); board.position.set(0, 1.2, .06); board.rotation.x = -.5; g.add(board);
+  const back = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2*680/1024 + .04, .03), new THREE.MeshLambertMaterial({color:0x1d1e22})); back.position.set(0, 1.2, .04); back.rotation.x = -.5; back.translateZ(-.02); g.add(back);
+  hall.add(g); ex.plaque = g; ex.plaqueC = c; ex.plaqueTex = t; ex.board = board; board.userData.ex = ex;
+  drawPlaque(ex);
+}
+function drawPlaque(ex){
+  const o = ex.o, x = ex.plaqueC.getContext('2d'), W = 1024, H = 680;
+  x.fillStyle = '#f3efe6'; x.fillRect(0, 0, W, H); x.fillStyle = '#c99a3c'; x.fillRect(0, 0, W, 12);
+  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#17140f'; x.font = '800 54px Vazirmatn, Tahoma'; x.fillText(o.fa, W - 44, 92);
+  x.direction = 'ltr'; x.textAlign = 'left'; x.fillStyle = '#6b5a3e'; x.font = '400 28px Vazirmatn, Georgia, serif'; x.fillText(o.en.slice(0, 64), 44, 142);
+  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#2a241b'; x.font = '400 32px Vazirmatn, Tahoma';
+  const lines = wrapRTL(x, o.info, W - 88).slice(0, 8); lines.forEach((l, i) => x.fillText(l, W - 44, 206 + i*50));
+  x.fillStyle = '#6b5a3e'; x.font = '600 26px Vazirmatn, Tahoma'; x.fillText('محل نگهداری: ' + o.where, W - 44, H - 74);
+  let st = '', col = '#6b5a3e';
+  if (ex.state === 'wait') st = 'در صف بارگذاری…';
+  else if (ex.state === 'load') st = 'در حال بارگذاری مدل سه‌بعدی ' + (ex.pct ? fa(ex.pct) + '٪' : '…');
+  else if (ex.state === 'err'){ st = 'مدل بارگذاری نشد: ' + ex.err; col = '#b3261e'; }
+  else st = 'اسکن سه‌بعدی اسمیتسونین (CC0)، بارگذاری ' + (ex.local ? 'از همین سایت' : 'از سرور اسمیتسونین');
+  x.fillStyle = col; x.font = '400 24px Vazirmatn, Tahoma'; x.fillText(st, W - 44, H - 32);
+  ex.plaqueTex.needsUpdate = true;
+}
+function placePlaque(ex, px, pz){
+  const W = HW/2 - 1, z1 = Z0 - 1, z2 = Z0 - HD + 1;
+  ex.plaque.position.set(clamp(px, -W, W), 0, clamp(pz, z2, z1));
+  ex.plaque.rotation.y = 0;   // faces the entrance (+z)
+}
+
+/* ================= loading Smithsonian Voyager packages ================= */
+function pickLive(M){
+  for (const q of ['Low', 'Medium', 'Thumb', 'High']) for (const d of (M.derivatives || [])) if (d.usage === 'Web3D' && d.quality === q) for (const a of (d.assets || [])) if (a.type === 'Model' && /\.glb$/i.test(a.uri || '') && !(a.byteSize > 45e6)) return a.uri;
+  return null;
+}
+function gltfLoad(url, onProg){ return new Promise((res, rej) => loader.load(url, res, e => onProg(e), rej)); }
+async function loadExhibit(ex, tok){
+  const o = ex.o, m = MAN && MAN.objects && MAN.objects[o.key];
+  ex.local = !!m; ex.state = 'load'; drawPlaque(ex); status();
+  let base = m ? m.base : LIVE + o.id + '/';
+  let docR = await fetch(m ? m.doc : base + 'document.json');
+  if (!m && !docR.ok){ base = LIVE.replace('3d_package:', '') + o.id + '/'; docR = await fetch(base + 'document.json'); }
+  if (!docR.ok) throw new Error('HTTP ' + docR.status);
+  const doc = await docR.json(); if (tok !== opening) return;
+  const sc = (doc.scenes || [])[doc.scene || 0] || {nodes:[]}; const sf = UNIT[sc.units] || 1;
+  const root = new THREE.Group(), jobs = [];
+  const addNode = (i, parent) => { const n = doc.nodes[i]; if (!n) return; const g = new THREE.Group(); if (n.translation) g.position.fromArray(n.translation).multiplyScalar(sf); if (n.rotation) g.quaternion.fromArray(n.rotation); if (n.scale) g.scale.fromArray(n.scale); parent.add(g); if (n.model !== undefined) jobs.push({g, mi:n.model}); (n.children || []).forEach(c => addNode(c, g)); };
+  (sc.nodes || []).forEach(i => addNode(i, root));
+  if (!jobs.length) (doc.models || []).forEach((M, mi) => { const g = new THREE.Group(); root.add(g); jobs.push({g, mi}); });
+  const plan = jobs.map(j => { const M = doc.models[j.mi] || {}; const p = m ? (m.models || []).find(x => x.index === j.mi) : null; const uri = m ? (p && p.file) : pickLive(M); return Object.assign(j, {M, url: uri ? base + (m ? uri.split('/').map(encodeURIComponent).join('/') : uri) : null}); }).filter(j => j.url);
+  if (!plan.length) throw new Error('نسخهٔ سبک مدل موجود نیست');
+  const prog = plan.map(() => [0, 0]);
+  for (let k = 0; k < plan.length; k++){
+    const j = plan[k];
+    const gl = await gltfLoad(j.url, e => { prog[k] = [e.loaded, e.total || 0]; const L = prog.reduce((s, p) => s + p[0], 0), T = prog.reduce((s, p) => s + p[1], 0); const pct = T ? Math.min(99, Math.round(100*L/T)) : 0; if (pct !== ex.pct){ ex.pct = pct; drawPlaque(ex); } });
+    if (tok !== opening){ disposeTree(gl.scene); disposeTree(root); return; }
+    const pose = new THREE.Group(); if (j.M.translation) pose.position.fromArray(j.M.translation); if (j.M.rotation) pose.quaternion.fromArray(j.M.rotation);
+    const us = new THREE.Group(); us.scale.setScalar(UNIT[j.M.units] || sf); us.add(pose); pose.add(gl.scene); j.g.add(us);
+  }
+  // tame very metallic scan materials (no environment map in this hall) and make them cheap to update
+  root.traverse(n => { if (n.isMesh){ const ms = Array.isArray(n.material) ? n.material : [n.material]; for (const mt of ms){ if (mt.metalness !== undefined && mt.metalness > .35){ mt.metalness = .35; mt.roughness = Math.max(mt.roughness, .45); } } } });
+  // size: trust the scan's units if they look plausible, otherwise scale to the known real size
+  root.updateMatrixWorld(true);
+  let box = new THREE.Box3().setFromObject(root); const sz = box.getSize(V()), dim = Math.max(sz.x, sz.y, sz.z);
+  if (!(dim > 0)) throw new Error('مدل خالی است');
+  const r = dim / o.size; const s = (r > .4 && r < 2.5) ? 1 : o.size / dim;
+  const inner = new THREE.Group(); inner.add(root); root.scale.multiplyScalar(s);
+  inner.updateMatrixWorld(true); box = new THREE.Box3().setFromObject(root); const c = box.getCenter(V());
+  root.position.set(-c.x, -box.min.y, -c.z);
+  inner.rotation.y = THREE.MathUtils.degToRad(o.rot || 0);
+  ex.holder.remove(ex.ph); disposeTree(ex.ph); ex.holder.add(inner); ex.inner = inner;
+  ex.holder.updateMatrixWorld(true);
+  const wb = new THREE.Box3().setFromObject(inner); ex.box = wb;
+  // invisible pick box matches the real extent (in holder space, no rotation)
+  const ws = wb.getSize(V()), wc = wb.getCenter(V()); ex.pick.rotation.y = 0; ex.pick.scale.copy(ws); ex.pick.position.set(wc.x - ex.holder.position.x, wc.y - ex.holder.position.y, wc.z - ex.holder.position.z);
+  // base: low platform, or stands for objects shown in the air
+  const lift = o.lift || 0, padR = (lift > 0 && lift < 1) ? Math.max(ws.x, ws.z)*.6 + .3 : 0, foot = new THREE.MeshLambertMaterial({color:0x2a2c31});
+  if (lift > 0 && lift < 1){ const pl = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(ws.x, ws.z)*.6 + .2, Math.max(ws.x, ws.z)*.6 + .3, lift, 40), foot); pl.position.set(wc.x, lift/2, wc.z); hall.add(pl); }
+  else if (lift >= 1){ for (const dx of [-.18, .18]){ const p = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, lift + ws.y*.25, 10), new THREE.MeshLambertMaterial({color:0x8a8f99})); p.position.set(wc.x + dx*ws.x*.3, (lift + ws.y*.25)/2, wc.z); hall.add(p); } const bs = new THREE.Mesh(new THREE.CylinderGeometry(.6, .7, .08, 24), foot); bs.position.set(wc.x, .04, wc.z); hall.add(bs); }
+  const ring = new THREE.Mesh(new THREE.RingGeometry(Math.max(ws.x, ws.z)*.55 + .4, Math.max(ws.x, ws.z)*.55 + .55, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0xc99a3c, transparent:true, opacity:.5})); ring.position.set(wc.x, .012, wc.z); hall.add(ring);
+  placePlaque(ex, wc.x, Math.max(wb.max.z, wc.z + padR) + 1.0);
+  ex.state = 'ok'; ex.pct = 100; drawPlaque(ex);
+}
+function pumpLoad(){
+  if (loadingNow || !loadQueue.length) { status(); return; }
+  const ex = loadQueue.shift(), tok = opening; loadingNow = ex;
+  loadExhibit(ex, tok).catch(e => { if (tok !== opening) return; ex.state = 'err'; if (ex.ph.parent){ ex.holder.remove(ex.ph); disposeTree(ex.ph); } ex.err = /fetch|network|HTTP|Failed/i.test(String(e && e.message)) ? 'سرور در دسترس نبود' : String(e && e.message || e).slice(0, 40); drawPlaque(ex); console.warn('model', ex.o.key, e); })
+    .finally(() => { if (loadingNow === ex) loadingNow = null; if (tok === opening) pumpLoad(); });
+  status();
+}
+function status(){
+  const s = $('#status'); if (curHall < 0){ s.hidden = true; return; } s.hidden = false;
+  const ok = exhibits.filter(e => e.state === 'ok').length, bad = exhibits.filter(e => e.state === 'err').length, H = DATA.halls[curHall];
+  s.textContent = H.name + '، ' + (ok + bad < exhibits.length ? 'بارگذاری مدل‌ها ' + fa(ok) + ' از ' + fa(exhibits.length) : fa(ok) + ' شیء') + (bad ? '، ' + fa(bad) + ' مورد بارگذاری نشد' : '');
+}
+function openHall(i){
+  ++opening; curHall = i; loadingNow = null; renderChips(); menuOpen = false;
+  buildHall(DATA.halls[i]); status();
+}
+function goTo(ex){
+  // stand next to the plaque, looking at the object
+  const p = ex.plaque.position, tgt = ex.box ? ex.box.getCenter(V()) : ex.holder.position.clone();
+  const stand = V(p.x + .9, 0, p.z + 1.4), yaw = Math.atan2(-(tgt.x - stand.x), -(tgt.z - stand.z));
+  if (renderer.xr.isPresenting){ const head = V(); camera.getWorldPosition(head); const camYaw = Math.atan2(-camLocalDir().x, -camLocalDir().z); rig.rotation.y = yaw - camYaw; rig.updateMatrixWorld(true); camera.getWorldPosition(head); rig.position.x += stand.x - head.x; rig.position.z += stand.z - head.z; }
+  else { rig.position.set(stand.x, 0, stand.z); rig.rotation.set(0, 0, 0); deskLook.yaw = yaw; deskLook.pitch = -.08; }
+}
+function camLocalDir(){ const d = V(0, 0, -1).applyQuaternion(camera.quaternion); d.y = 0; return d.normalize(); }
+
+/* ================= VR menu ================= */
+const menu = new THREE.Group(); menu.visible = false; scene.add(menu); let menuOpen = false, menuBtns = [];
+function btnPanel(label, color, act, w = .5){
+  const c = document.createElement('canvas'); c.width = 512; c.height = 110; const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w*110/512), new THREE.MeshBasicMaterial({map:t, transparent:true, depthTest:false})); m.renderOrder = 30;
+  const b = {m, act, draw(h){ const x = c.getContext('2d'); x.clearRect(0,0,512,110); rr(x,4,4,504,102,20); x.fillStyle = h ? color : 'rgba(18,21,26,.95)'; x.fill(); x.strokeStyle = color; x.lineWidth = 4; x.stroke(); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '600 38px Vazirmatn, Tahoma, sans-serif'; x.fillStyle = h ? '#101215' : '#eef1f4'; x.fillText(label, 256, 58); t.needsUpdate = true; }};
+  b.draw(false); m.userData.btn = b; return b;
+}
+function buildMenu(){
+  disposeTree(menu); menu.clear(); menuBtns = [];
+  const title = btnPanel('تالارهای گنجینه', '#e8b04b', null, .62); title.m.position.set(0, .34, 0); menu.add(title.m);
+  DATA.halls.forEach((h, i) => { const b = btnPanel(h.name, i === curHall ? '#7fb7e8' : '#e8b04b', () => openHall(i), .56); b.m.position.set(0, .2 - i*.14, 0); menu.add(b.m); menuBtns.push(b); });
+  const hub = btnPanel('→ فهرست بازی‌ها', '#ff8a8a', () => { location.href = HUB; }, .5); hub.m.position.set(0, .2 - DATA.halls.length*.14 - .04, 0); menu.add(hub.m); menuBtns.push(hub);
+}
+function placeMenu(){ const head = V(); camera.getWorldPosition(head); const d = V(); camera.getWorldDirection(d); d.y = 0; d.normalize(); menu.position.copy(head).addScaledVector(d, 1.3); menu.position.y = head.y - .15; menu.lookAt(head.x, menu.position.y, head.z); }
+
+/* ================= input ================= */
+const hands = [0,1].map(h => ({h, ctrl:null, src:null, btn:{}, down:{}, up:{}, axes:[0,0], pos:V(), dir:V(), snap:true, hit:null, aiming:false}));
+const rayGeo = new THREE.BufferGeometry().setFromPoints([V(), V(0,0,-1)]);
+for (let i=0;i<2;i++){ const c = renderer.xr.getController(i); rig.add(c); const line = new THREE.Line(rayGeo, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.6})); line.scale.z = 6; c.add(line); c.userData.line = line;
+  c.addEventListener('connected', e => { const h = e.data.handedness === 'left' ? 0 : 1; hands[h].ctrl = c; hands[h].src = e.data; });
+  c.addEventListener('disconnected', () => { for (const H of hands) if (H.ctrl === c){ H.ctrl = null; H.src = null; } }); }
+const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(new Array(48).fill(0).map(() => V())), new THREE.LineBasicMaterial({color:0x7fb7e8})); arc.visible = false; arc.frustumCulled = false; scene.add(arc);
+const tpMark = new THREE.Mesh(new THREE.RingGeometry(.22, .3, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0x7fb7e8})); tpMark.visible = false; scene.add(tpMark);
+const ray = new THREE.Raycaster(), _q = new THREE.Quaternion();
+function pick(o, d, far = 60){ ray.set(o, d); ray.far = far; const hit = ray.intersectObjects(exhibits.flatMap(e => [e.pick, e.board]), false)[0]; return hit ? hit.object.userData.ex : null; }
+function inHall(x, z){ return Math.abs(x) < HW/2 - .5 && z < Z0 - .5 && z > Z0 - HD + .5; }
+function vrStep(dt){
+  for (const H of hands){ const prev = H.btn; if (H.ctrl && H.src && H.src.gamepad){ const b = H.src.gamepad.buttons, a = H.src.gamepad.axes; H.btn = {trigger:!!(b[0] && b[0].pressed), grip:!!(b[1] && b[1].pressed), b:!!(b[5] && b[5].pressed)}; H.axes = [a[2]||0, a[3]||0]; H.ctrl.getWorldPosition(H.pos); H.ctrl.getWorldQuaternion(_q); H.dir.set(0,0,-1).applyQuaternion(_q); } else H.btn = {}; for (const k of ['trigger','grip','b']){ H.down[k] = H.btn[k] && !prev[k]; H.up[k] = !H.btn[k] && prev[k]; } }
+  const hs = hands.filter(H => H.ctrl && H.src);
+  if (hs.some(H => H.down.b)){ menuOpen = !menuOpen; if (menuOpen){ buildMenu(); placeMenu(); } }
+  menu.visible = menuOpen;
+  if (menuOpen){
+    arc.visible = tpMark.visible = false;
+    let hov = null, by = null;
+    for (const H of hs){ ray.set(H.pos, H.dir); ray.far = 5; const hit = ray.intersectObjects(menuBtns.map(b => b.m), false)[0]; if (hit){ hov = hit.object.userData.btn; by = H; } }
+    for (const b of menuBtns) b.draw(b === hov);
+    if (hov && by.down.trigger){ menuOpen = false; hov.act(); }
+    return;
+  }
+  const head = V(); camera.getWorldPosition(head); const fw = V(); camera.getWorldDirection(fw); fw.y = 0; fw.normalize(); const side = V(-fw.z, 0, fw.x);
+  const L = hands[0], R = hands[1];
+  if (L.ctrl && (Math.abs(L.axes[0]) > .15 || Math.abs(L.axes[1]) > .15)){ const sp = 2.2*dt; const dx = (fw.x*-L.axes[1] + side.x*L.axes[0])*sp, dz = (fw.z*-L.axes[1] + side.z*L.axes[0])*sp; if (inHall(head.x + dx, head.z + dz)){ rig.position.x += dx; rig.position.z += dz; } }
+  if (R.ctrl){ if (Math.abs(R.axes[0]) > .7 && R.snap){ R.snap = false; const a = -Math.sign(R.axes[0])*Math.PI/6; const off = rig.position.clone().sub(head); off.y = 0; off.applyAxisAngle(V(0,1,0), a); rig.position.set(head.x + off.x, 0, head.z + off.z); rig.rotation.y += a; } if (Math.abs(R.axes[0]) < .3) R.snap = true; }
+  let arcShown = false;
+  for (const H of hs){
+    if (H.down.trigger && !H.aiming){ const ex = pick(H.pos, H.dir); if (ex){ goTo(ex); continue; } H.aiming = true; }
+    if (H.aiming){
+      if (H.btn.trigger){
+        const pts = arc.geometry.attributes.position; let p = H.pos.clone(), v = H.dir.clone().multiplyScalar(10), hit = null;
+        for (let i=0;i<48;i++){ pts.setXYZ(i, p.x, p.y, p.z); if (!hit){ const np = p.clone().addScaledVector(v, .05); v.y -= 9.8*.05; if (np.y <= 0){ hit = p.clone().lerp(np, p.y/(p.y - np.y)); p = hit.clone(); } else p = np; } }
+        pts.needsUpdate = true; arcShown = true; H.hit = hit && inHall(hit.x, hit.z) ? hit : null; tpMark.visible = !!H.hit; if (H.hit) tpMark.position.copy(H.hit).add(V(0,.02,0));
+      } else { H.aiming = false; if (H.hit){ rig.position.x += H.hit.x - head.x; rig.position.z += H.hit.z - head.z; } H.hit = null; tpMark.visible = false; }
+    }
+  }
+  arc.visible = arcShown;
+}
+// desktop
+const deskLook = {yaw:0, pitch:0}, keys = {};
+let desk = false, drag = null;
+const el = renderer.domElement;
+el.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY, m:0}; el.setPointerCapture(e.pointerId); });
+el.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.m += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY; deskLook.yaw -= dx*.004; deskLook.pitch = clamp(deskLook.pitch - dy*.004, -1.2, 1.2); });
+el.addEventListener('pointerup', e => { const click = drag && drag.m < 6; drag = null; if (!click || !desk) return;
+  const r = el.getBoundingClientRect(), m = new THREE.Vector2(((e.clientX - r.left)/r.width)*2-1, -((e.clientY - r.top)/r.height)*2+1); ray.setFromCamera(m, camera); ray.far = 80; const hit = ray.intersectObjects(exhibits.flatMap(x => [x.pick, x.board]), false)[0]; if (hit) goTo(hit.object.userData.ex); });
+addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showLobby(); });
+addEventListener('keyup', e => { keys[e.code] = false; });
+function deskStep(dt){
+  camera.position.set(0, 1.6, 0); camera.rotation.set(deskLook.pitch, deskLook.yaw, 0, 'YXZ');
+  const sp = (keys.ShiftLeft || keys.ShiftRight ? 7 : 2.4)*dt, fw = V(-Math.sin(deskLook.yaw), 0, -Math.cos(deskLook.yaw)), side = V(-fw.z, 0, fw.x), mv = V();
+  if (keys.KeyW || keys.ArrowUp) mv.add(fw); if (keys.KeyS || keys.ArrowDown) mv.sub(fw); if (keys.KeyA || keys.ArrowLeft) mv.sub(side); if (keys.KeyD || keys.ArrowRight) mv.add(side);
+  if (mv.lengthSq()){ mv.normalize().multiplyScalar(sp); if (inHall(rig.position.x + mv.x, rig.position.z + mv.z)) rig.position.add(mv); }
+}
+addEventListener('resize', () => { if (renderer.xr.isPresenting) return; renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+
+/* ================= flow ================= */
+function startDesk(){ desk = true; $('#ov').hidden = true; $('#bar').hidden = false; if (curHall < 0) openHall(0); }
+function showLobby(){ desk = false; $('#ov').hidden = false; $('#bar').hidden = true; }
+$('#bDesk').onclick = startDesk; $('#bMenu').onclick = showLobby;
+async function enterVR(){
+  if (renderer.xr.isPresenting) return;
+  try { const s = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']}); await renderer.xr.setSession(s); if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+    desk = false; $('#ov').hidden = true; $('#bar').hidden = true; camera.position.set(0,0,0); camera.rotation.set(0,0,0);
+    if (curHall < 0) openHall(0);
+    menuOpen = true; buildMenu(); setTimeout(placeMenu, 300);
+    s.addEventListener('end', () => { renderer.setSize(innerWidth, innerHeight); showLobby(); });
+  } catch(e){ $('#srcNote').textContent = 'ورود به VR انجام نشد: ' + (e && e.message || e); }
+}
+(async () => { let ok = false; try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){} $('#bVR').disabled = !ok; })();
+$('#bVR').onclick = enterVR;
+if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), .05);
+  if (renderer.xr.isPresenting) vrStep(dt); else { for (const H of hands) if (H.ctrl) H.ctrl.userData.line.visible = false; if (desk) deskStep(dt); else { deskLook.yaw += dt*.05; camera.position.set(0,1.6,0); camera.rotation.set(-.05, deskLook.yaw, 0, 'YXZ'); } }
+  renderer.render(scene, camera);
+});
+loadData().then(() => { if (DATA.halls.length) openHall(0); });
+Promise.all([document.fonts.load('600 40px Vazirmatn', 'گنجینه ۱۲۳'), document.fonts.load('400 40px Lalezar', 'گنجینه')]).catch(() => {}).then(() => { for (const ex of exhibits) drawPlaque(ex); if (menuOpen) buildMenu(); });
+window.__m3d = {openHall, exhibits, goTo, get hall(){ return curHall; }, get man(){ return MAN; }};
+</script>
+</body>
+</html>

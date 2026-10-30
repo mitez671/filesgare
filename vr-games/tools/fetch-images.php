@@ -6,6 +6,8 @@
  *           → ../museum/art/ و ../museum/art/manifest.json
  * - tour:   عکس‌های کروی ۳۶۰ درجه با مجوز آزاد از ویکی‌مدیا کامنز
  *           → ../tour/pano/ و ../tour/pano/manifest.json
+ * - models: مدل‌های سه‌بعدی اشیای واقعی موزه‌های اسمیتسونین (فهرست در ../museum3d/objects.json)
+ *           → ../museum3d/models/ و ../museum3d/models/manifest.json (اجرای دوباره فقط موارد جامانده را می‌گیرد)
  * کار در چند مرحلهٔ کوتاه انجام می‌شود و صفحه خودش را تازه می‌کند تا تمام شود.
  * فقط از چند نشانی ثابت دانلود می‌کند. بعد از پایان، اجرای دوباره کاری نمی‌کند؛
  * برای دانلود دوباره، فایل manifest.json همان پوشه را از File Manager پاک کن.
@@ -21,7 +23,7 @@ if (!function_exists('str_contains')) { function str_contains($h, $n) { return $
 if (!function_exists('mb_strtolower')) { function mb_strtolower($s) { return strtolower($s); } }
 const UA = 'QuestGameHall-ImageFetcher/1.0 (self-hosted VR museum and 360 tour; https://github.com/mitez671/filesgare)';
 const BUDGET = 18;            // seconds of work per page load
-const HOSTS = ['api.artic.edu', 'www.artic.edu', 'collectionapi.metmuseum.org', 'images.metmuseum.org', 'commons.wikimedia.org', 'upload.wikimedia.org'];
+const HOSTS = ['api.artic.edu', 'www.artic.edu', 'collectionapi.metmuseum.org', 'images.metmuseum.org', 'commons.wikimedia.org', 'upload.wikimedia.org', '3d-api.si.edu'];
 $T0 = microtime(true);
 $ROOT = dirname(__DIR__);
 
@@ -56,6 +58,28 @@ function http_get(string $url, int $timeout = 25): ?string {
   $ctx = stream_context_create(['http' => ['timeout' => $timeout, 'header' => "User-Agent: " . UA . "\r\nAIC-User-Agent: " . UA . "\r\n", 'follow_location' => 1]]);
   $b = @file_get_contents($u, false, $ctx);
   return $b === false ? null : $b;
+}
+function http_download(string $url, string $dest, int $timeout = 240): int {
+  if (!allowed($url)) return 0;
+  $u = remote($url); $part = $dest . '.part'; $d = dirname($dest);
+  if (!is_dir($d) && !@mkdir($d, 0755, true)) return 0;
+  $ok = false;
+  if (function_exists('curl_init')) {
+    $fh = @fopen($part, 'wb'); if (!$fh) return 0;
+    $c = curl_init($u);
+    curl_setopt_array($c, [CURLOPT_FILE => $fh, CURLOPT_FOLLOWLOCATION => true, CURLOPT_MAXREDIRS => 3, CURLOPT_TIMEOUT => $timeout, CURLOPT_CONNECTTIMEOUT => 10,
+      CURLOPT_USERAGENT => UA, CURLOPT_PROTOCOLS => CURLPROTO_HTTPS | CURLPROTO_HTTP, CURLOPT_REDIR_PROTOCOLS => CURLPROTO_HTTPS]);
+    $r = curl_exec($c); $code = (int)curl_getinfo($c, CURLINFO_RESPONSE_CODE); curl_close($c); fclose($fh);
+    $ok = $r !== false && $code >= 200 && $code < 300;
+  } else {
+    $in = @fopen($u, 'rb', false, stream_context_create(['http' => ['timeout' => $timeout, 'header' => "User-Agent: " . UA . "\r\n", 'follow_location' => 1]]));
+    $out = $in ? @fopen($part, 'wb') : false;
+    if ($in && $out) { $ok = stream_copy_to_stream($in, $out) > 0; }
+    if ($in) fclose($in); if ($out) fclose($out);
+  }
+  $n = is_file($part) ? (int)filesize($part) : 0;
+  if (!$ok || $n < 100) { @unlink($part); return 0; }
+  rename($part, $dest); return $n;
 }
 function http_json(string $url): ?array { $b = http_get($url); if ($b === null) return null; $j = json_decode($b, true); return is_array($j) ? $j : null; }
 function load_json(string $f, $def) { if (!is_file($f)) return $def; $j = json_decode((string)file_get_contents($f), true); return $j === null ? $def : $j; }
@@ -242,17 +266,90 @@ function tour_finish(array &$w, string $dir): void {
   $w['phase'] = 'done'; $w['msg'] = 'تمام شد';
 }
 
+/* ---------------- 3D models job (Smithsonian Voyager packages) ---------------- */
+const MODEL_MAX = 45 * 1048576;   // skip a single glb larger than this
+const QUALITY_ORDER = ['Low', 'Medium', 'Thumb', 'High'];
+function svx_url(string $id, string $file, int $variant): string { return 'https://3d-api.si.edu/content/document/' . ($variant ? '' : '3d_package:') . $id . '/' . $file; }
+function safe_rel(string $uri): ?string { $uri = rawurldecode($uri); return (preg_match('#^[A-Za-z0-9][A-Za-z0-9 ._()/-]*\.glb$#', $uri) && !str_contains($uri, '..')) ? $uri : null; }
+function enc_rel(string $rel): string { return implode('/', array_map('rawurlencode', explode('/', $rel))); }
+function models_step(array &$w, string $dir, array $objs, array $have): void {
+  while (elapsed() < BUDGET) {
+    if ($w['phase'] === 'build') {
+      if ($w['p'] >= count($objs)) { $w['phase'] = 'download'; continue; }
+      $O = $objs[$w['p']]; $k = $O['key'];
+      if (isset($have[$k]) || !preg_match('/^[0-9a-f-]{36}$/', (string)$O['id'])) { $w['p']++; continue; }
+      $doc = null; $variant = 0;
+      foreach ([0, 1] as $v) { $b = http_get(svx_url($O['id'], 'document.json', $v), 30); $j = $b === null ? null : json_decode($b, true); if (is_array($j) && !empty($j['models'])) { $doc = $b; $variant = $v; break; } }
+      if ($doc === null) { $w['errors']++; $w['fail'][$O['fa']] = 'سند مدل از سرور اسمیتسونین دریافت نشد'; $w['p']++; $w['msg'] = 'دریافت نشد: ' . $O['en']; continue; }
+      $j = json_decode($doc, true); $picks = [];
+      foreach ($j['models'] as $mi => $M) {
+        $best = null;
+        foreach (QUALITY_ORDER as $q) {
+          foreach (($M['derivatives'] ?? []) as $D) {
+            if (($D['usage'] ?? '') !== 'Web3D' || ($D['quality'] ?? '') !== $q) continue;
+            foreach (($D['assets'] ?? []) as $A) {
+              if (($A['type'] ?? '') !== 'Model') continue;
+              $rel = safe_rel((string)($A['uri'] ?? '')); if ($rel === null) continue;
+              if (!empty($A['byteSize']) && (int)$A['byteSize'] > MODEL_MAX) continue;
+              $best = ['index' => $mi, 'quality' => $q, 'uri' => (string)$A['uri'], 'file' => $rel, 'bytes' => (int)($A['byteSize'] ?? 0)]; break 3;
+            }
+          }
+        }
+        if ($best) $picks[] = $best;
+      }
+      if (!$picks) { $w['errors']++; $w['fail'][$O['fa']] = 'نسخهٔ glb مناسب نداشت'; $w['p']++; continue; }
+      if (!is_dir("$dir/$k")) @mkdir("$dir/$k", 0755, true);
+      file_put_contents("$dir/$k/document.json", $doc);
+      $w['items'][$k] = ['fa' => $O['fa'], 'base' => svx_url($O['id'], '', $variant), 'picks' => $picks];
+      $w['p']++; $w['msg'] = 'آماده شد: ' . $O['en'];
+      continue;
+    }
+    if ($w['phase'] === 'download') {
+      $next = null;
+      foreach ($w['items'] as $k => $it) foreach ($it['picks'] as $i => $p) if (empty($p['done']) && empty($p['failed'])) { $next = [$k, $i]; break 2; }
+      if (!$next) { models_finish($w, $dir, $objs, $have); return; }
+      [$k, $i] = $next; $p = &$w['items'][$k]['picks'][$i];
+      $dest = "$dir/$k/" . $p['file'];
+      $n = is_file($dest) ? (int)filesize($dest) : http_download($w['items'][$k]['base'] . enc_rel(rawurldecode($p['uri'])), $dest);
+      $head = $n ? (string)file_get_contents($dest, false, null, 0, 4) : '';
+      if ($n && $head === 'glTF') { $p['done'] = true; $p['bytes'] = $n; $w['bytes'] = ($w['bytes'] ?? 0) + $n; }
+      else { if ($n) @unlink($dest); $p['failed'] = true; $w['errors']++; $w['fail'][$w['items'][$k]['fa']] = 'دانلود فایل مدل کامل نشد'; }
+      unset($p);
+      $w['done']++; $w['msg'] = 'دانلود مدل‌های سه‌بعدی';
+      continue;
+    }
+    return;
+  }
+}
+function models_finish(array &$w, string $dir, array $objs, array $have): void {
+  $out = $have;
+  foreach ($w['items'] as $k => $it) {
+    $ok = array_values(array_filter($it['picks'], fn($p) => !empty($p['done'])));
+    if (!$ok || count($ok) < count($it['picks'])) continue;     // all parts or nothing
+    $out[$k] = ['doc' => "models/$k/document.json", 'base' => "models/$k/", 'models' => array_map(fn($p) => ['index' => $p['index'], 'quality' => $p['quality'], 'file' => $p['file'], 'bytes' => $p['bytes']], $ok)];
+  }
+  foreach ($objs as $O) { $w['report'][$O['fa']] = isset($out[$O['key']]) ? 1 : 0; }
+  save_json("$dir/manifest.json", ['generated' => gmdate('c'), 'objects' => $out]);
+  $w['phase'] = 'done'; $w['msg'] = 'تمام شد';
+}
+
 /* ---------------- page ---------------- */
 $job = $_GET['job'] ?? '';
 $jobs = [
   'museum' => ['dir' => "$ROOT/museum/art", 'title' => 'تابلوهای موزهٔ مجازی', 'app' => '../museum/'],
   'tour'   => ['dir' => "$ROOT/tour/pano",  'title' => 'عکس‌های سفر ۳۶۰',    'app' => '../tour/'],
   'persian'=> ['dir' => "$ROOT/museum/art", 'title' => 'تالار نگارگری ایرانی', 'app' => '../museum/', 'only' => 'persian'],
+  'models' => ['dir' => "$ROOT/museum3d/models", 'title' => 'مدل‌های سه‌بعدی موزه', 'app' => '../museum3d/', 'only' => 'models'],
 ];
+if ($job === 'models') @set_time_limit(300);
 $out = ''; $refresh = false;
 if (isset($jobs[$job])) {
   $J = $jobs[$job]; $dir = $J['dir'];
   if (!is_dir($dir) && !@mkdir($dir, 0755, true)) { $out = '<p class="err">ساخت پوشهٔ ' . h($dir) . ' ممکن نشد. دسترسی نوشتن پوشه را در File Manager بررسی کن.</p>'; }
+  elseif ($job === 'models' && !is_file("$ROOT/museum3d/objects.json")) { $out = '<p class="err">فایل museum3d/objects.json پیدا نشد. پوشهٔ museum3d را کامل آپلود کن.</p>'; }
+  elseif ($job === 'models' && is_file("$dir/manifest.json") && !is_file("$dir/_work_models.json") && count(load_json("$dir/manifest.json", [])['objects'] ?? []) >= count(load_json("$ROOT/museum3d/objects.json", [])['objects'] ?? [])) {
+    $out = '<p class="ok">همهٔ مدل‌ها قبلاً روی سایت دانلود شده‌اند.</p><p><a class="btn" href="' . h($J['app']) . '">باز کردن موزه</a></p><p class="muted">برای دانلود دوباره، فایل manifest.json را از پوشهٔ museum3d/models پاک کن.</p>';
+  }
   elseif (is_file("$dir/manifest.json") && empty($J['only'])) {
     $m = load_json("$dir/manifest.json", []);
     $n = $job === 'museum' ? array_sum(array_map(fn($r) => count($r['items']), $m['rooms'] ?? [])) : array_sum(array_map('count', $m['places'] ?? []));
@@ -263,18 +360,20 @@ if (isset($jobs[$job])) {
     else {
       $wf = "$dir/_work" . (empty($J['only']) ? '' : '_' . $J['only']) . ".json";
       $w = load_json($wf, ['phase' => 'build', 'room' => 0, 'sub' => 0, 'queue' => [], 'p' => 0, 'q' => 0, 'items' => [], 'done' => 0, 'errors' => 0, 'msg' => 'شروع', 'only' => $J['only'] ?? '']);
-      if ($job === 'museum' || $job === 'persian') museum_step($w, $dir);
+      if ($job === 'models') { $objs = load_json("$ROOT/museum3d/objects.json", [])['objects'] ?? []; $have = load_json("$dir/manifest.json", [])['objects'] ?? []; $have = array_intersect_key($have, array_flip(array_map(fn($o) => $o['key'], $objs))); foreach ($have as $hk => $hv) foreach ($hv['models'] as $hm) if (!is_file("$dir/$hk/" . $hm['file'])) { unset($have[$hk]); break; } models_step($w, $dir, $objs, $have); }
+      elseif ($job === 'museum' || $job === 'persian') museum_step($w, $dir);
       else { $pl = load_json("$ROOT/tour/places.json", ['iran' => [], 'world' => []]); $per = max(1, min(3, (int)($_GET['per'] ?? 1))); tour_step($w, $dir, array_merge($pl['iran'], $pl['world']), $per); }
       save_json($wf, $w);
       if ($lock){ flock($lock, LOCK_UN); fclose($lock); }
-      $total = array_sum(array_map('count', $w['items']));
+      $total = $job === 'models' ? array_sum(array_map(fn($it) => count($it['picks']), $w['items'])) : array_sum(array_map('count', $w['items']));
       if ($w['phase'] === 'done') {
         @unlink($wf); @unlink("$dir/_lock");
         $rep = '';
         foreach (($w['report'] ?? []) as $rn => $c) $rep .= '<li>' . h($rn) . ': ' . $c . ($c ? '' : ' <span class="err">(چیزی پیدا نشد)</span>') . '</li>';
         if (!empty($w['metFail'])) $rep .= '<li class="muted">موزهٔ متروپولیتن از این سرور ' . $w['metFail'] . ' بار جواب نداد؛ به جایش از ویکی‌مدیا استفاده شد.</li>';
+        if ($job === 'models') { $rep = ''; foreach (($w['report'] ?? []) as $rn => $c) $rep .= '<li>' . h($rn) . ': ' . ($c ? '<span class="ok">روی سایت است</span>' : '<span class="err">' . h($w['fail'][$rn] ?? 'دریافت نشد') . '</span>') . '</li>'; if (!empty($w['bytes'])) $rep .= '<li class="muted">حجم دانلود این بار: ' . round($w['bytes'] / 1048576, 1) . ' مگابایت</li>'; if (array_sum($w['report'] ?? []) < count($w['report'] ?? [])) $rep .= '<li class="muted">برای امتحان دوبارهٔ موارد جامانده، همین دکمه را دوباره بزن؛ موارد دانلودشده دوباره گرفته نمی‌شوند.</li>'; }
         if (!empty($w['commonsFail'])) $rep .= '<li class="err">ویکی‌مدیا هم از این سرور ' . $w['commonsFail'] . ' بار جواب نداد.</li>';
-        $out = '<p class="ok">تمام شد! ' . $w['done'] . ' تصویر دانلود شد' . ($w['errors'] ? ' (' . $w['errors'] . ' مورد خطا داشت و کنار گذاشته شد)' : '') . '.</p>' . ($rep ? '<ul>' . $rep . '</ul>' : '') . '<p><a class="btn" href="' . h($J['app']) . '">باز کردن برنامه</a></p>';
+        $out = '<p class="ok">تمام شد! ' . $w['done'] . ($job === 'models' ? ' فایل مدل' : ' تصویر') . ' دانلود شد' . ($w['errors'] ? ' (' . $w['errors'] . ' مورد خطا داشت و کنار گذاشته شد)' : '') . '.</p>' . ($rep ? '<ul>' . $rep . '</ul>' : '') . '<p><a class="btn" href="' . h($J['app']) . '">باز کردن برنامه</a></p>';
       } else {
         $pct = $w['phase'] === 'build' ? 5 : (int)round(5 + 95 * $w['done'] / max(1, $total));
         $out = '<p>' . h($w['msg']) . '</p><div class="bar"><i style="width:' . $pct . '%"></i></div><p class="muted">' . ($w['phase'] === 'build' ? 'مرحلهٔ ۱ از ۲: پیدا کردن تصاویر' : 'مرحلهٔ ۲ از ۲: ' . $w['done'] . ' از ' . $total . ' دانلود شد') . ' · خطا: ' . $w['errors'] . '</p><p class="muted">این صفحه را نبند؛ خودش ادامه می‌دهد.</p>';
@@ -305,6 +404,7 @@ h1{font-size:26px;margin:0 0 6px;color:var(--accent)}
 <?php else: ?>
   <p class="muted">هر دکمه تصاویر لازم را یک بار روی همین سایت دانلود می‌کند تا برنامه‌ها بدون وابستگی به سرورهای خارجی کار کنند. این کار چند دقیقه طول می‌کشد.</p>
   <div class="card"><b>موزهٔ مجازی</b><p class="muted">حدود ۱۵۰ تابلو با مجوز آزاد CC0 از موزهٔ هنر شیکاگو و نگارگری ایرانی از موزهٔ متروپولیتن · حدود ۵۰ مگابایت</p><a class="btn" href="?job=museum">دانلود تابلوها</a><p class="muted">اگر تالار نگارگری ایرانی خالی ماند، فقط همان را دوباره بگیر (بقیهٔ تالارها دست نمی‌خورند):</p><a class="btn" href="?job=persian">دریافت دوبارهٔ نگارگری ایرانی</a></div>
+  <div class="card"><b>موزهٔ اشیای واقعی (سه‌بعدی)</b><p class="muted">مدل‌های سه‌بعدی اسکن‌شدهٔ موزه‌های اسمیتسونین: دایناسورها، ماموت، هواپیمای برادران رایت، کپسول آپولو ۱۱، شاتل دیسکاوری و… · بین ۴۰ تا ۲۰۰ مگابایت، بسته به نسخه‌ای که موزه گذاشته</p><a class="btn" href="?job=models">دانلود مدل‌ها</a></div>
   <div class="card"><b>سفر ۳۶۰</b><p class="muted">برای هر مکان یک عکس کروی با مجوز آزاد از ویکی‌مدیا کامنز · حدود ۱۰۰ مگابایت</p><a class="btn" href="?job=tour">دانلود عکس‌های ۳۶۰</a> <a class="muted" href="?job=tour&amp;per=2">(یا ۲ عکس برای هر مکان)</a></div>
 <?php endif; ?>
 </main></body></html>
