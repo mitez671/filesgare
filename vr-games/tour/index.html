@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>سفر ۳۶۰</title>
+<meta name="description" content="تور ۳۶۰ درجهٔ جاهای دیدنی ایران و جهان در واقعیت مجازی، با عکس‌های آزاد ویکی‌مدیا کامنز.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
+<style>
+/* Layout: lobby = header + tabbed card grid; viewer = full-bleed 360 sphere with a thin top bar and an attribution strip. Single warm "travel journal" dark look. */
+:root{--bg:#120f0c;--surface:#1c1814;--surface2:#262019;--ink:#f6efe4;--muted:#b4a796;--line:rgba(246,239,228,.14);--accent:#f0a742;--accent2:#3fb6c8;
+--display:Lalezar,Vazirmatn,Tahoma,sans-serif;--body:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;color-scheme:dark}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:calc(22px + env(safe-area-inset-top,0px)) calc(32px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.hub{color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+.hub:hover{color:var(--ink);border-color:var(--accent)}
+h1{margin:18px 0 6px;font:400 clamp(46px,11vw,82px)/1.05 var(--display);color:var(--accent)}
+h1 span{color:var(--ink)}
+.lede{margin:0 0 14px;max-width:64ch;line-height:1.9;font-size:15.5px}
+.note{margin:0 0 18px;max-width:72ch;font-size:13px;line-height:1.8;color:var(--muted);border-right:3px solid var(--accent2);padding-right:10px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:18px}
+.tabs{display:flex;gap:4px}
+.btn{font:600 14px/1 var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:11px 14px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.on{background:var(--accent);border-color:var(--accent);color:#1e1406}
+.btn.vr{background:var(--accent2);border-color:var(--accent2);color:#06171a;font-weight:800}
+.btn:focus-visible,.card:focus-visible,.hub:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+form.search{display:flex;gap:6px;flex:1 1 260px;min-width:0}
+form.search input{flex:1;min-width:0;font:400 15px var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.card{display:grid;gap:4px;text-align:right;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;cursor:pointer;color:inherit;font:inherit;min-width:0}
+.card:hover{background:var(--surface2);border-color:var(--accent)}
+.card b{font:400 21px/1.3 var(--display)}
+.card small{color:var(--muted);font-size:12.5px;line-height:1.6}
+footer{margin-top:28px;font-size:12px;color:var(--muted);line-height:1.8}
+/* viewer */
+#viewer{position:fixed;inset:0;background:#000}
+#stage{position:absolute;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+.vbar{position:absolute;top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-block:calc(10px + env(safe-area-inset-top,0px)) 10px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));background:linear-gradient(rgba(10,8,6,.85),rgba(10,8,6,0))}
+.vtitle{font:400 24px/1.2 var(--display);margin-left:auto;min-width:0}
+#vcount{font-size:13px;color:var(--muted)}
+.attr{position:absolute;bottom:0;left:0;right:0;padding-block:8px calc(8px + env(safe-area-inset-bottom,0px));padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));font-size:12.5px;line-height:1.7;color:var(--muted);background:rgba(10,8,6,.78)}
+.attr a{color:var(--ink)}
+#vmsg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);max-width:calc(100% - 32px);background:rgba(20,16,12,.9);border:1px solid var(--line);border-radius:14px;padding:16px 20px;text-align:center;line-height:1.8}
+</style>
+</head>
+<body>
+<main class="wrap" id="lobby">
+  <div class="top"><a class="hub" href="../index.html">→ همهٔ بازی‌ها</a><button class="btn vr" id="bVR" type="button" disabled>ورود به VR</button></div>
+  <h1>سفر <span>۳۶۰</span></h1>
+  <p class="lede">وسط میدان نقش جهان بایست، از پلکان تخت جمشید بالا برو یا زیر برج ایفل به آسمان نگاه کن. هر مکان یک یا چند عکس کروی ۳۶۰ درجه دارد که در هدست دورتادورت را می‌گیرد.</p>
+  <p class="note">عکس‌ها همان لحظه از ویکی‌مدیا کامنز جستجو می‌شوند و فقط عکس‌های با مجوز آزاد (CC0، CC BY، CC BY-SA و مالکیت عمومی) نمایش داده می‌شوند. نام عکاس و مجوز هر عکس پایین تصویر می‌آید. ممکن است برای بعضی مکان‌ها عکس ۳۶۰ درجهٔ آزادی پیدا نشود.</p>
+  <div class="controls">
+    <div class="tabs" role="tablist"><button class="btn on" id="tIran" role="tab" type="button">ایران</button><button class="btn" id="tWorld" role="tab" type="button">جهان</button></div>
+    <form class="search" id="sForm"><input id="sq" type="search" placeholder="جستجوی هر جا، به انگلیسی بهتر است: Kandovan" aria-label="جستجوی مکان"><button class="btn" type="submit">بگرد</button></form>
+  </div>
+  <div class="grid" id="grid"></div>
+  <footer>عکس‌ها: Wikimedia Commons و عکاسانی که نامشان روی هر عکس آمده. این صفحه هیچ عکسی را روی سرور خود ذخیره نمی‌کند و هر عکس با مجوز خودش نمایش داده می‌شود.</footer>
+</main>
+
+<section id="viewer" hidden>
+  <div id="stage"></div>
+  <div class="vbar" dir="rtl">
+    <button class="btn" id="vBack" type="button">→ فهرست مکان‌ها</button>
+    <button class="btn" id="vPrev" type="button">عکس قبلی</button>
+    <button class="btn" id="vNext" type="button">عکس بعدی</button>
+    <span id="vcount"></span>
+    <button class="btn vr" id="vVR" type="button" disabled>ورود به VR</button>
+    <span class="vtitle" id="vtitle"></span>
+  </div>
+  <div id="vmsg" hidden></div>
+  <div class="attr" id="vattr" dir="rtl"></div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+const fa = n => Math.round(n).toLocaleString('fa-IR');
+const API = 'https://commons.wikimedia.org/w/api.php';
+const HUB = '../index.html';
+// [Persian name, short note, Commons search queries (tried in order)]
+const IRAN = [
+  ['میدان نقش جهان', 'اصفهان', ['Naqsh-e Jahan Square 360', 'Naqsh-e Jahan spherical panorama', 'Imam Square Isfahan 360']],
+  ['تخت جمشید', 'مرودشت، فارس', ['Persepolis 360', 'Persepolis spherical panorama', 'Persepolis panorama virtual reality']],
+  ['پاسارگاد', 'آرامگاه کوروش', ['Pasargadae 360', 'Tomb of Cyrus panorama 360']],
+  ['مسجد نصیرالملک', 'شیراز', ['Nasir al-Mulk Mosque 360', 'Nasir ol Molk 360 panorama']],
+  ['باغ ارم', 'شیراز', ['Eram Garden 360', 'Eram Garden spherical']],
+  ['حافظیه', 'شیراز', ['Tomb of Hafez 360', 'Hafezieh panorama 360']],
+  ['سی‌وسه‌پل', 'اصفهان', ['Si-o-se-pol 360', 'Allahverdi Khan Bridge 360']],
+  ['مسجد شیخ لطف‌الله', 'اصفهان', ['Sheikh Lotfollah Mosque 360', 'Sheikh Lotfollah spherical']],
+  ['میدان امیرچخماق', 'یزد', ['Amir Chakhmaq 360', 'Yazd 360 panorama']],
+  ['باغ دولت‌آباد', 'یزد', ['Dowlatabad Garden 360', 'Dolat Abad garden panorama']],
+  ['کاخ گلستان', 'تهران', ['Golestan Palace 360', 'Golestan Palace spherical']],
+  ['برج آزادی', 'تهران', ['Azadi Tower 360', 'Azadi Square panorama 360']],
+  ['باغ فین', 'کاشان', ['Fin Garden 360', 'Bagh-e Fin panorama 360']],
+  ['خانهٔ طباطبایی‌ها', 'کاشان', ['Tabatabaei House 360', 'Tabatabaei Historical House panorama']],
+  ['ارگ بم', 'کرمان', ['Arg-e Bam 360', 'Bam Citadel panorama 360']],
+  ['کندوان', 'آذربایجان شرقی', ['Kandovan 360', 'Kandovan panorama']],
+  ['ماسوله', 'گیلان', ['Masuleh 360', 'Masouleh panorama 360']],
+  ['دماوند', 'بلندترین قلهٔ ایران', ['Damavand 360', 'Mount Damavand spherical panorama']],
+  ['چغازنبیل', 'خوزستان', ['Chogha Zanbil 360', 'Chogha Zanbil panorama']],
+  ['آسیاب‌های شوشتر', 'خوزستان', ['Shushtar Historical Hydraulic System 360', 'Shushtar panorama 360']],
+  ['طاق بستان', 'کرمانشاه', ['Taq-e Bostan 360', 'Taq-e Bostan panorama']],
+  ['کویر لوت', 'کرمان و سیستان', ['Lut Desert 360', 'Dasht-e Lut panorama 360']],
+  ['جزیرهٔ هرمز', 'هرمزگان', ['Hormuz Island 360', 'Hormoz Island panorama']],
+  ['قلعه رودخان', 'گیلان', ['Rudkhan Castle 360', 'Rudkhan Castle panorama']],
+];
+const WORLD = [
+  ['برج ایفل', 'پاریس', ['Eiffel Tower 360', 'Eiffel Tower spherical panorama', 'Champ de Mars 360']],
+  ['کولوسئوم', 'رم', ['Colosseum 360', 'Colosseum spherical panorama', 'Colosseo 360']],
+  ['ساگرادا فامیلیا', 'بارسلون', ['Sagrada Familia 360', 'Sagrada Familia spherical']],
+  ['ایاصوفیه', 'استانبول', ['Hagia Sophia 360', 'Hagia Sophia spherical panorama']],
+  ['اهرام جیزه', 'مصر', ['Giza pyramids 360', 'Giza spherical panorama']],
+  ['پترا', 'اردن', ['Petra 360', 'Petra Jordan spherical']],
+  ['ماچوپیچو', 'پرو', ['Machu Picchu 360', 'Machu Picchu spherical']],
+  ['گرند کنیون', 'آمریکا', ['Grand Canyon 360', 'Grand Canyon spherical panorama']],
+  ['کوه‌های آلپ', 'سوئیس', ['Piz Bernina Spherical Panorama', 'Swiss Alps spherical panorama', 'Spherical panorama Switzerland']],
+  ['شفق قطبی', 'ایسلند و نروژ', ['aurora 360 panorama', 'aurora borealis spherical']],
+  ['جنگل‌های استوایی', 'آمازون', ['rainforest 360 panorama', 'Amazon rainforest spherical']],
+  ['قطب جنوب', 'جنوبگان', ['Antarctica 360', 'Antarctica spherical panorama']],
+  ['آنگکور وات', 'کامبوج', ['Angkor Wat 360', 'Angkor spherical panorama']],
+  ['دیوار چین', 'چین', ['Great Wall of China 360', 'Mutianyu 360']],
+  ['تاج محل', 'هند', ['Taj Mahal 360', 'Taj Mahal spherical']],
+  ['میدان تایمز', 'نیویورک', ['Times Square 360', 'Times Square spherical panorama']],
+  ['استون‌هنج', 'انگلستان', ['Stonehenge 360', 'Stonehenge spherical']],
+  ['موزهٔ تاریخ طبیعی', 'اسکلت دایناسورها', ['Naturalis Biodiversity Center Panorama 360 3D', 'museum skeletons 360 panorama']],
+  ['ایستگاه فضایی', 'مدار زمین', ['International Space Station 360', 'ISS spherical panorama']],
+  ['سطح مریخ', 'تصاویر مریخ‌نورد', ['Mars rover 360 panorama', 'Curiosity 360 panorama Mars']],
+];
+const FREE = /(^|\b)(cc0|cc[ -]by(?![- ]?n[cd])|cc[ -]by[- ]sa|public domain|pd[- ]|no restrictions|attribution)/i, NONFREE = /(-nc|-nd| nc| nd|noncommercial|noderiv|fair use)/i;
+const cache = new Map();
+function stripHtml(h){ const d = document.createElement('div'); d.innerHTML = h || ''; return (d.textContent || '').replace(/\s+/g,' ').trim(); }
+async function searchPanos(queries){
+  const key = queries.join('|'); if (cache.has(key)) return cache.get(key);
+  const out = [], seen = new Set();
+  for (const q of queries){
+    const url = API + '?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30&gsrsearch=' + encodeURIComponent(q + ' filetype:bitmap') +
+      '&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiurlwidth=4096&iiextmetadatafilter=LicenseShortName|Artist|LicenseUrl|ObjectName|Credit';
+    let js; try { const r = await fetch(url); js = await r.json(); } catch(e){ throw new Error('net'); }
+    const pages = js && js.query && js.query.pages ? Object.values(js.query.pages) : [];
+    pages.sort((a,b) => (a.index || 0) - (b.index || 0));
+    for (const p of pages){
+      const ii = p.imageinfo && p.imageinfo[0]; if (!ii || seen.has(p.title)) continue;
+      const ratio = ii.width/ii.height; if (ratio < 1.97 || ratio > 2.03 || ii.width < 3000 || !/jpeg|png/.test(ii.mime || '')) continue;
+      const m = ii.extmetadata || {}, lic = (m.LicenseShortName && m.LicenseShortName.value) || '';
+      if (!FREE.test(lic) || NONFREE.test(lic)) continue;
+      seen.add(p.title);
+      out.push({title:(m.ObjectName && stripHtml(m.ObjectName.value)) || p.title.replace(/^File:/,'').replace(/\.[a-z]+$/i,''), src:ii.thumburl || ii.url, page:ii.descriptionurl, w:ii.width, h:ii.height,
+        artist:stripHtml(m.Artist && m.Artist.value) || 'نامشخص', license:lic, licenseUrl:(m.LicenseUrl && m.LicenseUrl.value) || ''});
+    }
+    if (out.length >= 3) break;
+  }
+  cache.set(key, out); return out;
+}
+
+/* ---------- lobby ---------- */
+let tab = 'iran';
+function renderGrid(){
+  const list = tab === 'iran' ? IRAN : WORLD, g = $('#grid'); g.innerHTML = '';
+  list.forEach((p, i) => { const b = document.createElement('button'); b.className = 'card'; b.type = 'button'; b.innerHTML = '<b></b><small></small>'; b.querySelector('b').textContent = p[0]; b.querySelector('small').textContent = p[1]; b.onclick = () => openPlace(p); g.appendChild(b); });
+}
+$('#tIran').onclick = () => { tab = 'iran'; $('#tIran').classList.add('on'); $('#tWorld').classList.remove('on'); renderGrid(); };
+$('#tWorld').onclick = () => { tab = 'world'; $('#tWorld').classList.add('on'); $('#tIran').classList.remove('on'); renderGrid(); };
+$('#sForm').addEventListener('submit', e => { e.preventDefault(); const q = $('#sq').value.trim(); if (q) openPlace([q, 'جستجو', [q + ' 360', q + ' spherical panorama', q + ' panorama']]); });
+renderGrid();
+
+/* ---------- 3D ---------- */
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local');
+$('#stage').appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0907);
+const camera = new THREE.PerspectiveCamera(75, 1, .05, 200); camera.position.set(0, 0, 0); scene.add(camera);
+const sphereGeo = new THREE.SphereGeometry(60, 64, 40); sphereGeo.scale(-1, 1, 1);
+const sphereMat = new THREE.MeshBasicMaterial({color:0x222222});
+const sphere = new THREE.Mesh(sphereGeo, sphereMat); scene.add(sphere);
+const loader = new THREE.TextureLoader(); loader.setCrossOrigin('anonymous');
+let state = {place:null, list:[], i:0, loadingTok:0};
+const lookD = {yaw:0, pitch:0, fov:75};
+function resize(){ if (renderer.xr.isPresenting) return; const w = innerWidth, h = innerHeight; renderer.setSize(w, h); camera.aspect = w/h; camera.fov = lookD.fov; camera.updateProjectionMatrix(); }
+addEventListener('resize', resize);
+function msg(t){ const m = $('#vmsg'); if (t){ m.textContent = t; m.hidden = false; } else m.hidden = true; vrInfoDirty = true; vrMsg = t || ''; }
+async function openPlace(p){
+  $('#lobby').hidden = true; $('#viewer').hidden = false; resize();
+  state = {place:p, list:[], i:0, loadingTok:state.loadingTok + 1}; const tok = state.loadingTok;
+  $('#vtitle').textContent = p[0]; $('#vcount').textContent = ''; $('#vattr').textContent = ''; sphereMat.map = null; sphereMat.color.setHex(0x222222); sphereMat.needsUpdate = true;
+  msg('در حال جستجوی عکس‌های ۳۶۰ درجهٔ آزاد…'); menuOpen = false;
+  try { const list = await searchPanos(p[2]); if (tok !== state.loadingTok) return; state.list = list;
+    if (!list.length){ msg('برای «' + p[0] + '» عکس ۳۶۰ درجه با مجوز آزاد پیدا نشد. مکان دیگری را امتحان کن.'); menuOpen = true; return; }
+    show(0);
+  } catch(e){ if (tok === state.loadingTok){ msg('اتصال به ویکی‌مدیا کامنز ممکن نشد. اینترنت را بررسی کن.'); menuOpen = true; } }
+}
+function show(i){
+  const L = state.list; if (!L.length) return; state.i = (i + L.length) % L.length; const it = L[state.i], tok = ++state.loadingTok;
+  $('#vcount').textContent = 'عکس ' + fa(state.i + 1) + ' از ' + fa(L.length);
+  $('#vattr').innerHTML = ''; const a = $('#vattr');
+  a.append('عکس: ' + it.artist + ' · مجوز ');
+  const l1 = document.createElement('a'); l1.href = it.licenseUrl || it.page; l1.target = '_blank'; l1.rel = 'noopener'; l1.textContent = it.license; a.append(l1);
+  a.append(' · '); const l2 = document.createElement('a'); l2.href = it.page; l2.target = '_blank'; l2.rel = 'noopener'; l2.textContent = 'صفحهٔ عکس در Wikimedia Commons'; a.append(l2);
+  msg('در حال بارگذاری عکس…');
+  loader.load(it.src, tex => {
+    if (tok !== state.loadingTok){ tex.dispose(); return; }
+    if (sphereMat.map) sphereMat.map.dispose();
+    tex.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy()); sphereMat.map = tex; sphereMat.color.setHex(0xffffff); sphereMat.needsUpdate = true; msg(''); vrInfoDirty = true;
+  }, undefined, () => { if (tok === state.loadingTok) msg('بارگذاری این عکس ممکن نشد. عکس بعدی را امتحان کن.'); });
+  vrInfoDirty = true;
+}
+$('#vNext').onclick = () => show(state.i + 1);
+$('#vPrev').onclick = () => show(state.i - 1);
+$('#vBack').onclick = closeViewer;
+function closeViewer(){ state.loadingTok++; $('#viewer').hidden = true; $('#lobby').hidden = false; }
+// desktop look
+const el = renderer.domElement; let drag = null;
+el.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY}; el.setPointerCapture(e.pointerId); el.style.cursor = 'grabbing'; });
+el.addEventListener('pointermove', e => { if (!drag) return; const k = lookD.fov/innerHeight*Math.PI/180; lookD.yaw += (e.clientX - drag.x)*k; lookD.pitch = Math.max(-1.45, Math.min(1.45, lookD.pitch + (e.clientY - drag.y)*k)); drag = {x:e.clientX, y:e.clientY}; });
+el.addEventListener('pointerup', () => { drag = null; el.style.cursor = 'grab'; });
+el.addEventListener('wheel', e => { e.preventDefault(); lookD.fov = Math.max(30, Math.min(100, lookD.fov + e.deltaY*.04)); resize(); }, {passive:false});
+addEventListener('keydown', e => { if ($('#viewer').hidden || e.target.tagName === 'INPUT') return; if (e.key === 'ArrowLeft') show(state.i + 1); if (e.key === 'ArrowRight') show(state.i - 1); if (e.key === 'Escape') closeViewer(); });
+
+/* ---------- VR UI ---------- */
+function panel(w, h, worldW){ const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); const m = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldW*h/w), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthTest:false, depthWrite:false})); m.renderOrder = 10; return {c, x, tex, m}; }
+function rr(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); }
+const ui = new THREE.Group(); scene.add(ui);
+const info = panel(1024, 230, 1.15); info.m.position.set(0, -.55, -1.5); info.m.rotation.x = -.35; ui.add(info.m);
+let vrInfoDirty = true, vrMsg = '', menuOpen = false;
+function drawInfo(){
+  const {x} = info; x.clearRect(0,0,1024,230); rr(x,6,6,1012,218,26); x.fillStyle = 'rgba(18,15,12,.88)'; x.fill(); x.strokeStyle = '#f0a742'; x.lineWidth = 3; x.stroke();
+  x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic';
+  const it = state.list[state.i];
+  x.fillStyle = '#f0a742'; x.font = '400 54px Lalezar, Vazirmatn, sans-serif'; x.fillText(state.place ? state.place[0] : 'سفر ۳۶۰', 990, 66);
+  x.textAlign = 'left'; x.fillStyle = '#b4a796'; x.font = '600 28px Vazirmatn, Tahoma, sans-serif'; if (state.list.length) x.fillText('عکس ' + fa(state.i + 1) + ' از ' + fa(state.list.length), 34, 62);
+  x.textAlign = 'right'; x.fillStyle = '#f6efe4'; x.font = '400 26px Vazirmatn, Tahoma, sans-serif';
+  const line = vrMsg || (it ? ('عکس: ' + it.artist).slice(0, 70) + ' · ' + it.license + ' · Wikimedia Commons' : '');
+  x.fillText(line, 990, 122);
+  x.fillStyle = '#b4a796'; x.font = '600 25px Vazirmatn, Tahoma, sans-serif'; x.fillText('A یا X: عکس بعدی · B یا Y: فهرست مکان‌ها · ماشه روی دکمه‌ها', 990, 186);
+  info.tex.needsUpdate = true;
+}
+const menu = new THREE.Group(); menu.visible = false; ui.add(menu);
+const menuBtns = []; let menuTab = 'iran';
+function buildMenu(){
+  for (const b of menuBtns) menu.remove(b.m); menuBtns.length = 0;
+  const list = menuTab === 'iran' ? IRAN : WORLD, cols = 4, bw = .34, bh = .085;
+  const mk = (label, x, y, color, act, w = bw) => { const p = panel(512, 128, w); p.m.position.set(x, y, 0); menu.add(p.m);
+    p.draw = hov => { const c = p.x; c.clearRect(0,0,512,128); rr(c,4,4,504,120,22); c.fillStyle = hov ? color : 'rgba(18,15,12,.92)'; c.fill(); c.strokeStyle = color; c.lineWidth = 4; c.stroke(); c.direction = 'rtl'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '600 46px Vazirmatn, Tahoma, sans-serif'; c.fillStyle = hov ? '#120f0c' : '#f6efe4'; c.fillText(label, 256, 68); p.tex.needsUpdate = true; };
+    p.draw(false); p.act = act; menuBtns.push(p); return p; };
+  mk('ایران', .19, .62, menuTab === 'iran' ? '#f0a742' : '#6b6055', () => { menuTab = 'iran'; buildMenu(); }, .3);
+  mk('جهان', -.19, .62, menuTab === 'world' ? '#f0a742' : '#6b6055', () => { menuTab = 'world'; buildMenu(); }, .3);
+  list.forEach((p, i) => { const r = Math.floor(i/cols), c = i % cols; mk(p[0], ((cols-1)/2 - c)*(bw + .03), .48 - r*(bh + .025), '#3fb6c8', () => openPlace(p)); });
+  const rows = Math.ceil(list.length/cols);
+  mk('→ فهرست بازی‌ها', 0, .48 - rows*(bh + .025) - .02, '#ff8a8a', () => { location.href = HUB; }, .42);
+}
+buildMenu();
+const hands = [0,1].map(h => ({ctrl:null, src:null, btn:{}, down:{}}));
+const rayGeo = new THREE.BufferGeometry().setFromPoints([V(), V(0,0,-1)]);
+for (let i=0;i<2;i++){ const c = renderer.xr.getController(i); scene.add(c); const line = new THREE.Line(rayGeo, new THREE.LineBasicMaterial({color:0xffffff})); line.scale.z = 3; c.add(line);
+  c.addEventListener('connected', e => { const h = e.data.handedness === 'left' ? 0 : 1; hands[h].ctrl = c; hands[h].src = e.data; });
+  c.addEventListener('disconnected', () => { for (const H of hands) if (H.ctrl === c){ H.ctrl = null; H.src = null; } }); }
+const ray = new THREE.Raycaster(), _o = V(), _q = new THREE.Quaternion(), _d = V();
+let hovered = null, lastMenuOpen = null;
+function placeUI(){ const cam = renderer.xr.getCamera(); const d = V(); cam.getWorldDirection(d); const yaw = Math.atan2(-d.x, -d.z); ui.rotation.set(0, yaw, 0); ui.position.set(0, 0, 0); }
+function vrStep(){
+  for (const H of hands){ const prev = H.btn; if (H.src && H.src.gamepad){ const b = H.src.gamepad.buttons; H.btn = {trigger:!!(b[0] && b[0].pressed), a:!!(b[4] && b[4].pressed), b:!!(b[5] && b[5].pressed)}; } else H.btn = {}; for (const k of ['trigger','a','b']) H.down[k] = H.btn[k] && !prev[k]; }
+  if (hands.some(H => H.down.b)) menuOpen = !menuOpen;
+  if (hands.some(H => H.down.a) && state.list.length) show(state.i + 1);
+  if (menuOpen !== lastMenuOpen){ lastMenuOpen = menuOpen; menu.visible = menuOpen; info.m.visible = !menuOpen; placeUI(); }
+  menu.position.set(0, -.15, -1.6);
+  let hov = null, by = null;
+  if (menuOpen) for (const H of hands){ if (!H.ctrl) continue; H.ctrl.getWorldPosition(_o); H.ctrl.getWorldQuaternion(_q); _d.set(0,0,-1).applyQuaternion(_q); ray.set(_o, _d); const hit = ray.intersectObjects(menuBtns.map(b => b.m), false)[0]; if (hit){ hov = menuBtns.find(b => b.m === hit.object); by = H; } }
+  if (hov !== hovered){ if (hovered && menuBtns.includes(hovered)) hovered.draw(false); if (hov) hov.draw(true); hovered = hov; }
+  if (hov && by.down.trigger){ const act = hov.act; hovered = null; act(); }
+}
+
+/* ---------- VR session ---------- */
+async function enterVR(){
+  if (renderer.xr.isPresenting) return;
+  try { const s = await navigator.xr.requestSession('immersive-vr'); await renderer.xr.setSession(s); if (renderer.xr.setFoveation) renderer.xr.setFoveation(0);
+    if ($('#viewer').hidden){ $('#lobby').hidden = true; $('#viewer').hidden = false; menuOpen = true; msg('یک مکان را از فهرست انتخاب کن.'); }
+    lastMenuOpen = null; vrInfoDirty = true;
+    s.addEventListener('end', () => { resize(); });
+  } catch(e){ msg('ورود به VR انجام نشد: ' + (e && e.message || e)); }
+}
+(async () => { let ok = false; try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){} $('#bVR').disabled = $('#vVR').disabled = !ok; })();
+$('#bVR').onclick = enterVR; $('#vVR').onclick = enterVR;
+if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
+
+renderer.setAnimationLoop(() => {
+  if (renderer.xr.isPresenting){ ui.visible = true; vrStep(); if (vrInfoDirty){ drawInfo(); vrInfoDirty = false; } }
+  else { ui.visible = false; camera.rotation.set(lookD.pitch, lookD.yaw, 0, 'YXZ'); if (!drag && $('#viewer').hidden === false && sphereMat.map) lookD.yaw += .0004; }
+  renderer.render(scene, camera);
+});
+Promise.all([document.fonts.load('600 40px Vazirmatn', 'ایران ۱۲۳'), document.fonts.load('400 40px Lalezar', 'سفر')]).catch(() => {}).then(() => { buildMenu(); vrInfoDirty = true; });
+window.__tour = {openPlace, searchPanos, state:() => state, IRAN, WORLD};
+})();
+</script>
+</body>
+</html>
