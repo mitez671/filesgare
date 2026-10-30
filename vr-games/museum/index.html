@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>نگارخانه</title>
+<meta name="description" content="موزهٔ مجازی VR با آثار مالکیت عمومی ون‌گوگ، مونه، رامبرانت، هوکوسای و نگارگری ایرانی.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
+<style>
+/* Layout: full-bleed gallery stage; RTL lobby card over it; thin top bar while touring. Single warm museum-night look. */
+:root{--bg:#15110d;--panel:rgba(24,19,14,.88);--ink:#f5ede0;--muted:#b9ab96;--line:rgba(245,237,224,.16);--accent:#d9a441;--accent2:#7fb7a8;
+--display:Lalezar,Vazirmatn,Tahoma,sans-serif;--body:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;color-scheme:dark}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#ov{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:rgba(21,17,13,.72);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.card{width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;text-align:right}
+.hub{align-self:flex-start;color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:6px 12px}
+.hub:hover{color:var(--ink);border-color:var(--accent)}
+h1{margin:0;font:400 clamp(52px,14vw,92px)/1.05 var(--display);color:var(--accent)}
+.lede{margin:0;line-height:1.9;font-size:15.5px;max-width:62ch}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:600 15px/1 var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1.5px solid var(--line);border-radius:12px;padding:14px 18px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,.hub:focus-visible,.chip:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#1d1406;font-weight:800}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.rooms{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:600 13.5px/1 var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1px solid var(--line);border-radius:999px;padding:9px 12px;cursor:pointer}
+.chip.on{background:var(--accent2);border-color:var(--accent2);color:#0b1714}
+.note{margin:0;font-size:13px;line-height:1.8;color:var(--muted);border-right:3px solid var(--accent2);padding-right:10px}
+.note a{color:var(--ink)}
+.how{margin:0;padding:0 18px 0 0;font-size:14px;line-height:1.8}
+#bar{position:fixed;top:0;left:0;right:0;display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-block:calc(8px + env(safe-area-inset-top,0px)) 8px;
+  padding-left:max(10px,env(safe-area-inset-left,0px));padding-right:max(10px,env(safe-area-inset-right,0px));background:linear-gradient(rgba(21,17,13,.9),rgba(21,17,13,0))}
+#status{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));right:max(12px,env(safe-area-inset-right,0px));max-width:calc(100% - 24px);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<div id="ov" dir="rtl">
+  <main class="card">
+    <a class="hub" href="../index.html">→ همهٔ بازی‌ها</a>
+    <h1>نگارخانه</h1>
+    <p class="lede">یک موزهٔ شبانه فقط برای تو. در تالارها قدم بزن، جلوی «اتاق خواب» ون‌گوگ بایست یا نگاره‌های شاهنامه را از نزدیک ببین. ماشه را روی هر تابلو بزنی، بزرگ جلویت می‌آید.</p>
+    <div class="actions"><button class="btn primary" id="bVR" type="button" disabled>ورود به واقعیت مجازی</button><button class="btn" id="bDesk" type="button">گشت با موس</button></div>
+    <div class="rooms" id="rooms"></div>
+    <ul class="how">
+      <li>در VR: ماشه روی تابلو آن را بزرگ می‌کند. ماشه روی زمین جای پرش را نشان می‌دهد و با رها کردن می‌پری. استیک چپ راه می‌برد و استیک راست می‌چرخاند. B یا Y فهرست تالارها را باز می‌کند.</li>
+      <li>با موس: W، A، S و D راه می‌برند، کشیدن موس نگاه می‌کند و کلیک روی تابلو آن را بزرگ می‌کند.</li>
+    </ul>
+    <p class="note" id="srcNote">در حال بررسی تصاویر…</p>
+  </main>
+</div>
+<div id="bar" hidden dir="rtl"><button class="btn" id="bMenu" type="button">منو</button><div class="rooms" id="rooms2"></div></div>
+<div id="status" hidden dir="rtl"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const fa = n => Math.round(n).toLocaleString('fa-IR');
+const HUB = '../index.html', TOOL = '../tools/fetch-images.php';
+// same rooms as tools/fetch-images.php (used only when the site has no local copy yet)
+const LIVE_ROOMS = [
+  ['vangogh', 'ون‌گوگ', ['Vincent van Gogh'], 16], ['monet', 'کلود مونه', ['Claude Monet'], 22],
+  ['impress', 'امپرسیونیست‌ها', ['Pierre-Auguste Renoir','Edgar Degas','Camille Pissarro','Gustave Caillebotte','Georges Seurat','Berthe Morisot','Mary Cassatt'], 24],
+  ['post', 'پست‌امپرسیونیست‌ها', ['Paul Cézanne','Paul Gauguin','Henri de Toulouse-Lautrec','Henri Rousseau'], 20],
+  ['masters', 'استادان قدیم', ['Rembrandt van Rijn','El Greco','Peter Paul Rubens','Frans Hals','Jan Steen','Francisco José de Goya y Lucientes'], 20],
+  ['japan', 'چاپ چوبی ژاپنی', ['Katsushika Hokusai','Utagawa Hiroshige'], 24],
+];
+let ROOMS = [], LOCAL = false, curRoom = -1;
+
+/* ================= data ================= */
+async function loadManifest(){
+  try { const r = await fetch('art/manifest.json', {cache:'no-cache'}); if (!r.ok) throw 0; const m = await r.json(); if (!m.rooms || !m.rooms.length) throw 0; ROOMS = m.rooms; LOCAL = true; }
+  catch(e){ ROOMS = LIVE_ROOMS.map(([key, name, artists, max]) => ({key, name, artists, max, items:null})); LOCAL = false; }
+  $('#srcNote').innerHTML = LOCAL
+    ? 'تابلوها از همین سایت بارگذاری می‌شوند. همهٔ آثار «مالکیت عمومی» هستند و موزه‌ها آن‌ها را با مجوز CC0 منتشر کرده‌اند: موزهٔ هنر شیکاگو و موزهٔ متروپولیتن.'
+    : 'تصاویر هنوز روی این سایت نیستند و تابلوها مستقیم از موزهٔ هنر شیکاگو می‌آیند. تالار نگارگری ایرانی فقط بعد از بارگذاری روی سایت فعال می‌شود. برای سرعت بیشتر <a href="' + TOOL + '">ابزار بارگذاری تصاویر</a> را یک بار اجرا کن.';
+  renderChips();
+}
+function norm(s){ return (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''); }
+async function liveItems(room){
+  if (room.items) return room.items;
+  const per = Math.ceil(room.max/room.artists.length) + 2, out = [];
+  for (const a of room.artists){
+    try {
+      const u = 'https://api.artic.edu/api/v1/artworks/search?q=' + encodeURIComponent(a) + '&query[term][is_public_domain]=true&fields=id,title,artist_title,date_display,image_id,thumbnail,is_public_domain&limit=60';
+      const js = await (await fetch(u)).json(); const last = norm(a.split(' ').pop()); let n = 0;
+      for (const d of js.data || []){ if (n >= per) break; if (!d.image_id || !d.is_public_domain || !norm(d.artist_title).includes(last)) continue;
+        const tw = d.thumbnail && d.thumbnail.width, th = d.thumbnail && d.thumbnail.height;
+        out.push({title:d.title, artist:d.artist_title, date:d.date_display || '', src:'https://www.artic.edu/iiif/2/' + d.image_id + '/full/843,/0/default.jpg', full:'https://www.artic.edu/iiif/2/' + d.image_id + '/full/' + Math.min(1686, tw || 843) + ',/0/default.jpg', aspect: th ? tw/th : 0, source:'Art Institute of Chicago', license:'CC0'}); n++; }
+    } catch(e){}
+  }
+  room.items = out.slice(0, room.max); return room.items;
+}
+function itemsOf(room){ return LOCAL ? room.items.map(it => Object.assign({}, it, {src:it.file, full:it.file, aspect:it.w && it.h ? it.w/it.h : (it.aspect || 1.3)})) : null; }
+function renderChips(){
+  for (const id of ['#rooms', '#rooms2']){ const box = $(id); box.innerHTML = ''; ROOMS.forEach((r, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (i === curRoom ? ' on' : ''); b.textContent = r.name + (LOCAL ? ' · ' + fa(r.items.length) : ''); b.onclick = () => { if (id === '#rooms') startDesk(); openRoom(i); }; box.appendChild(b); }); }
+}
+
+/* ================= renderer ================= */
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+$('#stage').appendChild(renderer.domElement);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0e0b08); scene.fog = new THREE.Fog(0x0e0b08, 14, 40);
+const rig = new THREE.Group(); scene.add(rig);
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .03, 120); camera.position.set(0, 1.6, 0); rig.add(camera);
+scene.add(new THREE.HemisphereLight(0xfff3e0, 0x3a2e22, .75));
+const key = new THREE.DirectionalLight(0xfff0d8, .35); key.position.set(2, 6, 3); scene.add(key);
+const room = new THREE.Group(); scene.add(room);
+const H = 4.6;
+
+function canvasTex(w, h, draw, rep){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 8; if (rep){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); } return t; }
+const parquet = (W, D) => canvasTex(256, 256, (x) => { for (let r=0;r<8;r++) for (let c=0;c<4;c++){ const v = 95 + ((r*7 + c*13) % 5)*9; x.fillStyle = `rgb(${v+40},${v+12},${v-22})`; x.fillRect(c*64 + (r%2)*32 - 32, r*32, 64, 32); x.strokeStyle = 'rgba(40,24,10,.5)'; x.strokeRect(c*64 + (r%2)*32 - 32, r*32, 64, 32); } }, [W/2, D/2]);
+const wallMat = new THREE.MeshLambertMaterial({color:0xece3d3});
+const accentWall = new THREE.MeshLambertMaterial({color:0x4b2e2a});
+const frameMat = new THREE.MeshLambertMaterial({color:0x6b4e1f, emissive:0x2a1c06});
+const benchMat = new THREE.MeshLambertMaterial({color:0x3b2a1c});
+const paintings = [];  // {mesh, it, tex}
+let floorMesh = null, roomW = 12, roomD = 16;
+
+function buildRoom(items){
+  // dispose previous
+  for (const p of paintings){ if (p.tex) p.tex.dispose(); }
+  paintings.length = 0;
+  room.traverse(o => { if (o.geometry) o.geometry.dispose(); if (o.material && o.material.map && o.material !== wallMat) o.material.map.dispose(); });
+  room.clear();
+  const sizes = items.map(it => { const a = clamp(it.aspect || 1.3, .3, 3.5); let h = a > 1.6 ? 1.0 : 1.25, w = h*a; if (w > 1.9){ w = 1.9; h = w/a; } return {w, h}; });
+  const gap = 1.25, need = sizes.reduce((s, z) => s + z.w + gap, 0);
+  roomW = 12; roomD = clamp(Math.ceil((need - roomW + 2)/2) + 2, 10, 34);
+  const W = roomW, D = roomD, z0 = 2.5, zb = z0 - D;   // room spans z from z0 (behind start) to zb
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({map:parquet(W, D)})); fl.rotation.x = -Math.PI/2; fl.position.set(0, 0, (z0 + zb)/2); room.add(fl); floorMesh = fl;
+  const ce = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({color:0x2a231c})); ce.rotation.x = Math.PI/2; ce.position.set(0, H, (z0 + zb)/2); room.add(ce);
+  const wall = (w, x, z, ry, mat) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, H), mat || wallMat); m.position.set(x, H/2, z); m.rotation.y = ry; room.add(m); };
+  wall(D, -W/2, (z0 + zb)/2, Math.PI/2); wall(D, W/2, (z0 + zb)/2, -Math.PI/2); wall(W, 0, zb, 0, accentWall); wall(W, 0, z0, Math.PI);
+  // skirting + ceiling light strips
+  const sk = new THREE.MeshLambertMaterial({color:0x2c2018});
+  [[D, -W/2 + .01, (z0+zb)/2, Math.PI/2], [D, W/2 - .01, (z0+zb)/2, -Math.PI/2], [W, 0, zb + .01, 0], [W, 0, z0 - .01, Math.PI]].forEach(([w,x,z,r]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, .14), sk); m.position.set(x, .07, z); m.rotation.y = r; room.add(m); });
+  for (let z = z0 - 2; z > zb + 1; z -= 4){ const l = new THREE.Mesh(new THREE.PlaneGeometry(W - 2, .25), new THREE.MeshBasicMaterial({color:0xfff2d6})); l.rotation.x = Math.PI/2; l.position.set(0, H - .01, z); room.add(l); }
+  for (let z = -3; z > zb + 3; z -= 6){ const b = new THREE.Mesh(new THREE.BoxGeometry(2.2, .45, .55), benchMat); b.position.set(0, .225, z); room.add(b); }
+  // walls path: left (z from 0 → zb+1, facing +x), back (x -W/2+1 → W/2-1, facing +z), right (z zb+1 → 0, facing -x), front (x W/2-1 → -W/2+1, facing -z)
+  const segs = [
+    {len: -zb + .5, at: d => [-W/2 + .02, 1.55, .5 - d], ry: Math.PI/2},
+    {len: W - 2, at: d => [-W/2 + 1 + d, 1.55, zb + .02], ry: 0},
+    {len: -zb + .5, at: d => [W/2 - .02, 1.55, zb + .5 + d], ry: -Math.PI/2},
+    {len: W - 2, at: d => [W/2 - 1 - d, 1.55, z0 - .02], ry: Math.PI},
+  ];
+  let si = 0, pos = .6;
+  items.forEach((it, i) => {
+    const {w, h} = sizes[i];
+    while (si < segs.length && pos + w + .3 > segs[si].len){ si++; pos = .6; }
+    if (si >= segs.length) return;
+    const s = segs[si], [x, y, z] = s.at(pos + w/2); pos += w + gap;
+    const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = s.ry; room.add(g);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(w + .12, h + .12, .05), frameMat); frame.position.z = .025; g.add(frame);
+    const mat = new THREE.MeshBasicMaterial({color:0x2a2520});
+    const pic = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat); pic.position.z = .052; g.add(pic);
+    const lbl = new THREE.Mesh(new THREE.PlaneGeometry(.34, .17), new THREE.MeshBasicMaterial({map:labelTex(it)})); lbl.position.set(w/2 + .32, -.25, .01); g.add(lbl);
+    const lamp = new THREE.Mesh(new THREE.ConeGeometry(.45, 2.3, 20, 1, true), new THREE.MeshBasicMaterial({color:0xfff0c8, transparent:true, opacity:.05, depthWrite:false, side:THREE.DoubleSide})); lamp.position.set(0, 1.15, .6); g.add(lamp);
+    const rec = {mesh:pic, it, tex:null, g, w, h}; pic.userData.rec = rec; paintings.push(rec);
+  });
+  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); deskLook.yaw = 0; deskLook.pitch = 0;
+  loadTextures();
+}
+function labelTex(it){
+  return canvasTex(512, 256, (x) => {
+    x.fillStyle = '#f7f1e6'; x.fillRect(0,0,512,256); x.strokeStyle = '#c8b99f'; x.lineWidth = 6; x.strokeRect(3,3,506,250);
+    x.fillStyle = '#1d150d'; x.textAlign = 'left'; x.textBaseline = 'alphabetic'; x.direction = 'ltr';
+    x.font = '700 30px Vazirmatn, Georgia, serif'; const words = (it.title || '').split(' '); let line = '', y = 50, lines = 0;
+    for (const w of words){ const t = line ? line + ' ' + w : w; if (x.measureText(t).width > 470 && line){ x.fillText(line, 22, y); y += 36; line = w; if (++lines >= 2) break; } else line = t; }
+    if (lines < 2 && line) { x.fillText(line, 22, y); y += 36; }
+    x.font = '400 26px Vazirmatn, Georgia, serif'; x.fillStyle = '#4a3a26'; x.fillText(it.artist || '', 22, y + 8); x.fillText(it.date || '', 22, y + 42);
+    x.font = '400 19px Vazirmatn, sans-serif'; x.fillStyle = '#7d6a50'; x.fillText((it.source || '') + ' · ' + (it.license || 'CC0'), 22, 236);
+  });
+}
+const texQueue = []; let texBusy = 0, loaded = 0;
+function loadTextures(){ texQueue.length = 0; loaded = 0; paintings.forEach(p => texQueue.push(p)); pumpTex(); }
+async function bitmapFrom(url, maxW){
+  const r = await fetch(url, {mode:'cors'}); if (!r.ok) throw new Error('HTTP ' + r.status); const blob = await r.blob();
+  if (typeof createImageBitmap === 'function'){ try { const probe = await createImageBitmap(blob); const w = probe.width, h = probe.height; probe.close && probe.close(); const sc = Math.min(1, maxW / w); return await createImageBitmap(blob, {imageOrientation:'flipY', resizeWidth:Math.round(w*sc), resizeHeight:Math.round(h*sc), resizeQuality:'high'}); } catch(e){} }
+  return null;
+}
+async function texFor(url, maxW){
+  const bmp = await bitmapFrom(url, maxW).catch(() => null);
+  if (bmp){ const t = new THREE.Texture(bmp); t.flipY = false; t.needsUpdate = true; t.anisotropy = 8; return t; }
+  return await new Promise((res, rej) => new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, res, undefined, rej));
+}
+function pumpTex(){
+  while (texBusy < 4 && texQueue.length){
+    const p = texQueue.shift(); texBusy++;
+    texFor(p.it.src, 1024).then(t => { if (!paintings.includes(p)){ t.dispose(); return; } p.tex = t; p.mesh.material.map = t; p.mesh.material.color.setHex(0xffffff); p.mesh.material.needsUpdate = true; loaded++; })
+      .catch(() => {}).finally(() => { texBusy--; status(); pumpTex(); });
+  }
+  status();
+}
+function status(){ const s = $('#status'); if (curRoom < 0){ s.hidden = true; return; } s.hidden = false; const r = ROOMS[curRoom]; s.textContent = r.name + ' · ' + (texQueue.length || texBusy ? 'بارگذاری تابلوها ' + fa(loaded) + ' از ' + fa(paintings.length) : fa(paintings.length) + ' اثر'); hintDirty = true; }
+let opening = 0;
+async function openRoom(i){
+  const tok = ++opening; curRoom = i; renderChips(); closeZoom();
+  const r = ROOMS[i]; $('#status').hidden = false; $('#status').textContent = r.name + ' · در حال آماده‌سازی…';
+  let items = itemsOf(r);
+  if (!items){ items = await liveItems(r); if (tok !== opening) return; }
+  if (!items.length){ $('#status').textContent = r.name + ' · اثری بارگذاری نشد. اتصال به موزه را بررسی کن.'; buildRoom([]); return; }
+  buildRoom(items); menuOpen = false; status();
+}
+
+/* ================= zoom view ================= */
+const zoom = new THREE.Group(); zoom.visible = false; scene.add(zoom);
+const dim = new THREE.Mesh(new THREE.SphereGeometry(3, 24, 16), new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:.82, side:THREE.BackSide, depthWrite:false})); dim.renderOrder = 20; zoom.add(dim);
+const zPic = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({color:0xffffff, depthTest:false, transparent:true})); zPic.renderOrder = 21; zoom.add(zPic);
+const zInfoC = document.createElement('canvas'); zInfoC.width = 1024; zInfoC.height = 170; const zInfoT = new THREE.CanvasTexture(zInfoC);
+const zInfo = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4*170/1024), new THREE.MeshBasicMaterial({map:zInfoT, transparent:true, depthTest:false})); zInfo.renderOrder = 22; zoom.add(zInfo);
+let zoomRec = null, zoomTex = null;
+function openZoom(rec){
+  zoomRec = rec; const head = V(); camera.getWorldPosition(head); const dir = V(); camera.getWorldDirection(dir); dir.y = 0; dir.normalize();
+  zoom.position.copy(head); zoom.lookAt(head.clone().sub(dir)); zoom.visible = true;
+  const a = rec.w/rec.h; let w = 2.1, h = w/a; if (h > 1.5){ h = 1.5; w = h*a; }
+  zPic.scale.set(w, h, 1); zPic.position.set(0, .1, -1.55);
+  zPic.material.map = rec.tex; zPic.material.needsUpdate = true;
+  zInfo.position.set(0, .1 - h/2 - .16, -1.5);
+  const x = zInfoC.getContext('2d'); x.clearRect(0,0,1024,170); x.fillStyle = 'rgba(24,19,14,.92)'; x.fillRect(0,0,1024,170); x.textAlign = 'center'; x.direction = 'ltr';
+  x.fillStyle = '#f5ede0'; x.font = '700 40px Vazirmatn, Georgia, serif'; x.fillText((rec.it.title || '').slice(0, 60), 512, 58);
+  x.fillStyle = '#d9a441'; x.font = '400 32px Vazirmatn, Georgia, serif'; x.fillText([rec.it.artist, rec.it.date].filter(Boolean).join(' · '), 512, 104);
+  x.fillStyle = '#b9ab96'; x.font = '400 24px Vazirmatn, sans-serif'; x.fillText((rec.it.source || '') + ' · ' + (rec.it.license || 'CC0') + ' · ماشه یا کلیک: بستن', 512, 146); zInfoT.needsUpdate = true;
+  if (rec.it.full && rec.it.full !== rec.it.src || LOCAL){ texFor(rec.it.full, 4096).then(t => { if (zoomRec !== rec){ t.dispose(); return; } if (zoomTex) zoomTex.dispose(); zoomTex = t; zPic.material.map = t; zPic.material.needsUpdate = true; }).catch(() => {}); }
+}
+function closeZoom(){ zoom.visible = false; zoomRec = null; if (zoomTex){ zoomTex.dispose(); zoomTex = null; } }
+
+/* ================= VR menu (rooms) ================= */
+const menu = new THREE.Group(); menu.visible = false; scene.add(menu); let menuOpen = false, menuBtns = [];
+function rr(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); }
+function btnPanel(label, color, act, w = .5){
+  const c = document.createElement('canvas'); c.width = 512; c.height = 110; const t = new THREE.CanvasTexture(c);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w*110/512), new THREE.MeshBasicMaterial({map:t, transparent:true, depthTest:false})); m.renderOrder = 30;
+  const b = {m, act, draw(h){ const x = c.getContext('2d'); x.clearRect(0,0,512,110); rr(x,4,4,504,102,20); x.fillStyle = h ? color : 'rgba(24,19,14,.94)'; x.fill(); x.strokeStyle = color; x.lineWidth = 4; x.stroke(); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '600 40px Vazirmatn, Tahoma, sans-serif'; x.fillStyle = h ? '#15110d' : '#f5ede0'; x.fillText(label, 256, 58); t.needsUpdate = true; }};
+  b.draw(false); m.userData.btn = b; return b;
+}
+function buildMenu(){
+  menu.clear(); menuBtns = [];
+  const title = btnPanel('تالارهای نگارخانه', '#d9a441', null, .62); title.m.position.set(0, .42, 0); menu.add(title.m);
+  ROOMS.forEach((r, i) => { const b = btnPanel(r.name, i === curRoom ? '#7fb7a8' : '#d9a441', () => openRoom(i)); b.m.position.set(i % 2 ? -.27 : .27, .3 - Math.floor(i/2)*.13, 0); menu.add(b.m); menuBtns.push(b); });
+  const rows = Math.ceil(ROOMS.length/2), hub = btnPanel('→ فهرست بازی‌ها', '#ff8a8a', () => { location.href = HUB; }, .5); hub.m.position.set(0, .3 - rows*.13 - .02, 0); menu.add(hub.m); menuBtns.push(hub);
+}
+function placeMenu(){ const head = V(); camera.getWorldPosition(head); const d = V(); camera.getWorldDirection(d); d.y = 0; d.normalize(); menu.position.copy(head).addScaledVector(d, 1.3); menu.position.y = head.y - .15; menu.lookAt(head.x, menu.position.y, head.z); }
+let hintDirty = true;
+
+/* ================= input ================= */
+const hands = [0,1].map(h => ({h, ctrl:null, src:null, btn:{}, down:{}, up:{}, axes:[0,0], pos:V(), dir:V(), snap:true, hit:null}));
+const rayGeo = new THREE.BufferGeometry().setFromPoints([V(), V(0,0,-1)]);
+for (let i=0;i<2;i++){ const c = renderer.xr.getController(i); rig.add(c); const line = new THREE.Line(rayGeo, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.6})); line.scale.z = 4; c.add(line); c.userData.line = line;
+  c.addEventListener('connected', e => { const h = e.data.handedness === 'left' ? 0 : 1; hands[h].ctrl = c; hands[h].src = e.data; });
+  c.addEventListener('disconnected', () => { for (const H of hands) if (H.ctrl === c){ H.ctrl = null; H.src = null; } }); }
+const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(new Array(40).fill(0).map(() => V())), new THREE.LineBasicMaterial({color:0x7fb7a8})); arc.visible = false; arc.frustumCulled = false; scene.add(arc);
+const tpMark = new THREE.Mesh(new THREE.RingGeometry(.2, .28, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0x7fb7a8})); tpMark.visible = false; scene.add(tpMark);
+const ray = new THREE.Raycaster(), _q = new THREE.Quaternion();
+function pick(o, d){ ray.set(o, d); ray.far = 14; const hit = ray.intersectObjects(paintings.map(p => p.mesh), false)[0]; return hit ? hit.object.userData.rec : null; }
+function inRoom(x, z){ return Math.abs(x) < roomW/2 - .4 && z < 2.5 - .4 && z > 2.5 - roomD + .4; }
+function vrStep(dt){
+  for (const H of hands){ const prev = H.btn; if (H.ctrl && H.src && H.src.gamepad){ const b = H.src.gamepad.buttons, a = H.src.gamepad.axes; H.btn = {trigger:!!(b[0] && b[0].pressed), grip:!!(b[1] && b[1].pressed), b:!!(b[5] && b[5].pressed)}; H.axes = [a[2]||0, a[3]||0]; H.ctrl.getWorldPosition(H.pos); H.ctrl.getWorldQuaternion(_q); H.dir.set(0,0,-1).applyQuaternion(_q); } else H.btn = {}; for (const k of ['trigger','grip','b']){ H.down[k] = H.btn[k] && !prev[k]; H.up[k] = !H.btn[k] && prev[k]; } }
+  const hs = hands.filter(H => H.ctrl && H.src);
+  if (hs.some(H => H.down.b)){ if (zoom.visible) closeZoom(); else { menuOpen = !menuOpen; if (menuOpen){ buildMenu(); placeMenu(); } } }
+  menu.visible = menuOpen;
+  if (zoom.visible){ if (hs.some(H => H.down.trigger)) closeZoom(); arc.visible = tpMark.visible = false; return; }
+  if (menuOpen){
+    let hov = null, by = null;
+    for (const H of hs){ ray.set(H.pos, H.dir); const hit = ray.intersectObjects(menuBtns.map(b => b.m), false)[0]; if (hit){ hov = hit.object.userData.btn; by = H; } }
+    for (const b of menuBtns) b.draw(b === hov);
+    if (hov && by.down.trigger){ menuOpen = false; hov.act(); }
+    return;
+  }
+  const head = V(); camera.getWorldPosition(head); const fw = V(); camera.getWorldDirection(fw); fw.y = 0; fw.normalize(); const side = V(-fw.z, 0, fw.x);
+  const L = hands[0], R = hands[1];
+  if (L.ctrl && (Math.abs(L.axes[0]) > .15 || Math.abs(L.axes[1]) > .15)){ const sp = 1.6*dt; const nx = rig.position.x + (fw.x*-L.axes[1] + side.x*L.axes[0])*sp, nz = rig.position.z + (fw.z*-L.axes[1] + side.z*L.axes[0])*sp; if (inRoom(head.x + nx - rig.position.x, head.z + nz - rig.position.z)){ rig.position.x = nx; rig.position.z = nz; } }
+  if (R.ctrl){ if (Math.abs(R.axes[0]) > .7 && R.snap){ R.snap = false; const a = -Math.sign(R.axes[0])*Math.PI/6; const off = rig.position.clone().sub(head); off.y = 0; off.applyAxisAngle(V(0,1,0), a); rig.position.set(head.x + off.x, 0, head.z + off.z); rig.rotation.y += a; } if (Math.abs(R.axes[0]) < .3) R.snap = true; }
+  let arcShown = false;
+  for (const H of hs){
+    const rec = pick(H.pos, H.dir);
+    if (rec && H.down.trigger && !H.aiming){ openZoom(rec); return; }
+    if (H.down.trigger && !rec) H.aiming = true;
+    if (H.aiming){
+      if (H.btn.trigger){
+        const pts = arc.geometry.attributes.position; let p = H.pos.clone(), v = H.dir.clone().multiplyScalar(7), hit = null;
+        for (let i=0;i<40;i++){ pts.setXYZ(i, p.x, p.y, p.z); if (!hit){ const np = p.clone().addScaledVector(v, .05); v.y -= 9.8*.05; if (np.y <= 0){ hit = p.clone().lerp(np, p.y/(p.y - np.y)); p = hit.clone(); } else p = np; } }
+        pts.needsUpdate = true; arcShown = true; H.hit = hit && inRoom(hit.x, hit.z) ? hit : null; tpMark.visible = !!H.hit; if (H.hit) tpMark.position.copy(H.hit).add(V(0,.01,0));
+      } else { H.aiming = false; if (H.hit){ rig.position.x += H.hit.x - head.x; rig.position.z += H.hit.z - head.z; } H.hit = null; tpMark.visible = false; }
+    }
+  }
+  arc.visible = arcShown;
+}
+// desktop
+const deskLook = {yaw:0, pitch:0}, keys = {};
+let desk = false, drag = null;
+const el = renderer.domElement;
+el.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY, m:0}; el.setPointerCapture(e.pointerId); });
+el.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.m += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY; deskLook.yaw -= dx*.004; deskLook.pitch = clamp(deskLook.pitch - dy*.004, -1.2, 1.2); });
+el.addEventListener('pointerup', e => { const click = drag && drag.m < 6; drag = null; if (!click || !desk) return;
+  if (zoom.visible){ closeZoom(); return; }
+  const r = el.getBoundingClientRect(), m = new THREE.Vector2(((e.clientX - r.left)/r.width)*2-1, -((e.clientY - r.top)/r.height)*2+1); ray.setFromCamera(m, camera); const hit = ray.intersectObjects(paintings.map(p => p.mesh), false)[0]; if (hit && hit.distance < 14) openZoom(hit.object.userData.rec); });
+addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape'){ if (zoom.visible) closeZoom(); else showLobby(); } });
+addEventListener('keyup', e => { keys[e.code] = false; });
+function deskStep(dt){
+  camera.position.set(0, 1.6, 0); camera.rotation.set(deskLook.pitch, deskLook.yaw, 0, 'YXZ');
+  if (zoom.visible) return;
+  const sp = (keys.ShiftLeft ? 4 : 2)*dt, fw = V(-Math.sin(deskLook.yaw), 0, -Math.cos(deskLook.yaw)), side = V(-fw.z, 0, fw.x), mv = V();
+  if (keys.KeyW || keys.ArrowUp) mv.add(fw); if (keys.KeyS || keys.ArrowDown) mv.sub(fw); if (keys.KeyA || keys.ArrowLeft) mv.sub(side); if (keys.KeyD || keys.ArrowRight) mv.add(side);
+  if (mv.lengthSq()){ mv.normalize().multiplyScalar(sp); if (inRoom(rig.position.x + mv.x, rig.position.z + mv.z)) rig.position.add(mv); }
+}
+addEventListener('resize', () => { if (renderer.xr.isPresenting) return; renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+
+/* ================= flow ================= */
+function startDesk(){ desk = true; $('#ov').hidden = true; $('#bar').hidden = false; if (curRoom < 0) openRoom(0); }
+function showLobby(){ desk = false; closeZoom(); $('#ov').hidden = false; $('#bar').hidden = true; }
+$('#bDesk').onclick = startDesk; $('#bMenu').onclick = showLobby;
+async function enterVR(){
+  if (renderer.xr.isPresenting) return;
+  try { const s = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']}); await renderer.xr.setSession(s); if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+    desk = false; $('#ov').hidden = true; $('#bar').hidden = true; camera.position.set(0,0,0); camera.rotation.set(0,0,0);
+    if (curRoom < 0) await openRoom(0);
+    menuOpen = true; buildMenu(); setTimeout(placeMenu, 300);
+    s.addEventListener('end', () => { renderer.setSize(innerWidth, innerHeight); showLobby(); });
+  } catch(e){ $('#srcNote').textContent = 'ورود به VR انجام نشد: ' + (e && e.message || e); }
+}
+(async () => { let ok = false; try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){} $('#bVR').disabled = !ok; })();
+$('#bVR').onclick = enterVR;
+if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), .05);
+  if (renderer.xr.isPresenting) vrStep(dt); else { for (const H of hands) if (H.ctrl) H.ctrl.userData.line.visible = false; if (desk) deskStep(dt); else { deskLook.yaw += dt*.05; camera.position.set(0,1.6,0); camera.rotation.set(-.05, deskLook.yaw, 0, 'YXZ'); } }
+  renderer.render(scene, camera);
+});
+loadManifest().then(() => { buildRoom([]); });
+Promise.all([document.fonts.load('600 40px Vazirmatn', 'نگارخانه ۱۲۳'), document.fonts.load('400 40px Lalezar', 'نگارخانه')]).catch(() => {}).then(() => { if (menuOpen) buildMenu(); });
+window.__museum = {openRoom, get rooms(){ return ROOMS; }, get local(){ return LOCAL; }, paintings, openZoom, get zoomOpen(){ return zoom.visible; }};
+})();
+</script>
+</body>
+</html>

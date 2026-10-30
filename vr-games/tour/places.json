@@ -1,0 +1,363 @@
+{
+ "iran": [
+  [
+   "میدان نقش جهان",
+   "اصفهان",
+   [
+    "Naqsh-e Jahan Square 360",
+    "Naqsh-e Jahan spherical panorama",
+    "Imam Square Isfahan 360"
+   ]
+  ],
+  [
+   "تخت جمشید",
+   "مرودشت، فارس",
+   [
+    "Persepolis 360",
+    "Persepolis spherical panorama",
+    "Persepolis panorama virtual reality"
+   ]
+  ],
+  [
+   "پاسارگاد",
+   "آرامگاه کوروش",
+   [
+    "Pasargadae 360",
+    "Tomb of Cyrus panorama 360"
+   ]
+  ],
+  [
+   "مسجد نصیرالملک",
+   "شیراز",
+   [
+    "Nasir al-Mulk Mosque 360",
+    "Nasir ol Molk 360 panorama"
+   ]
+  ],
+  [
+   "باغ ارم",
+   "شیراز",
+   [
+    "Eram Garden 360",
+    "Eram Garden spherical"
+   ]
+  ],
+  [
+   "حافظیه",
+   "شیراز",
+   [
+    "Tomb of Hafez 360",
+    "Hafezieh panorama 360"
+   ]
+  ],
+  [
+   "سی‌وسه‌پل",
+   "اصفهان",
+   [
+    "Si-o-se-pol 360",
+    "Allahverdi Khan Bridge 360"
+   ]
+  ],
+  [
+   "مسجد شیخ لطف‌الله",
+   "اصفهان",
+   [
+    "Sheikh Lotfollah Mosque 360",
+    "Sheikh Lotfollah spherical"
+   ]
+  ],
+  [
+   "میدان امیرچخماق",
+   "یزد",
+   [
+    "Amir Chakhmaq 360",
+    "Yazd 360 panorama"
+   ]
+  ],
+  [
+   "باغ دولت‌آباد",
+   "یزد",
+   [
+    "Dowlatabad Garden 360",
+    "Dolat Abad garden panorama"
+   ]
+  ],
+  [
+   "کاخ گلستان",
+   "تهران",
+   [
+    "Golestan Palace 360",
+    "Golestan Palace spherical"
+   ]
+  ],
+  [
+   "برج آزادی",
+   "تهران",
+   [
+    "Azadi Tower 360",
+    "Azadi Square panorama 360"
+   ]
+  ],
+  [
+   "باغ فین",
+   "کاشان",
+   [
+    "Fin Garden 360",
+    "Bagh-e Fin panorama 360"
+   ]
+  ],
+  [
+   "خانهٔ طباطبایی‌ها",
+   "کاشان",
+   [
+    "Tabatabaei House 360",
+    "Tabatabaei Historical House panorama"
+   ]
+  ],
+  [
+   "ارگ بم",
+   "کرمان",
+   [
+    "Arg-e Bam 360",
+    "Bam Citadel panorama 360"
+   ]
+  ],
+  [
+   "کندوان",
+   "آذربایجان شرقی",
+   [
+    "Kandovan 360",
+    "Kandovan panorama"
+   ]
+  ],
+  [
+   "ماسوله",
+   "گیلان",
+   [
+    "Masuleh 360",
+    "Masouleh panorama 360"
+   ]
+  ],
+  [
+   "دماوند",
+   "بلندترین قلهٔ ایران",
+   [
+    "Damavand 360",
+    "Mount Damavand spherical panorama"
+   ]
+  ],
+  [
+   "چغازنبیل",
+   "خوزستان",
+   [
+    "Chogha Zanbil 360",
+    "Chogha Zanbil panorama"
+   ]
+  ],
+  [
+   "آسیاب‌های شوشتر",
+   "خوزستان",
+   [
+    "Shushtar Historical Hydraulic System 360",
+    "Shushtar panorama 360"
+   ]
+  ],
+  [
+   "طاق بستان",
+   "کرمانشاه",
+   [
+    "Taq-e Bostan 360",
+    "Taq-e Bostan panorama"
+   ]
+  ],
+  [
+   "کویر لوت",
+   "کرمان و سیستان",
+   [
+    "Lut Desert 360",
+    "Dasht-e Lut panorama 360"
+   ]
+  ],
+  [
+   "جزیرهٔ هرمز",
+   "هرمزگان",
+   [
+    "Hormuz Island 360",
+    "Hormoz Island panorama"
+   ]
+  ],
+  [
+   "قلعه رودخان",
+   "گیلان",
+   [
+    "Rudkhan Castle 360",
+    "Rudkhan Castle panorama"
+   ]
+  ]
+ ],
+ "world": [
+  [
+   "برج ایفل",
+   "پاریس",
+   [
+    "Eiffel Tower 360",
+    "Eiffel Tower spherical panorama",
+    "Champ de Mars 360"
+   ]
+  ],
+  [
+   "کولوسئوم",
+   "رم",
+   [
+    "Colosseum 360",
+    "Colosseum spherical panorama",
+    "Colosseo 360"
+   ]
+  ],
+  [
+   "ساگرادا فامیلیا",
+   "بارسلون",
+   [
+    "Sagrada Familia 360",
+    "Sagrada Familia spherical"
+   ]
+  ],
+  [
+   "ایاصوفیه",
+   "استانبول",
+   [
+    "Hagia Sophia 360",
+    "Hagia Sophia spherical panorama"
+   ]
+  ],
+  [
+   "اهرام جیزه",
+   "مصر",
+   [
+    "Giza pyramids 360",
+    "Giza spherical panorama"
+   ]
+  ],
+  [
+   "پترا",
+   "اردن",
+   [
+    "Petra 360",
+    "Petra Jordan spherical"
+   ]
+  ],
+  [
+   "ماچوپیچو",
+   "پرو",
+   [
+    "Machu Picchu 360",
+    "Machu Picchu spherical"
+   ]
+  ],
+  [
+   "گرند کنیون",
+   "آمریکا",
+   [
+    "Grand Canyon 360",
+    "Grand Canyon spherical panorama"
+   ]
+  ],
+  [
+   "کوه‌های آلپ",
+   "سوئیس",
+   [
+    "Piz Bernina Spherical Panorama",
+    "Swiss Alps spherical panorama",
+    "Spherical panorama Switzerland"
+   ]
+  ],
+  [
+   "شفق قطبی",
+   "ایسلند و نروژ",
+   [
+    "aurora 360 panorama",
+    "aurora borealis spherical"
+   ]
+  ],
+  [
+   "جنگل‌های استوایی",
+   "آمازون",
+   [
+    "rainforest 360 panorama",
+    "Amazon rainforest spherical"
+   ]
+  ],
+  [
+   "قطب جنوب",
+   "جنوبگان",
+   [
+    "Antarctica 360",
+    "Antarctica spherical panorama"
+   ]
+  ],
+  [
+   "آنگکور وات",
+   "کامبوج",
+   [
+    "Angkor Wat 360",
+    "Angkor spherical panorama"
+   ]
+  ],
+  [
+   "دیوار چین",
+   "چین",
+   [
+    "Great Wall of China 360",
+    "Mutianyu 360"
+   ]
+  ],
+  [
+   "تاج محل",
+   "هند",
+   [
+    "Taj Mahal 360",
+    "Taj Mahal spherical"
+   ]
+  ],
+  [
+   "میدان تایمز",
+   "نیویورک",
+   [
+    "Times Square 360",
+    "Times Square spherical panorama"
+   ]
+  ],
+  [
+   "استون‌هنج",
+   "انگلستان",
+   [
+    "Stonehenge 360",
+    "Stonehenge spherical"
+   ]
+  ],
+  [
+   "موزهٔ تاریخ طبیعی",
+   "اسکلت دایناسورها",
+   [
+    "Naturalis Biodiversity Center Panorama 360 3D",
+    "museum skeletons 360 panorama"
+   ]
+  ],
+  [
+   "ایستگاه فضایی",
+   "مدار زمین",
+   [
+    "International Space Station 360",
+    "ISS spherical panorama"
+   ]
+  ],
+  [
+   "سطح مریخ",
+   "تصاویر مریخ‌نورد",
+   [
+    "Mars rover 360 panorama",
+    "Curiosity 360 panorama Mars"
+   ]
+  ]
+ ]
+}

@@ -56,7 +56,7 @@ footer{margin-top:28px;font-size:12px;color:var(--muted);line-height:1.8}
   <div class="top"><a class="hub" href="../index.html">→ همهٔ بازی‌ها</a><button class="btn vr" id="bVR" type="button" disabled>ورود به VR</button></div>
   <h1>سفر <span>۳۶۰</span></h1>
   <p class="lede">وسط میدان نقش جهان بایست، از پلکان تخت جمشید بالا برو یا زیر برج ایفل به آسمان نگاه کن. هر مکان یک یا چند عکس کروی ۳۶۰ درجه دارد که در هدست دورتادورت را می‌گیرد.</p>
-  <p class="note">عکس‌ها همان لحظه از ویکی‌مدیا کامنز جستجو می‌شوند و فقط عکس‌های با مجوز آزاد (CC0، CC BY، CC BY-SA و مالکیت عمومی) نمایش داده می‌شوند. نام عکاس و مجوز هر عکس پایین تصویر می‌آید. ممکن است برای بعضی مکان‌ها عکس ۳۶۰ درجهٔ آزادی پیدا نشود.</p>
+  <p class="note">اگر عکس‌ها با <a href="../tools/fetch-images.php" style="color:inherit">ابزار بارگذاری تصاویر</a> روی همین سایت ذخیره شده باشند، از همین‌جا می‌آیند؛ وگرنه همان لحظه از ویکی‌مدیا کامنز جستجو می‌شوند و فقط عکس‌های با مجوز آزاد (CC0، CC BY، CC BY-SA و مالکیت عمومی) نمایش داده می‌شوند. نام عکاس و مجوز هر عکس پایین تصویر می‌آید. ممکن است برای بعضی مکان‌ها عکس ۳۶۰ درجهٔ آزادی پیدا نشود.</p>
   <div class="controls">
     <div class="tabs" role="tablist"><button class="btn on" id="tIran" role="tab" type="button">ایران</button><button class="btn" id="tWorld" role="tab" type="button">جهان</button></div>
     <form class="search" id="sForm"><input id="sq" type="search" placeholder="جستجوی هر جا، به انگلیسی بهتر است: Kandovan" aria-label="جستجوی مکان"><button class="btn" type="submit">بگرد</button></form>
@@ -140,6 +140,12 @@ const WORLD = [
 const FREE = /(^|\b)(cc0|cc[ -]by(?![- ]?n[cd])|cc[ -]by[- ]sa|public domain|pd[- ]|no restrictions|attribution)/i, NONFREE = /(-nc|-nd| nc| nd|noncommercial|noderiv|fair use)/i;
 const cache = new Map();
 function stripHtml(h){ const d = document.createElement('div'); d.innerHTML = h || ''; return (d.textContent || '').replace(/\s+/g,' ').trim(); }
+let localMan;
+async function localPanos(name){
+  if (localMan === undefined){ try { const r = await fetch('pano/manifest.json', {cache:'no-cache'}); localMan = r.ok ? await r.json() : null; } catch(e){ localMan = null; } }
+  const list = localMan && localMan.places && localMan.places[name] || [];
+  return list.map(it => ({title:it.title, src:it.file, page:it.page, artist:it.artist, license:it.license, licenseUrl:it.licenseUrl}));
+}
 let lastStats = null;
 async function apiGet(params){
   const r = await fetch(API + '?format=json&formatversion=2&origin=*&' + params);
@@ -160,7 +166,7 @@ async function searchPanos(queries){
     for (let b = 0; b < titles.length; b += 20){
       let cont = '', guard = 0;
       do {
-        const ij = await apiGet('action=query&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiurlwidth=4096&iiextmetadatafilter=LicenseShortName|Artist|LicenseUrl|ObjectName&titles=' + encodeURIComponent(titles.slice(b, b+20).join('|')) + cont);
+        const ij = await apiGet('action=query&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiurlwidth=3840&iiextmetadatafilter=LicenseShortName|Artist|LicenseUrl|ObjectName&titles=' + encodeURIComponent(titles.slice(b, b+20).join('|')) + cont);
         for (const p of ((ij.query && ij.query.pages) || [])){
           const ii = p.imageinfo && p.imageinfo[0]; if (!ii) continue;
           const ratio = ii.width/ii.height;
@@ -216,6 +222,8 @@ async function openPlace(p){
   state = {place:p, list:[], i:0, loadingTok:state.loadingTok + 1}; const tok = state.loadingTok;
   $('#vtitle').textContent = p[0]; $('#vcount').textContent = ''; $('#vattr').textContent = ''; sphereMat.map = null; sphereMat.color.setHex(0x222222); sphereMat.needsUpdate = true;
   msg('در حال جستجوی عکس‌های ۳۶۰ درجهٔ آزاد…'); menuOpen = false;
+  const local = await localPanos(p[0]); if (tok !== state.loadingTok) return;
+  if (local.length){ state.list = local; show(0); return; }
   try { const qs = p[2].concat([p[2][0].replace(/ 360$/,'') + ' spherical', p[2][0].replace(/ 360$/,'') + ' equirectangular', p[2][0].replace(/ 360$/,'')]); const list = await searchPanos([...new Set(qs)]); if (tok !== state.loadingTok) return; state.list = list;
     if (!list.length){ msg('برای «' + p[0] + '» عکس ۳۶۰ درجه با مجوز آزاد پیدا نشد. ' + statsText()); menuOpen = true; return; }
     show(0);
