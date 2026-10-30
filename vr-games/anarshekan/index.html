@@ -666,8 +666,8 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), .05); clockT += dt;
   ambience();
   if (mode==='desk'){ placeDesk(); updBlade(deskBlade, dt); }
-  if (mode==='vr' && state!=='play') for (const s of blades){ const gp = s.src && s.src.gamepad; if (gp && gp.buttons[5] && gp.buttons[5].pressed){ location.href = '../index.html'; break; } }
   else if (mode==='vr'){ for (const s of blades) if (s.active) updBlade(s, dt); }
+  if (mode==='vr' && state!=='play') for (const s of blades){ const gp = s.src && s.src.gamepad; if (gp && gp.buttons[5] && gp.buttons[5].pressed){ location.href = '../index.html'; break; } }
   if (state==='play') updatePlay(dt); else updateMenu(dt);
   updateFx(dt);
   renderer.render(scene, camera);

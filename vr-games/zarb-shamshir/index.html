@@ -696,8 +696,8 @@ renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), .05); clockT += dt;
   pump();
   if (mode==='desk'){ placeDesk(); updSaber(deskSaber, dt); }
-  if (mode==='vr' && state!=='play') for (const s of sabers){ const gp = s.src && s.src.gamepad; if (gp && gp.buttons[5] && gp.buttons[5].pressed){ location.href = '../index.html'; break; } }
   else if (mode==='vr'){ for (const s of sabers) if (s.active) updSaber(s, dt); }
+  if (mode==='vr' && state!=='play') for (const s of sabers){ const gp = s.src && s.src.gamepad; if (gp && gp.buttons[5] && gp.buttons[5].pressed){ location.href = '../index.html'; break; } }
   updateEnv(dt);
   if (state==='play') updatePlay(dt); else updateMenu(dt);
   updateFx(dt);
