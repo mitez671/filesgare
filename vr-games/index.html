@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>بازی‌خانهٔ کوئست</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
+<style>
+/* Layout: one column of category sections; each holds a wrapping grid of game tiles. Dark arcade-hall look by choice. */
+:root{
+  --bg:#0c0b14; --surface:#16141f; --surface2:#1d1a29; --ink:#f1edff; --muted:#a49fbe; --line:rgba(255,255,255,.1);
+  --display:"Lalezar","Vazirmatn",Tahoma,sans-serif; --body:"Vazirmatn",Tahoma,"Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body)}
+.wrap{max-width:1080px;margin:0 auto;padding-block:calc(28px + env(safe-area-inset-top,0px)) calc(40px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{display:grid;gap:10px;margin-bottom:28px}
+.eyebrow{margin:0;color:var(--muted);font-size:13px}
+h1{margin:0;font:400 clamp(44px,10vw,80px)/1.05 var(--display);text-wrap:balance}
+h1 span{color:#ff4d6d}
+.lede{margin:0;max-width:62ch;line-height:1.9;font-size:15.5px}
+.tip{margin:6px 0 0;max-width:70ch;font-size:13.5px;line-height:1.8;color:var(--muted);border-right:3px solid #ffd23f;padding-right:10px}
+section{margin-top:30px}
+h2{margin:0 0 12px;font:400 26px/1.2 var(--display);color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+a.game{display:grid;grid-template-columns:52px 1fr;gap:14px;align-items:start;text-decoration:none;color:inherit;background:var(--surface);
+  border:1px solid var(--line);border-radius:16px;padding:16px;transition:background .15s,border-color .15s,transform .15s;min-width:0}
+a.game:hover{background:var(--surface2);border-color:var(--c);transform:translateY(-2px)}
+a.game:focus-visible{outline:2px solid var(--c);outline-offset:3px}
+.glyph{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font:400 30px/1 var(--display);color:var(--c);
+  background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+.game h3{margin:2px 0 4px;font:400 22px/1.25 var(--display);color:var(--ink)}
+.game p{margin:0;font-size:13.5px;line-height:1.7;color:var(--muted)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{font-size:11.5px;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);border-radius:999px;padding:2px 9px}
+footer{margin-top:36px;color:var(--muted);font-size:12.5px;line-height:1.8}
+@media (prefers-reduced-motion:reduce){a.game{transition:none}a.game:hover{transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="eyebrow">۱۵ بازی WebXR برای Meta Quest 3S · بدون نصب، مستقیم در مرورگر</p>
+    <h1>بازی‌خانهٔ <span>کوئست</span></h1>
+    <p class="lede">هر بازی را در مرورگر کوئست باز کن و «ورود به واقعیت مجازی» را بزن. همه با کنترلرها کار می‌کنند و روی کامپیوتر هم با موس قابل تمرین‌اند.</p>
+    <p class="tip">قبل از بازی‌های پرتحرک مثل بوکس، شمشیرزنی و دروازه‌بانی، محدودهٔ ایمنی (Guardian) را در حالت ایستاده و با حداقل ۲×۲ متر جای خالی تنظیم کن.</p>
+  </header>
+
+  <section>
+    <h2>ریتمی و موسیقی</h2>
+    <div class="grid">
+      <a class="game" href="zarb-shamshir/" style="--c:#19b3ff"><span class="glyph">ض</span><div><h3>ضرب‌شمشیر</h3><p>مکعب‌ها را با ضرب آهنگ و در جهت فلش با شمشیر نوری بشکاف.</p><div class="tags"><span class="tag">دو شمشیر</span><span class="tag">۳ سطح سختی</span></div></div></a>
+      <a class="game" href="boxing/" style="--c:#ff4d4d"><span class="glyph">م</span><div><h3>ضرب‌مشت</h3><p>بوکس ریتمی: مشت بزن، زیر میله خم شو و از دیوار جاخالی بده.</p><div class="tags"><span class="tag">ورزشی</span><span class="tag">آسان و سخت</span></div></div></a>
+      <a class="game" href="drums/" style="--c:#3bffb0"><span class="glyph">ط</span><div><h3>طبل‌زن</h3><p>ست درام کامل. وقتی حلقهٔ سبز بسته شد، روی طبل بکوب.</p><div class="tags"><span class="tag">۷ طبل و سنج</span><span class="tag">حالت آزاد</span></div></div></a>
+      <a class="game" href="santur/" style="--c:#ffd27a"><span class="glyph">س</span><div><h3>سنتورزن</h3><p>سنتور کوک‌شده در شور با ربع‌پرده‌های واقعی. آزاد بنواز یا درس بگیر.</p><div class="tags"><span class="tag">دو مضراب</span><span class="tag">۳ درس</span></div></div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>ورزشی</h2>
+    <div class="grid">
+      <a class="game" href="goalkeeper/" style="--c:#c8ff3c"><span class="glyph">د</span><div><h3>دروازه‌بان</h3><p>زیر تیر دروازه بایست و شوت‌های پیچ‌دار را مهار کن.</p><div class="tags"><span class="tag">پنالتی</span><span class="tag">بقا</span></div></div></a>
+      <a class="game" href="breaker/" style="--c:#ff5ccf"><span class="glyph">آ</span><div><h3>دیوارشکن</h3><p>با راکت توپ را به دیوار آجری بزن و همهٔ آجرها را بشکن.</p><div class="tags"><span class="tag">مرحله‌ای</span><span class="tag">۹۰ ثانیه</span></div></div></a>
+      <a class="game" href="anarshekan/" style="--c:#ffb000"><span class="glyph">ا</span><div><h3>انارشکن</h3><p>میوه‌ها را در یک باغ ایرانی شبانه، در هوا ببُر و به بمب دست نزن.</p><div class="tags"><span class="tag">کلاسیک</span><span class="tag">زمان‌دار</span></div></div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>تیراندازی و نبرد</h2>
+    <div class="grid">
+      <a class="game" href="archery/" style="--c:#ffd23f"><span class="glyph">ک</span><div><h3>کمان‌دار</h3><p>زه را بکش و به هدف‌های نزدیک، دور و روی برج قلعه بزن.</p><div class="tags"><span class="tag">۱۰ تیر</span><span class="tag">شکار</span></div></div></a>
+      <a class="game" href="castle/" style="--c:#ff9a3c"><span class="glyph">ژ</span><div><h3>دژبان</h3><p>از بالای دیوار قلعه سنگ پرتاب کن و موج‌های دشمن را عقب بزن.</p><div class="tags"><span class="tag">پرتاب</span><span class="tag">موج‌به‌موج</span></div></div></a>
+      <a class="game" href="balloons/" style="--c:#ff3b5c"><span class="glyph">ب</span><div><h3>بادکنک‌باز</h3><p>با دو تفنگ لیزری بادکنک‌های چادر شهربازی را بترکان.</p><div class="tags"><span class="tag">دو تفنگ</span><span class="tag">۶۰ ثانیه</span></div></div></a>
+      <a class="game" href="robot/" style="--c:#29e0ff"><span class="glyph">ر</span><div><h3>دوئل با ربات</h3><p>ضربهٔ ربات را دفع کن تا هسته‌اش باز شود، بعد بزنش.</p><div class="tags"><span class="tag">شمشیرزنی</span><span class="tag">آسان و سخت</span></div></div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>فکری و آرام</h2>
+    <div class="grid">
+      <a class="game" href="tower/" style="--c:#ffb347"><span class="glyph">ج</span><div><h3>برج‌ساز</h3><p>با فیزیک واقعی آجر بچین. در حالت زلزله، فقط برج محکم می‌ماند.</p><div class="tags"><span class="tag">فیزیک</span><span class="tag">زلزله</span></div></div></a>
+      <a class="game" href="rubik/" style="--c:#ffd51c"><span class="glyph">ق</span><div><h3>روبیک غول‌پیکر</h3><p>مکعب روبیک به اندازهٔ صندلی. لایه‌ها را بچرخان و حلش کن.</p><div class="tags"><span class="tag">۳×۳</span><span class="tag">رکورد زمان</span></div></div></a>
+      <a class="game" href="zen/" style="--c:#c9e2a0"><span class="glyph">ذ</span><div><h3>باغ ذن</h3><p>روی شن شیار بکش، سنگ بچین و با گوی نور آرام نفس بکش.</p><div class="tags"><span class="tag">آرامش</span><span class="tag">تنفس</span></div></div></a>
+    </div>
+  </section>
+
+  <section>
+    <h2>پرهیجان</h2>
+    <div class="grid">
+      <a class="game" href="plank/" style="--c:#ffcc00"><span class="glyph">ل</span><div><h3>لبهٔ آسمان</h3><p>روی تختهٔ باریکی در ارتفاع ۲۰۰ متری راه برو و گربه را نجات بده.</p><div class="tags"><span class="tag">ترس از ارتفاع</span><span class="tag">راه رفتن واقعی</span></div></div></a>
+    </div>
+  </section>
+
+  <footer>همهٔ صداها و مدل‌ها با کد ساخته شده‌اند و هیچ فایل خارجی جز کتابخانهٔ three.js لازم نیست. بهترین امتیاز هر بازی در همان مرورگر ذخیره می‌شود.</footer>
+</div>
+</body>
+</html>

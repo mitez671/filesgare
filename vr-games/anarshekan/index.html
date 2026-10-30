@@ -1,0 +1,718 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>انارشکن</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Noto+Nastaliq+Urdu:wght@700&family=Vazirmatn:wght@400;600;800&display=swap">
+<style>
+/* Layout: full-bleed WebGL night garden; one RTL lobby card over it. Single dark look by choice: lapis night, saffron + pomegranate accents. */
+:root{
+  --bg:#0a1626; --ink:#f4ecdc; --muted:#a9b6c8; --saffron:#ffb000; --anar:#d7263d; --firuze:#2ec4b6; --lapis:#13315c;
+  --panel:rgba(9,20,38,.8); --line:rgba(46,196,182,.35);
+  --nastaliq:"Noto Nastaliq Urdu","Vazirmatn",Tahoma,serif;
+  --display:"Lalezar","Vazirmatn",Tahoma,sans-serif;
+  --body:"Vazirmatn",Tahoma,"Segoe UI",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden}
+#stage{position:fixed;inset:0}
+#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#overlay{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;
+  padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background:radial-gradient(90% 60% at 50% 0%,rgba(255,176,0,.12),transparent 60%),rgba(10,22,38,.62);
+  backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.card{width:100%;max-width:540px;display:flex;flex-direction:column;gap:16px;text-align:right}
+.eyebrow{margin:0;color:var(--muted);font-size:13px}
+.logo{margin:0;font-family:var(--nastaliq);font-weight:700;font-size:clamp(54px,15vw,92px);line-height:1.9;color:var(--saffron);
+  text-shadow:0 0 22px rgba(255,176,0,.45)}
+.logo .a{color:var(--anar);text-shadow:0 0 22px rgba(215,38,61,.55)}
+.lede{margin:0;font-size:16px;line-height:1.9;max-width:62ch}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:600 16px/1 var(--body);color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:12px;
+  padding:15px 20px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s}
+.btn:hover{border-color:var(--firuze);background:rgba(46,196,182,.1)}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible{outline:2px solid var(--saffron);outline-offset:3px}
+.btn.primary{background:var(--saffron);border-color:var(--saffron);color:#1b1206;font-weight:800;box-shadow:0 0 22px rgba(255,176,0,.35)}
+.btn[disabled]{opacity:.38;cursor:not-allowed;box-shadow:none}
+.note{margin:0;font-size:13.5px;line-height:1.8;color:var(--muted);border-right:3px solid var(--firuze);padding-right:10px}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mode{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.mode h3{margin:0;font:400 24px/1.2 var(--display)}
+.mode h3.c{color:var(--anar)} .mode h3.t{color:var(--saffron)}
+.mode p{margin:0;font-size:13.5px;line-height:1.75;color:var(--muted)}
+.mode b{color:var(--ink);font-weight:600}
+@media (max-width:420px){.modes{grid-template-columns:1fr}}
+.foot{margin:0;font-size:12px;color:var(--muted)}
+#btnMenu{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));
+  font:600 14px/1 var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer}
+#deskHint{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);
+  font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center;direction:rtl;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
+
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="overlay" dir="rtl">
+  <main class="card">
+    <a href="../index.html" style="align-self:flex-start;color:#a9a3cc;text-decoration:none;font-size:14px;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 14px">→ همهٔ بازی‌ها</a>
+    <p class="eyebrow">بازی میوه‌بُری واقعیت مجازی · ساخته‌شده برای Meta Quest 3S</p>
+    <h1 class="logo"><span class="a">انار</span>شکن</h1>
+    <p class="lede">شب است و باغ پر از میوه. میوه‌ها از پشت حوض به هوا پرت می‌شوند. با دو شمشیر در هوا ببُرشان و به بمب‌ها دست نزن.</p>
+    <div class="actions">
+      <button id="btnVR" class="btn primary" disabled>ورود به واقعیت مجازی</button>
+      <button id="btnDesk" class="btn">تمرین با موس یا لمس</button>
+    </div>
+    <p id="xrNote" class="note">در حال بررسی پشتیبانی WebXR…</p>
+    <div class="modes">
+      <section class="mode"><h3 class="c">کلاسیک</h3><p><b>سه جان</b> داری. هر میوه‌ای که بیفتد یک جان می‌گیرد و بمب بازی را تمام می‌کند. هندوانه را بزن تا شروع شود.</p></section>
+      <section class="mode"><h3 class="t">زمان‌دار</h3><p><b>۶۰ ثانیه</b> برای بیشترین امتیاز. بمب ۱۰ امتیاز کم می‌کند. انار را بزن تا شروع شود.</p></section>
+    </div>
+    <p class="foot">هر میوه ۱ امتیاز، انار ۳ امتیاز · بُریدن ۳ میوه یا بیشتر در یک ضربه امتیاز ترکیبی دارد</p>
+  </main>
+</div>
+
+<button id="btnMenu" hidden>منو</button>
+<div id="deskHint" hidden>موس یا انگشت را سریع روی میوه‌ها بکش · کلید ۱ کلاسیک، کلید ۲ زمان‌دار</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+const fa = n => Math.round(n).toLocaleString('fa-IR');
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rand = (a,b) => a + Math.random()*(b-a);
+
+const G = 7, WALL_Z = -4.6, HIT_Z = -1.3, ARCADE_LEN = 60;
+const AMBER = 0xffb000, FIRUZE = 0x2ec4b6, BG = 0x0a1626;
+
+/* ---------- renderer ---------- */
+const renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.xr.enabled = true;
+renderer.xr.setReferenceSpaceType('local-floor');
+$('#stage').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(BG);
+scene.fog = new THREE.Fog(BG, 7, 34);
+const camera = new THREE.PerspectiveCamera(62, innerWidth/innerHeight, 0.05, 140);
+function resetCamera(){ camera.position.set(0,1.5,1.2); camera.quaternion.identity(); camera.lookAt(0,1.35,-2); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); }
+resetCamera();
+addEventListener('resize', () => { if (renderer.xr.isPresenting) return; renderer.setSize(innerWidth, innerHeight); resetCamera(); });
+
+scene.add(new THREE.HemisphereLight(0x9fc6ff, 0x1a1020, 0.75));
+const moon = new THREE.DirectionalLight(0xc9dcff, 0.65); moon.position.set(-3,6,3); scene.add(moon);
+const lamp = new THREE.PointLight(0xffb35c, 1.3, 7, 1.6); lamp.position.set(0,2.6,-1.6); scene.add(lamp);
+
+/* ---------- canvas helpers ---------- */
+function cv(w,h,draw){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; }
+function rr(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); }
+const basic = (c, o={}) => new THREE.MeshBasicMaterial(Object.assign({color:c}, o));
+
+/* ---------- environment: night Persian garden ---------- */
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(200,200), basic(0x0c1712)); ground.rotation.x = -Math.PI/2; scene.add(ground);
+// stone platform & path
+const stone = new THREE.MeshLambertMaterial({color:0x5d5446});
+const plat = new THREE.Mesh(new THREE.BoxGeometry(2.2,.04,2.2), stone); plat.position.set(0,.02,0); scene.add(plat);
+// reflecting pool
+const poolRim = new THREE.Mesh(new THREE.BoxGeometry(3.4,.16,2.9), stone); poolRim.position.set(0,.08,-3.05); scene.add(poolRim);
+const water = new THREE.Mesh(new THREE.PlaneGeometry(3.1,2.6), new THREE.MeshPhongMaterial({color:0x0b2a3c, emissive:0x05131d, specular:0x9fc6ff, shininess:120}));
+water.rotation.x = -Math.PI/2; water.position.set(0,.165,-3.05); scene.add(water);
+// tiled wall with iwan arch
+const wallTex = cv(1024,384,(x,w,h) => {
+  x.fillStyle = '#13315c'; x.fillRect(0,0,w,h);
+  const s = 48;
+  for (let gy=0; gy<h/s+1; gy++) for (let gx=0; gx<w/s+1; gx++){
+    const cx = gx*s + (gy%2 ? s/2 : 0), cy = gy*s;
+    x.save(); x.translate(cx,cy);
+    for (const r of [0, Math.PI/4]){ x.save(); x.rotate(r); x.fillStyle = 'rgba(46,196,182,.55)'; x.fillRect(-11,-11,22,22); x.restore(); }
+    x.beginPath(); x.arc(0,0,4,0,Math.PI*2); x.fillStyle = '#f4ecdc'; x.fill();
+    x.restore();
+  }
+  // borders
+  x.fillStyle = '#c9a24a'; x.fillRect(0,0,w,10); x.fillRect(0,h-10,w,10);
+  x.fillStyle = '#0d2446'; x.fillRect(0,10,w,24); x.fillRect(0,h-34,w,24);
+  // arch
+  const ax = w/2, aw = 230, top = 70, base = h-34;
+  x.beginPath(); x.moveTo(ax-aw/2, base); x.lineTo(ax-aw/2, 190);
+  x.quadraticCurveTo(ax-aw/2, top+30, ax, top); x.quadraticCurveTo(ax+aw/2, top+30, ax+aw/2, 190); x.lineTo(ax+aw/2, base); x.closePath();
+  x.fillStyle = '#081428'; x.fill(); x.lineWidth = 12; x.strokeStyle = '#c9a24a'; x.stroke();
+  x.lineWidth = 3; x.strokeStyle = 'rgba(46,196,182,.8)'; x.stroke();
+});
+const wall = new THREE.Mesh(new THREE.PlaneGeometry(12,4.5), new THREE.MeshLambertMaterial({map:wallTex}));
+wall.position.set(0,2.25,WALL_Z); scene.add(wall);
+const coping = new THREE.Mesh(new THREE.BoxGeometry(12.3,.18,.3), stone); coping.position.set(0,4.55,WALL_Z); scene.add(coping);
+// cypress trees
+const cypMat = new THREE.MeshLambertMaterial({color:0x0f2a1c});
+const cypGeo = new THREE.ConeGeometry(.55,5.5,8);
+[[-4.2,-3.8],[4.2,-3.8],[-6.5,-2.5],[6.5,-2.5],[-5.6,-6.5],[5.6,-6.5]].forEach(([x,z],i) => { const c = new THREE.Mesh(cypGeo, cypMat); c.position.set(x,2.75,z); c.scale.setScalar(.85 + (i%3)*.12); scene.add(c); });
+// lanterns
+const lanternMat = basic(0xffc46b);
+const postMat = new THREE.MeshLambertMaterial({color:0x2b241c});
+const lanterns = [];
+[[-2.1,-1.7],[2.1,-1.7],[-2.1,-4.2],[2.1,-4.2]].forEach(([x,z]) => {
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(.03,.04,1.4,6), postMat); p.position.set(x,.7,z); scene.add(p);
+  const l = new THREE.Mesh(new THREE.BoxGeometry(.18,.24,.18), lanternMat); l.position.set(x,1.52,z); scene.add(l); lanterns.push(l);
+});
+// stars + moon
+(function(){
+  const n = 380, pos = new Float32Array(n*3);
+  for (let i=0;i<n;i++){ const th = Math.random()*Math.PI*2, ph = rand(.08, 1.2); const r = 70; pos[i*3] = Math.cos(th)*Math.cos(ph)*r; pos[i*3+1] = Math.sin(ph)*r; pos[i*3+2] = Math.sin(th)*Math.cos(ph)*r; }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({color:0xdfe8ff, size:.22, fog:false})));
+  const mt = cv(256,256,(x) => { const gr = x.createRadialGradient(128,128,0,128,128,128); gr.addColorStop(0,'rgba(255,247,225,1)'); gr.addColorStop(.28,'rgba(255,240,210,1)'); gr.addColorStop(.32,'rgba(255,220,170,.35)'); gr.addColorStop(1,'rgba(0,0,0,0)'); x.fillStyle = gr; x.fillRect(0,0,256,256); });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(12,12), new THREE.MeshBasicMaterial({map:mt, transparent:true, depthWrite:false, fog:false, blending:THREE.AdditiveBlending}));
+  m.position.set(-14,20,-48); m.lookAt(0,1.5,0); scene.add(m);
+})();
+// bomb flash sphere
+const flash = new THREE.Mesh(new THREE.SphereGeometry(6,16,12), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.BackSide, transparent:true, opacity:0, depthTest:false, depthWrite:false, fog:false}));
+flash.position.set(0,1.5,0); flash.renderOrder = 20; flash.visible = false; scene.add(flash);
+
+/* ---------- fruit textures ---------- */
+function skin(base, fn){ return cv(256,128,(x,w,h) => { x.fillStyle = base; x.fillRect(0,0,w,h); fn && fn(x,w,h); }); }
+function speck(x,w,h,col,n,r){ x.fillStyle = col; for (let i=0;i<n;i++){ x.beginPath(); x.arc(Math.random()*w, Math.random()*h, Math.random()*r+.5, 0, Math.PI*2); x.fill(); } }
+function inner(fn){ return cv(256,256,(x) => fn(x)); }
+function disc(x,r,c){ x.beginPath(); x.arc(128,128,r,0,Math.PI*2); x.fillStyle = c; x.fill(); }
+function segments(x,n,r,line){ x.strokeStyle = line; x.lineWidth = 3; for (let i=0;i<n;i++){ const a = i/n*Math.PI*2; x.beginPath(); x.moveTo(128,128); x.lineTo(128+Math.cos(a)*r, 128+Math.sin(a)*r); x.stroke(); } }
+
+const TEX = {
+  watermelon: [skin('#1f6b2a', (x,w,h) => { x.fillStyle = '#0e3f17'; for (let i=0;i<12;i++){ const cx = i*w/12; x.beginPath(); x.moveTo(cx,0); for (let y=0;y<=h;y+=8) x.lineTo(cx + Math.sin(y*.18+i)*5, y); for (let y=h;y>=0;y-=8) x.lineTo(cx + 9 + Math.sin(y*.18+i+1)*5, y); x.fill(); } }),
+    inner(x => { disc(x,128,'#1f6b2a'); disc(x,119,'#e9f5d2'); disc(x,110,'#ff3355'); x.fillStyle = '#1b0f0f'; for (let i=0;i<14;i++){ const a = i/14*Math.PI*2, r = 58 + (i%2)*18; x.save(); x.translate(128+Math.cos(a)*r, 128+Math.sin(a)*r); x.rotate(a); x.beginPath(); x.ellipse(0,0,7,4,0,0,Math.PI*2); x.fill(); x.restore(); } })],
+  orange: [skin('#ff8a1c', (x,w,h) => speck(x,w,h,'rgba(200,90,10,.6)',300,1.6)),
+    inner(x => { disc(x,128,'#ff8a1c'); disc(x,118,'#fff2d6'); disc(x,110,'#ffa431'); segments(x,10,110,'#fff2d6'); disc(x,12,'#fff2d6'); })],
+  apple: [skin('#c8102e', (x,w,h) => { const g = x.createLinearGradient(0,0,0,h); g.addColorStop(0,'rgba(255,200,80,.0)'); g.addColorStop(.5,'rgba(255,200,80,.25)'); g.addColorStop(1,'rgba(90,0,10,.4)'); x.fillStyle = g; x.fillRect(0,0,w,h); speck(x,w,h,'rgba(255,230,180,.5)',140,1.2); }),
+    inner(x => { disc(x,128,'#c8102e'); disc(x,121,'#fbf1cf'); x.strokeStyle = 'rgba(160,120,60,.5)'; x.lineWidth = 3; x.beginPath(); for (let i=0;i<=10;i++){ const a = i/10*Math.PI*2 - Math.PI/2, r = i%2 ? 18 : 42; i ? x.lineTo(128+Math.cos(a)*r,128+Math.sin(a)*r) : x.moveTo(128+Math.cos(a)*r,128+Math.sin(a)*r); } x.stroke(); x.fillStyle = '#4a2a12'; for (let i=0;i<5;i++){ const a = i/5*Math.PI*2 - Math.PI/2; x.beginPath(); x.ellipse(128+Math.cos(a)*28,128+Math.sin(a)*28,4,8,a,0,Math.PI*2); x.fill(); } })],
+  lemon: [skin('#ffe23a', (x,w,h) => speck(x,w,h,'rgba(200,170,10,.5)',260,1.4)),
+    inner(x => { disc(x,128,'#ffe23a'); disc(x,118,'#fffbe0'); disc(x,110,'#fff07a'); segments(x,9,110,'#fffbe0'); disc(x,10,'#fffbe0'); })],
+  kiwi: [skin('#7a5a32', (x,w,h) => speck(x,w,h,'rgba(60,40,20,.7)',500,1.1)),
+    inner(x => { disc(x,128,'#7a5a32'); disc(x,122,'#6fbf3a'); disc(x,70,'#a7dd6a'); x.fillStyle = '#111'; for (let i=0;i<34;i++){ const a = i/34*Math.PI*2, r = 52 + (i%3)*5; x.beginPath(); x.ellipse(128+Math.cos(a)*r,128+Math.sin(a)*r,2.5,5,a,0,Math.PI*2); x.fill(); } x.fillStyle = '#f2f7d8'; x.beginPath(); x.ellipse(128,128,30,22,0,0,Math.PI*2); x.fill(); })],
+  peach: [skin('#ffa25e', (x,w,h) => { const g = x.createLinearGradient(0,0,w,0); g.addColorStop(0,'rgba(230,60,70,.55)'); g.addColorStop(.5,'rgba(230,60,70,0)'); g.addColorStop(1,'rgba(230,60,70,.55)'); x.fillStyle = g; x.fillRect(0,0,w,h); }),
+    inner(x => { disc(x,128,'#f27a50'); disc(x,122,'#ffc15e'); const g = x.createRadialGradient(128,128,20,128,128,90); g.addColorStop(0,'rgba(220,60,40,.8)'); g.addColorStop(1,'rgba(220,60,40,0)'); x.fillStyle = g; x.beginPath(); x.arc(128,128,90,0,Math.PI*2); x.fill(); x.fillStyle = '#6b3a1c'; x.beginPath(); x.ellipse(128,128,30,40,0,0,Math.PI*2); x.fill(); })],
+  pomegranate: [skin('#9e0f24', (x,w,h) => { speck(x,w,h,'rgba(255,120,90,.35)',80,6); speck(x,w,h,'rgba(60,0,10,.4)',120,3); }),
+    inner(x => { disc(x,128,'#7d0a1c'); disc(x,120,'#f7e3c4'); for (let i=0;i<150;i++){ const a = Math.random()*Math.PI*2, r = Math.sqrt(Math.random())*108; const px = 128+Math.cos(a)*r, py = 128+Math.sin(a)*r; x.beginPath(); x.arc(px,py,6,0,Math.PI*2); x.fillStyle = '#c8102e'; x.fill(); x.beginPath(); x.arc(px-2,py-2,2,0,Math.PI*2); x.fillStyle = 'rgba(255,200,210,.8)'; x.fill(); } })],
+};
+function fruitMat(t){ return new THREE.MeshStandardMaterial({map:t, emissiveMap:t, emissive:0xffffff, emissiveIntensity:.28, roughness:.5}); }
+const leafMat = new THREE.MeshStandardMaterial({color:0x3f9a3a, emissive:0x1b4a18, roughness:.6, side:THREE.DoubleSide});
+const stemMat = new THREE.MeshStandardMaterial({color:0x4a2e18, roughness:.8});
+const leafGeo = (() => { const s = new THREE.Shape(); s.moveTo(0,0); s.quadraticCurveTo(.035,.03,0,.075); s.quadraticCurveTo(-.035,.03,0,0); return new THREE.ShapeGeometry(s); })();
+const stemGeo = new THREE.CylinderGeometry(.006,.008,.05,5);
+const crownGeo = new THREE.CylinderGeometry(.034,.02,.04,6,1,true);
+
+const FRUITS = [
+  {key:'watermelon', s:[.2,.165,.165], juice:0xff3355, w:1.0, pts:1},
+  {key:'orange',     s:[.085,.085,.085], juice:0xff9a1f, w:1.2, pts:1, leaf:true},
+  {key:'apple',      s:[.08,.074,.08], juice:0xfff0b0, w:1.2, pts:1, stem:true, leaf:true},
+  {key:'lemon',      s:[.085,.065,.065], juice:0xfff35a, w:1.0, pts:1},
+  {key:'kiwi',       s:[.075,.064,.064], juice:0x9be15d, w:1.0, pts:1},
+  {key:'peach',      s:[.08,.08,.08], juice:0xffb36b, w:1.0, pts:1, leaf:true},
+  {key:'pomegranate',s:[.092,.088,.092], juice:0xc8102e, w:.55, pts:3, crown:true},
+];
+FRUITS.forEach(f => { f.skin = fruitMat(TEX[f.key][0]); f.inner = fruitMat(TEX[f.key][1]); f.inner.emissiveIntensity = .4; f.r = Math.max(...f.s); });
+const FW = FRUITS.reduce((a,f) => a + f.w, 0);
+const pickFruit = () => { let r = Math.random()*FW; for (const f of FRUITS){ r -= f.w; if (r <= 0) return f; } return FRUITS[0]; };
+
+const sphereGeo = new THREE.SphereGeometry(1,24,16);
+const hemiGeo = new THREE.SphereGeometry(1,20,10,0,Math.PI*2,0,Math.PI/2);
+const capGeo = new THREE.CircleGeometry(1,28); capGeo.rotateX(Math.PI/2);
+
+function buildFruit(def){
+  const root = new THREE.Group();
+  const body = new THREE.Mesh(sphereGeo, def.skin); body.scale.set(...def.s); root.add(body);
+  const top = def.s[1];
+  if (def.stem){ const st = new THREE.Mesh(stemGeo, stemMat); st.position.y = top + .015; root.add(st); }
+  if (def.leaf){ const lf = new THREE.Mesh(leafGeo, leafMat); lf.position.set(.004, top - .004, 0); lf.rotation.set(-.4,0,-.9); root.add(lf); }
+  if (def.crown){ const cr = new THREE.Mesh(crownGeo, def.skin); cr.position.y = top + .012; root.add(cr); }
+  return root;
+}
+const fruitPools = {}; FRUITS.forEach(f => fruitPools[f.key] = []);
+function getFruitMesh(def){ const m = fruitPools[def.key].pop() || buildFruit(def); m.visible = true; if (!m.parent) scene.add(m); return m; }
+
+// bomb
+const bombBodyMat = new THREE.MeshStandardMaterial({color:0x151518, emissive:0xff2020, emissiveIntensity:0, roughness:.3, metalness:.6});
+function buildBomb(){
+  const g = new THREE.Group();
+  const b = new THREE.Mesh(new THREE.SphereGeometry(.1,20,14), bombBodyMat); g.add(b);
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(.03,.035,.03,10), new THREE.MeshStandardMaterial({color:0x6b6b70, metalness:.8, roughness:.3})); cap.position.y = .105; g.add(cap);
+  const fuse = new THREE.Mesh(new THREE.CylinderGeometry(.006,.006,.07,5), stemMat); fuse.position.set(.012,.15,0); fuse.rotation.z = -.35; g.add(fuse);
+  return g;
+}
+const bombPool = [];
+const getBomb = () => { const m = bombPool.pop() || (() => { const b = buildBomb(); scene.add(b); return b; })(); m.visible = true; return m; };
+
+/* ---------- halves, juice, splats ---------- */
+const halves = [];
+for (let i=0;i<36;i++){
+  const g = new THREE.Group(); const o = new THREE.Mesh(hemiGeo, FRUITS[0].skin); const c = new THREE.Mesh(capGeo, FRUITS[0].inner);
+  g.add(o); g.add(c); g.visible = false; scene.add(g); halves.push({g,o,c,vel:V(),spin:V(),life:0});
+}
+let halfIdx = 0; const _q = new THREE.Quaternion(), _up = V(0,1,0);
+function spawnHalf(def, pos, n, vel){
+  const h = halves[halfIdx++ % halves.length];
+  h.o.material = def.skin; h.c.material = def.inner;
+  h.o.scale.set(...def.s); h.c.scale.set(...def.s);
+  h.g.position.copy(pos).addScaledVector(n, .01);
+  h.g.quaternion.setFromUnitVectors(_up, n);
+  h.vel.copy(vel).addScaledVector(n, 1.1); h.vel.y += .4;
+  h.spin.set(rand(-3,3), rand(-3,3), rand(-3,3));
+  h.life = 2.4; h.g.visible = true;
+}
+
+const PN = 500;
+const pPos = new Float32Array(PN*3), pCol = new Float32Array(PN*3), pBase = new Float32Array(PN*3), pVel = new Float32Array(PN*3), pLife = new Float32Array(PN), pMax = new Float32Array(PN), pGrav = new Float32Array(PN);
+for (let i=0;i<PN;i++) pPos[i*3+1] = -99;
+const pGeo = new THREE.BufferGeometry();
+pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pCol,3));
+const points = new THREE.Points(pGeo, new THREE.PointsMaterial({size:.04, vertexColors:true, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false}));
+points.frustumCulled = false; scene.add(points);
+let pIdx = 0; const _col = new THREE.Color();
+function emit(pos, hex, n, power, life=.7, grav=1){
+  _col.setHex(hex);
+  for (let k=0;k<n;k++){
+    const i = pIdx++ % PN;
+    pPos[i*3] = pos.x; pPos[i*3+1] = pos.y; pPos[i*3+2] = pos.z;
+    const th = Math.random()*Math.PI*2, ph = Math.random()*Math.PI, sp = power*rand(.3,1);
+    pVel[i*3] = Math.cos(th)*Math.sin(ph)*sp; pVel[i*3+1] = Math.cos(ph)*sp + .6*grav; pVel[i*3+2] = Math.sin(th)*Math.sin(ph)*sp;
+    pBase[i*3] = _col.r; pBase[i*3+1] = _col.g; pBase[i*3+2] = _col.b;
+    pLife[i] = pMax[i] = life*rand(.6,1.1);
+    pGrav[i] = grav;
+  }
+}
+
+const splatTex = cv(128,128,(x) => { x.fillStyle = '#fff'; x.beginPath(); x.arc(64,64,34,0,Math.PI*2); x.fill(); for (let i=0;i<11;i++){ const a = Math.random()*Math.PI*2, r = rand(36,56), s = rand(4,11); x.beginPath(); x.arc(64+Math.cos(a)*r, 64+Math.sin(a)*r, s, 0, Math.PI*2); x.fill(); x.beginPath(); x.moveTo(64,64); x.lineTo(64+Math.cos(a-.12)*r, 64+Math.sin(a-.12)*r); x.lineTo(64+Math.cos(a+.12)*r, 64+Math.sin(a+.12)*r); x.fill(); } });
+const splats = [];
+for (let i=0;i<18;i++){ const m = new THREE.Mesh(new THREE.PlaneGeometry(1,1), new THREE.MeshBasicMaterial({map:splatTex, transparent:true, depthWrite:false, opacity:0})); m.visible = false; m.renderOrder = 2; scene.add(m); splats.push({m,life:0}); }
+let splatIdx = 0;
+function splat(def, pos){
+  const s = splats[splatIdx++ % splats.length];
+  s.m.material.color.setHex(def.juice);
+  s.m.position.set(clamp(pos.x*2.2, -5.5, 5.5), clamp(pos.y*1.4 + .2, .5, 4.2), WALL_Z + .02 + splatIdx*.0004);
+  s.m.rotation.z = Math.random()*Math.PI*2; s.m.scale.setScalar(def.r*7*rand(.8,1.3));
+  s.life = 5; s.m.visible = true;
+}
+
+// popups
+const popups = [];
+for (let i=0;i<10;i++){
+  const c = document.createElement('canvas'); c.width = 320; c.height = 96; const tex = new THREE.CanvasTexture(c);
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(.6,.18), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, fog:false}));
+  m.visible = false; m.renderOrder = 8; scene.add(m); popups.push({c,x:c.getContext('2d'),tex,m,life:0});
+}
+let popIdx = 0;
+function popup(text, color, pos, big){
+  const p = popups[popIdx++ % popups.length], x = p.x;
+  x.clearRect(0,0,320,96); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = `400 ${big ? 62 : 70}px Lalezar, Vazirmatn, sans-serif`; x.lineWidth = 8; x.strokeStyle = 'rgba(10,22,38,.85)'; x.strokeText(text,160,52); x.fillStyle = color; x.fillText(text,160,52);
+  p.tex.needsUpdate = true; p.m.position.set(pos.x, pos.y + .2, pos.z + .05); p.m.scale.setScalar(big ? 1.3 : 1); p.m.material.opacity = 1; p.life = big ? 1.1 : .75; p.m.visible = true;
+}
+
+/* ---------- blades ---------- */
+function makeTrail(hex){
+  const N = 12; const pos = new Float32Array(N*6), col = new Float32Array(N*6), c = new THREE.Color(hex), idx = [];
+  for (let i=0;i<N;i++){ const k = Math.pow(1-i/(N-1),1.5)*.6; for (let j=0;j<2;j++){ const kk = j ? k : k*.25; col[i*6+j*3] = c.r*kk; col[i*6+j*3+1] = c.g*kk; col[i*6+j*3+2] = c.b*kk; } }
+  for (let i=0;i<N-1;i++){ const a = i*2; idx.push(a,a+1,a+2, a+1,a+3,a+2); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos,3)); geo.setAttribute('color', new THREE.BufferAttribute(col,3)); geo.setIndex(idx);
+  const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({vertexColors:true, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide, fog:false}));
+  mesh.frustumCulled = false; mesh.visible = false; scene.add(mesh);
+  return {mesh,pos,N,geo,init:false};
+}
+const bladeMat = new THREE.MeshPhongMaterial({color:0xcfd6e6, specular:0xffffff, shininess:90, emissive:0x2a3040});
+function makeBlade(hex, hand){
+  const g = new THREE.Group();
+  const grip = new THREE.Mesh(new THREE.CylinderGeometry(.017,.017,.22,8), new THREE.MeshStandardMaterial({color:0x2a1a14, roughness:.9})); grip.rotation.x = Math.PI/2; grip.position.z = .03; g.add(grip);
+  const tsuba = new THREE.Mesh(new THREE.CylinderGeometry(.042,.042,.01,16), new THREE.MeshStandardMaterial({color:0xc9a24a, metalness:.7, roughness:.35})); tsuba.rotation.x = Math.PI/2; tsuba.position.z = -.085; g.add(tsuba);
+  const blade = new THREE.Mesh(new THREE.BoxGeometry(.007,.032,.92), bladeMat); blade.position.z = -.55; g.add(blade);
+  const edge = new THREE.Mesh(new THREE.BoxGeometry(.003,.006,.92), new THREE.MeshBasicMaterial({color:hex, transparent:true, opacity:.9, blending:THREE.AdditiveBlending})); edge.position.set(0,-.017,-.55); g.add(edge);
+  return {group:g, hex, hand, base:V(), tip:V(), prevBase:V(), prevTip:V(), vel:V(), speed:0, init:false, active:false, src:null, ctrl:null, trail:makeTrail(hex), swing:0, swingHits:0, lastHit:V(), whooshAt:0};
+}
+const blades = [makeBlade(AMBER,0), makeBlade(FIRUZE,1)];
+const deskBlade = makeBlade(AMBER,1); deskBlade.group.visible = false; scene.add(deskBlade.group);
+
+for (let i=0;i<2;i++){
+  const c = renderer.xr.getController(i); scene.add(c);
+  c.addEventListener('connected', e => {
+    const hd = e.data && e.data.handedness; const hand = hd==='left' ? 0 : hd==='right' ? 1 : i;
+    const s = blades[hand]; if (s.ctrl && s.ctrl !== c) s.ctrl.remove(s.group);
+    c.add(s.group); s.ctrl = c; s.src = e.data; s.active = true; s.init = false; s.trail.init = false;
+  });
+  c.addEventListener('disconnected', () => { for (const s of blades) if (s.ctrl === c){ c.remove(s.group); s.active = false; s.ctrl = null; s.src = null; s.trail.mesh.visible = false; } });
+}
+function buzz(s, amt, ms){ try { const h = s.src && s.src.gamepad && s.src.gamepad.hapticActuators && s.src.gamepad.hapticActuators[0]; if (h && h.pulse) h.pulse(amt, ms); } catch(e){} }
+
+const _v = V(), _ab = V(), _ap = V(), _c = V(), _a = V(), _b = V(), _n = V(), _d = V();
+function updBlade(s, dt){
+  s.prevBase.copy(s.base); s.prevTip.copy(s.tip);
+  s.group.updateWorldMatrix(true,false);
+  s.base.set(0,0,-.1).applyMatrix4(s.group.matrixWorld);
+  s.tip.set(0,0,-1.01).applyMatrix4(s.group.matrixWorld);
+  if (!s.init){ s.prevBase.copy(s.base); s.prevTip.copy(s.tip); s.vel.set(0,0,0); s.init = true; }
+  _v.subVectors(s.tip, s.prevTip).divideScalar(Math.max(dt,1e-3)); s.vel.lerp(_v,.55); s.speed = s.vel.length();
+  const t = s.trail; t.mesh.visible = true;
+  if (!t.init){ for (let i=0;i<t.N;i++){ s.base.toArray(t.pos,i*6); s.tip.toArray(t.pos,i*6+3); } t.init = true; }
+  t.pos.copyWithin(6,0,(t.N-1)*6); s.base.toArray(t.pos,0); s.tip.toArray(t.pos,3);
+  t.geo.attributes.position.needsUpdate = true;
+  // swing tracking (combos + whoosh)
+  if (s.speed > 2.2){
+    if (!s.swing){ s.swing = 1; s.swingHits = 0; if (clockT - s.whooshAt > .25 && s.speed > 3){ sfxWhoosh(s.speed); s.whooshAt = clockT; } }
+  } else if (s.swing && s.speed < 1.2){
+    s.swing = 0;
+    if (s.swingHits >= 3 && state==='play'){ const b = s.swingHits; score += b; hudDirty = true; maxCombo = Math.max(maxCombo, b); popup('ترکیب ' + fa(b) + ' میوه  +' + fa(b), '#ffb000', s.lastHit, true); sfxCombo(b); buzz(s,1,90); }
+    s.swingHits = 0;
+  }
+}
+function segDist(p,a,b){ _ab.subVectors(b,a); const t = clamp(_ap.subVectors(p,a).dot(_ab)/Math.max(_ab.lengthSq(),1e-6),0,1); return _c.copy(a).addScaledVector(_ab,t).distanceTo(p); }
+function sweptDist(p,s){ let m = 1e9; for (let k=0;k<=3;k++){ const f = k/3; _a.lerpVectors(s.prevBase,s.base,f); _b.lerpVectors(s.prevTip,s.tip,f); m = Math.min(m, segDist(p,_a,_b)); } return m; }
+function cutNormal(s){ _d.subVectors(s.tip, s.base).normalize(); _n.crossVectors(_d, s.vel); if (_n.lengthSq() < 1e-6) _n.set(1,0,0); return _n.normalize(); }
+
+// desktop pointer blade
+const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(.15,-.1), hitPlane = new THREE.Plane(V(0,0,1), -HIT_Z), _P = V(), SHOULDER = V(.3,1.05,.5);
+function placeDesk(){
+  ray.setFromCamera(ndc, camera);
+  if (!ray.ray.intersectPlane(hitPlane,_P)) return;
+  const dir = _v.subVectors(_P, SHOULDER).normalize();
+  const g = deskBlade.group; g.position.copy(_P).addScaledVector(dir,-.75);
+  g.lookAt(_c.copy(g.position).sub(dir));
+}
+renderer.domElement.addEventListener('pointermove', e => { const r = renderer.domElement.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1); });
+renderer.domElement.addEventListener('pointerdown', e => { ensureAudio(); renderer.domElement.setPointerCapture && renderer.domElement.setPointerCapture(e.pointerId); });
+
+/* ---------- audio ---------- */
+let actx = null, master, sfxBus, ambBus, noiseBuf;
+function ensureAudio(){
+  if (!actx){
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = actx.createDynamicsCompressor(); comp.threshold.value = -12; comp.ratio.value = 4; comp.connect(actx.destination);
+    master = actx.createGain(); master.gain.value = .9; master.connect(comp);
+    sfxBus = actx.createGain(); sfxBus.gain.value = .8; sfxBus.connect(master);
+    ambBus = actx.createGain(); ambBus.gain.value = .55; ambBus.connect(master);
+    noiseBuf = actx.createBuffer(1, actx.sampleRate, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    // drone D + A
+    [73.42, 110].forEach((f,i) => { const o = actx.createOscillator(), g = actx.createGain(), lp = actx.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = f; o.detune.value = i ? 4 : -4; lp.type = 'lowpass'; lp.frequency.value = 320; g.gain.value = .045; o.connect(lp); lp.connect(g); g.connect(ambBus); o.start(); });
+  }
+  if (actx.state === 'suspended') actx.resume();
+}
+const mtof = m => 440*Math.pow(2,(m-69)/12);
+function env(g,t,peak,dec){ g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(peak,t+.004); g.gain.exponentialRampToValueAtTime(.0001,t+dec); }
+function noise(t,dur){ const s = actx.createBufferSource(); s.buffer = noiseBuf; s.start(t); s.stop(t+dur); return s; }
+function pluck(m, v=.12){ const t = actx.currentTime; [1,2.01,3.02].forEach((h,i) => { const o = actx.createOscillator(), g = actx.createGain(); o.type = i ? 'sine' : 'triangle'; o.frequency.value = mtof(m)*h; env(g,t,v/(i*1.6+1), 1.4 - i*.4); o.connect(g); g.connect(ambBus); o.start(t); o.stop(t+1.5); }); }
+const SHUR = [62,63,65,67,69,70,72,74,75,77];
+let melIdx = 3, nextNote = 0, nextCricket = 0;
+function ambience(){
+  if (!actx) return; const t = actx.currentTime;
+  if (t > nextNote){ nextNote = t + (Math.random() < .3 ? .25 : .55); if (Math.random() < .7){ melIdx = clamp(melIdx + Math.round(rand(-2,2)), 0, SHUR.length-1); pluck(SHUR[melIdx], .09); if (Math.random() < .2) pluck(SHUR[melIdx]-12, .06); } }
+  if (t > nextCricket){ nextCricket = t + rand(.3,1.2); for (let k=0;k<3;k++){ const o = actx.createOscillator(), g = actx.createGain(), s = t + k*.045; o.frequency.value = 4600 + rand(-200,200); env(g,s,.012,.03); o.connect(g); g.connect(ambBus); o.start(s); o.stop(s+.05); } }
+}
+function sfxWhoosh(sp){ if (!actx) return; const t = actx.currentTime, s = noise(t,.3), f = actx.createBiquadFilter(), g = actx.createGain(); f.type = 'bandpass'; f.Q.value = 1.5; f.frequency.setValueAtTime(600,t); f.frequency.exponentialRampToValueAtTime(2600,t+.2); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(clamp(sp/12,.05,.3),t+.06); g.gain.exponentialRampToValueAtTime(.0001,t+.25); s.connect(f); f.connect(g); g.connect(sfxBus); }
+function sfxSlice(){ if (!actx) return; const t = actx.currentTime;
+  const s = noise(t,.25), f = actx.createBiquadFilter(), g = actx.createGain(); f.type = 'bandpass'; f.Q.value = 2; f.frequency.setValueAtTime(3800,t); f.frequency.exponentialRampToValueAtTime(700,t+.18); env(g,t,.55,.2); s.connect(f); f.connect(g); g.connect(sfxBus);
+  const o = actx.createOscillator(), g2 = actx.createGain(); o.frequency.setValueAtTime(220,t); o.frequency.exponentialRampToValueAtTime(90,t+.12); env(g2,t,.35,.14); o.connect(g2); g2.connect(sfxBus); o.start(t); o.stop(t+.2); }
+function sfxLaunch(){ if (!actx) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.frequency.setValueAtTime(140,t); o.frequency.exponentialRampToValueAtTime(320,t+.09); env(g,t,.18,.12); o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t+.15); }
+function sfxBomb(){ if (!actx) return; const t = actx.currentTime; const o = actx.createOscillator(), g = actx.createGain(); o.frequency.setValueAtTime(110,t); o.frequency.exponentialRampToValueAtTime(25,t+.6); env(g,t,1,.9); o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t+1);
+  const s = noise(t,1), f = actx.createBiquadFilter(), g2 = actx.createGain(); f.type = 'lowpass'; f.frequency.setValueAtTime(3000,t); f.frequency.exponentialRampToValueAtTime(200,t+.8); env(g2,t,.8,.9); s.connect(f); f.connect(g2); g2.connect(sfxBus); }
+function sfxLose(){ if (!actx) return; const t = actx.currentTime, o = actx.createOscillator(), g = actx.createGain(); o.type = 'square'; o.frequency.setValueAtTime(330,t); o.frequency.setValueAtTime(247,t+.12); env(g,t,.09,.3); o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t+.35); }
+function sfxCombo(n){ if (!actx) return; for (let i=0;i<Math.min(n,6);i++){ const t = actx.currentTime + i*.06, o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; o.frequency.value = mtof(SHUR[i+3]+12); env(g,t,.12,.25); o.connect(g); g.connect(sfxBus); o.start(t); o.stop(t+.3); } }
+
+/* ---------- HUD panels ---------- */
+function panel(w,h,worldW){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldW*h/w), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, fog:false}));
+  m.renderOrder = 5; scene.add(m); return {c,x,tex,m};
+}
+function panelBg(p){ const {x,c} = p; x.clearRect(0,0,c.width,c.height); rr(x,6,6,c.width-12,c.height-12,28); x.fillStyle = 'rgba(9,20,38,.72)'; x.fill(); x.lineWidth = 4; x.strokeStyle = 'rgba(201,162,74,.75)'; x.stroke(); x.direction = 'rtl'; x.textBaseline = 'alphabetic'; }
+const hudL = panel(512,320,1.05); hudL.m.position.set(-1.55,2.05,-2.4); hudL.m.rotation.y = .4;
+const hudR = panel(512,320,1.05); hudR.m.position.set(1.55,2.05,-2.4); hudR.m.rotation.y = -.4;
+const titleP = panel(1024,420,2.5); titleP.m.position.set(0,2.75,-3.6);
+const resP = panel(1024,560,2.3); resP.m.position.set(0,2.65,-3.6);
+
+let best = {classic:0, arcade:0};
+try { best.classic = +localStorage.getItem('anarshekan-classic') || 0; best.arcade = +localStorage.getItem('anarshekan-arcade') || 0; } catch(e){}
+function saveBest(){ try { localStorage.setItem('anarshekan-' + gameMode, String(best[gameMode])); } catch(e){} }
+
+/* ---------- game state ---------- */
+let mode = 'none', state = 'menu', gameMode = 'classic';
+let items = [], pending = [], score = 0, lives = 3, sliced = 0, maxCombo = 0, gameT = 0, nextWave = 0, endReason = '', newBest = false;
+let hudDirty = true, hudTick = 0, menuReadyAt = 0, clockT = 0, flashT = 0;
+
+const MODES = {classic:{name:'کلاسیک', col:'#d7263d'}, arcade:{name:'زمان‌دار', col:'#ffb000'}};
+const menuItems = [
+  {key:'classic', def:FRUITS[0], x:.42, label:'کلاسیک', col:'#ff5a6e'},
+  {key:'arcade',  def:FRUITS[6], x:-.42, label:'زمان‌دار', col:'#ffb000'},
+].map(m => {
+  const g = buildFruit(m.def); g.scale.setScalar(m.def.key==='watermelon' ? 1.1 : 1.8); g.position.set(m.x,1.35,-1.25); scene.add(g);
+  const lab = panel(320,110,.6); lab.m.position.set(m.x,1.72,-1.25);
+  lab.draw = () => { const x = lab.x; x.clearRect(0,0,320,110); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '400 66px Lalezar, Vazirmatn, sans-serif'; x.lineWidth = 8; x.strokeStyle = 'rgba(10,22,38,.85)'; x.strokeText(m.label,160,58); x.fillStyle = m.col; x.fillText(m.label,160,58); lab.tex.needsUpdate = true; };
+  lab.draw();
+  return Object.assign(m, {g, lab, base:g.position.clone(), radius: m.def.r * (m.def.key==='watermelon' ? 1.1 : 1.8)});
+});
+
+function drawTitle(){
+  const p = titleP, {x,c} = p; x.clearRect(0,0,c.width,c.height); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle';
+  x.font = '700 130px "Noto Nastaliq Urdu", Vazirmatn, serif'; x.shadowColor = 'rgba(255,176,0,.7)'; x.shadowBlur = 26;
+  x.fillStyle = '#ffb000'; x.fillText('انارشکن', 512, 160); x.shadowBlur = 0;
+  x.font = '600 40px Vazirmatn, Tahoma, sans-serif'; x.fillStyle = '#f4ecdc'; x.fillText('هندوانه برای کلاسیک، انار برای زمان‌دار؛ ببُرش تا شروع شود', 512, 340);
+  p.tex.needsUpdate = true;
+}
+function xMark(x,cx,cy,s,col){ x.save(); x.translate(cx,cy); x.rotate(Math.PI/4); x.fillStyle = col; rr(x,-s/2,-s*.11,s,s*.22,s*.08); x.fill(); rr(x,-s*.11,-s/2,s*.22,s,s*.08); x.fill(); x.restore(); }
+function drawHud(){
+  { const p = hudL, {x} = p; panelBg(p);
+    x.textAlign = 'right'; x.fillStyle = '#a9b6c8'; x.font = '600 34px Vazirmatn, Tahoma, sans-serif'; x.fillText('امتیاز', 476, 66);
+    x.textAlign = 'left'; x.fillStyle = MODES[gameMode].col; x.fillText(MODES[gameMode].name, 36, 66);
+    x.textAlign = 'right'; x.fillStyle = '#ffffff'; x.font = '400 128px Lalezar, Vazirmatn, sans-serif'; x.fillText(fa(score), 476, 205);
+    x.fillStyle = '#c9a24a'; x.font = '600 34px Vazirmatn, Tahoma, sans-serif'; x.fillText('بهترین ' + fa(Math.max(best[gameMode], score)), 476, 270);
+    p.tex.needsUpdate = true; }
+  { const p = hudR, {x} = p; panelBg(p);
+    if (gameMode === 'classic'){
+      x.textAlign = 'right'; x.fillStyle = '#a9b6c8'; x.font = '600 34px Vazirmatn, Tahoma, sans-serif'; x.fillText('جان', 476, 66);
+      for (let i=0;i<3;i++){ const lost = i >= lives; xMark(x, 380 - i*120, 175, lost ? 92 : 84, lost ? '#d7263d' : 'rgba(255,255,255,.18)'); }
+      x.fillStyle = '#a9b6c8'; x.font = '600 30px Vazirmatn, Tahoma, sans-serif'; x.fillText('میوهٔ بُریده ' + fa(sliced), 476, 280);
+    } else {
+      const left = Math.max(0, Math.ceil(ARCADE_LEN - gameT));
+      x.textAlign = 'right'; x.fillStyle = '#a9b6c8'; x.font = '600 34px Vazirmatn, Tahoma, sans-serif'; x.fillText('زمان', 476, 66);
+      x.fillStyle = left <= 10 ? '#ff5a6e' : '#ffffff'; x.font = '400 128px Lalezar, Vazirmatn, sans-serif'; x.fillText(fa(left), 476, 205);
+      rr(x,36,250,440,20,10); x.fillStyle = 'rgba(255,255,255,.12)'; x.fill();
+      const w = Math.max(20, 440*left/ARCADE_LEN); rr(x,36+440-w,250,w,20,10); x.fillStyle = left <= 10 ? '#d7263d' : '#ffb000'; x.fill();
+    }
+    p.tex.needsUpdate = true; }
+}
+function drawResults(){
+  const p = resP, {x} = p; panelBg(p);
+  const title = endReason==='bomb' ? 'بمب منفجر شد!' : endReason==='lives' ? 'سه میوه از دستت افتاد' : 'وقت تمام شد';
+  x.textAlign = 'right'; x.fillStyle = endReason==='time' ? '#ffb000' : '#ff5a6e'; x.font = '400 72px Lalezar, Vazirmatn, sans-serif'; x.fillText(title, 960, 112);
+  x.fillStyle = '#a9b6c8'; x.font = '600 34px Vazirmatn, Tahoma, sans-serif'; x.fillText('حالت ' + MODES[gameMode].name, 960, 166);
+  const rows = [['بهترین امتیاز', fa(best[gameMode])], ['میوه‌های بُریده', fa(sliced)], ['بزرگ‌ترین ترکیب', maxCombo >= 3 ? fa(maxCombo) + ' میوه' : '—']];
+  rows.forEach(([k,v],i) => { const y = 262 + i*74; x.textAlign = 'right'; x.fillStyle = '#a9b6c8'; x.font = '600 38px Vazirmatn, Tahoma, sans-serif'; x.fillText(k, 960, y); x.fillStyle = '#ffffff'; x.font = '800 44px Vazirmatn, Tahoma, sans-serif'; x.fillText(v, 600, y); });
+  x.textAlign = 'center'; x.fillStyle = '#a9b6c8'; x.font = '600 32px Vazirmatn, Tahoma, sans-serif'; x.fillText('امتیاز', 240, 200);
+  x.font = '400 190px Lalezar, Vazirmatn, sans-serif'; x.fillStyle = '#ffffff'; x.shadowColor = 'rgba(255,176,0,.7)'; x.shadowBlur = 24; x.fillText(fa(score), 240, 380); x.shadowBlur = 0;
+  if (newBest){ rr(x,140,420,200,52,26); x.fillStyle = '#ffb000'; x.fill(); x.fillStyle = '#1b1206'; x.font = '800 30px Vazirmatn, Tahoma, sans-serif'; x.fillText('رکورد تازه!', 240, 457); }
+  x.fillStyle = '#f4ecdc'; x.font = '600 32px Vazirmatn, Tahoma, sans-serif'; x.fillText('برای بازی دوباره، یکی از میوه‌ها را ببُر', 512, 526);
+  p.tex.needsUpdate = true;
+}
+
+function setState(s){
+  state = s;
+  hudL.m.visible = hudR.m.visible = s==='play' || s==='over';
+  titleP.m.visible = s==='menu';
+  resP.m.visible = s==='over';
+  menuReadyAt = clockT + (s==='over' ? 1.6 : 0);
+  menuItems.forEach(m => { m.g.visible = false; m.lab.m.visible = false; });
+}
+function clearItems(){
+  for (const it of items){ it.mesh.visible = false; (it.bomb ? bombPool : fruitPools[it.def.key]).push(it.mesh); }
+  items = []; pending = [];
+}
+function startGame(gm){
+  ensureAudio(); gameMode = gm; clearItems();
+  score = 0; lives = 3; sliced = 0; maxCombo = 0; gameT = 0; nextWave = 1.2; newBest = false; endReason = '';
+  setState('play'); hudDirty = true;
+}
+function endGame(reason){
+  endReason = reason;
+  if (score > best[gameMode]){ best[gameMode] = score; newBest = true; saveBest(); }
+  drawHud(); drawResults(); setState('over');
+  setTimeout(() => { if (state==='over') clearItems(); }, 900);
+}
+function toMenu(){ clearItems(); setState('menu'); }
+
+function queueWave(){
+  const lvl = gameMode==='arcade' ? Math.min(1, gameT/40) : Math.min(1, gameT/100);
+  const count = 1 + Math.floor(Math.random()*(1.5 + lvl*4.2));
+  const pat = Math.random() < .45 ? 'burst' : Math.random() < .75 ? 'stagger' : 'fan';
+  const bombP = gameT < 8 ? 0 : (gameMode==='arcade' ? .12 : .06) + lvl*.16;
+  let bombs = 0;
+  for (let i=0;i<count;i++){
+    const isBomb = count > 1 && bombs < 1 + Math.floor(lvl*1.5) && Math.random() < bombP;
+    if (isBomb) bombs++;
+    let x0;
+    if (pat==='fan') x0 = (i - (count-1)/2) * (2.4/Math.max(count,2));
+    else x0 = rand(-1.3,1.3);
+    const delay = pat==='stagger' ? i*.24 : pat==='fan' ? i*.08 : rand(0,.06);
+    pending.push({at: gameT + delay, bomb:isBomb, x0});
+  }
+  if (count === 1 && gameT > 10 && Math.random() < bombP*.6) pending.push({at: gameT + .5, bomb:true, x0: rand(-1.2,1.2)});
+  const gap = (gameMode==='arcade' ? 2.0 : 2.5) - lvl*1.2;
+  nextWave = gameT + gap + (pat==='stagger' ? count*.24 : 0);
+}
+function launch(p){
+  const y0 = -.15, z0 = rand(-2.1,-1.6), apex = rand(1.35,2.15);
+  const vy = Math.sqrt(2*G*(apex - y0)), tA = vy/G;
+  const tx = p.x0*.35 + rand(-.35,.35);
+  const vel = V((tx - p.x0)/tA, vy, (-1.2 - z0)/tA*.85);
+  let it;
+  if (p.bomb){ it = {bomb:true, mesh:getBomb(), r:.1}; }
+  else { const def = pickFruit(); it = {bomb:false, def, mesh:getFruitMesh(def), r:def.r}; }
+  it.pos = V(p.x0, y0, z0); it.vel = vel; it.spin = V(rand(-2.5,2.5), rand(-2.5,2.5), rand(-2.5,2.5));
+  it.mesh.position.copy(it.pos); it.mesh.rotation.set(rand(0,6), rand(0,6), rand(0,6));
+  items.push(it); sfxLaunch();
+}
+
+function hitFruit(it, s){
+  const def = it.def, n = cutNormal(s);
+  spawnHalf(def, it.pos, n, it.vel); spawnHalf(def, it.pos, _v.copy(n).negate(), it.vel);
+  emit(it.pos, def.juice, 26, 2.2, .7);
+  splat(def, it.pos);
+  score += def.pts; sliced++; hudDirty = true;
+  s.swingHits++; s.lastHit.copy(it.pos);
+  if (def.pts > 1) popup('+' + fa(def.pts), '#ff5a6e', it.pos);
+  sfxSlice(); buzz(s, .6, 40);
+}
+function hitBomb(it, s){
+  emit(it.pos, 0xffb000, 60, 4, .9); emit(it.pos, 0xffffff, 30, 3, .5);
+  sfxBomb(); buzz(blades[0],1,250); buzz(blades[1],1,250); buzz(s,1,250);
+  flashT = .45; flash.visible = true;
+  if (gameMode==='classic'){ endGame('bomb'); }
+  else { score = Math.max(0, score - 10); hudDirty = true; popup('−۱۰', '#ff5a6e', it.pos, true); }
+}
+
+const activeBlades = () => mode==='desk' ? [deskBlade] : blades.filter(s => s.active);
+
+function updatePlay(dt){
+  gameT += dt;
+  if (gameMode==='arcade' && gameT >= ARCADE_LEN){ endGame('time'); return; }
+  if (gameT >= nextWave) queueWave();
+  for (let i = pending.length-1; i >= 0; i--) if (gameT >= pending[i].at){ launch(pending[i]); pending.splice(i,1); }
+  const bs = activeBlades(), desk = mode==='desk';
+  const pulse = .5 + .5*Math.sin(clockT*12);
+  bombBodyMat.emissiveIntensity = .15 + .45*pulse;
+  for (let i = items.length-1; i >= 0; i--){
+    const it = items[i];
+    it.vel.y -= G*dt; it.pos.addScaledVector(it.vel, dt);
+    it.mesh.position.copy(it.pos); it.mesh.rotation.x += it.spin.x*dt; it.mesh.rotation.y += it.spin.y*dt; it.mesh.rotation.z += it.spin.z*dt;
+    if (it.bomb && Math.random() < .7){ _a.set(.012,.19,0).applyEuler(it.mesh.rotation).add(it.pos); emit(_a, 0xffc46b, 1, .5, .3, .2); }
+    let gone = false;
+    if (it.pos.y > .3){
+      for (const s of bs){
+        if (s.speed < (desk ? 1.0 : 1.4)) continue;
+        if (sweptDist(it.pos, s) < it.r + .035){
+          if (it.bomb) hitBomb(it, s); else hitFruit(it, s);
+          gone = true; break;
+        }
+      }
+      if (state !== 'play'){ return; }
+    }
+    if (!gone && it.pos.y < -.25 && it.vel.y < 0){
+      gone = true;
+      if (!it.bomb && gameMode==='classic'){
+        lives--; hudDirty = true; sfxLose(); popup('×', '#ff5a6e', V(it.pos.x, .45, it.pos.z));
+        if (lives <= 0){ it.mesh.visible = false; fruitPools[it.def.key].push(it.mesh); items.splice(i,1); endGame('lives'); return; }
+      }
+    }
+    if (gone){ it.mesh.visible = false; (it.bomb ? bombPool : fruitPools[it.def.key]).push(it.mesh); items.splice(i,1); }
+  }
+  hudTick += dt;
+  if (hudDirty || hudTick > .25){ drawHud(); hudDirty = false; hudTick = 0; }
+}
+
+function updateMenu(dt){
+  const ready = (state==='menu' || state==='over') && clockT >= menuReadyAt;
+  menuItems.forEach((m,i) => {
+    m.g.visible = ready; m.lab.m.visible = ready;
+    if (!ready) return;
+    m.g.position.y = m.base.y + Math.sin(clockT*1.5 + i*2)*.05;
+    m.g.rotation.y += dt*.8; m.g.rotation.x = Math.sin(clockT*.7 + i)*.3;
+    for (const s of activeBlades()){
+      if (s.speed > 1.0 && sweptDist(m.g.position, s) < m.radius + .04){
+        const n = cutNormal(s), sc = m.radius / m.def.r;
+        const save = m.def.s; const scaled = save.map(v => v*sc);
+        const tmp = Object.assign({}, m.def, {s:scaled});
+        spawnHalf(tmp, m.g.position, n, V(0,0,0)); spawnHalf(tmp, m.g.position, _v.copy(n).negate(), V(0,0,0));
+        emit(m.g.position, m.def.juice, 40, 2.6, .8); splat(tmp, m.g.position);
+        ensureAudio(); sfxSlice(); buzz(s, .8, 60);
+        state = 'starting'; menuItems.forEach(mm => { mm.g.visible = false; mm.lab.m.visible = false; }); titleP.m.visible = false; resP.m.visible = false;
+        const gm = m.key; setTimeout(() => { if (state==='starting') startGame(gm); }, 700);
+        return;
+      }
+    }
+  });
+}
+
+function updateFx(dt){
+  for (const h of halves){
+    if (h.life <= 0) continue;
+    h.life -= dt; h.vel.y -= G*dt; h.g.position.addScaledVector(h.vel, dt);
+    h.g.rotation.x += h.spin.x*dt*.5; h.g.rotation.z += h.spin.z*dt*.5;
+    if (h.life <= 0 || h.g.position.y < -.5){ h.life = 0; h.g.visible = false; }
+  }
+  for (let i=0;i<PN;i++){
+    if (pLife[i] <= 0) continue;
+    pLife[i] -= dt;
+    if (pLife[i] <= 0){ pPos[i*3+1] = -99; pCol[i*3] = pCol[i*3+1] = pCol[i*3+2] = 0; continue; }
+    pVel[i*3+1] -= 6*pGrav[i]*dt;
+    pPos[i*3] += pVel[i*3]*dt; pPos[i*3+1] += pVel[i*3+1]*dt; pPos[i*3+2] += pVel[i*3+2]*dt;
+    const k = Math.min(1, pLife[i]/(pMax[i]*.6));
+    pCol[i*3] = pBase[i*3]*k; pCol[i*3+1] = pBase[i*3+1]*k; pCol[i*3+2] = pBase[i*3+2]*k;
+  }
+  pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
+  for (const s of splats){ if (s.life <= 0) continue; s.life -= dt; s.m.material.opacity = clamp(s.life/2.5,0,.85); if (s.life <= 0) s.m.visible = false; }
+  for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
+  if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/.45)*.85; if (flashT <= 0) flash.visible = false; }
+  const fl = .85 + .15*Math.sin(clockT*9) * Math.sin(clockT*3.3);
+  lamp.intensity = 1.3*fl; lanterns.forEach(l => l.material.color.setRGB(1*fl, .77*fl, .42*fl));
+}
+
+/* ---------- loop ---------- */
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), .05); clockT += dt;
+  ambience();
+  if (mode==='desk'){ placeDesk(); updBlade(deskBlade, dt); }
+  else if (mode==='vr'){ for (const s of blades) if (s.active) updBlade(s, dt); }
+  if (state==='play') updatePlay(dt); else updateMenu(dt);
+  updateFx(dt);
+  renderer.render(scene, camera);
+});
+
+/* ---------- UI ---------- */
+const overlay = $('#overlay'), btnVR = $('#btnVR'), btnDesk = $('#btnDesk'), btnMenu = $('#btnMenu'), hint = $('#deskHint'), note = $('#xrNote');
+const inFrame = (() => { try { return window.self !== window.top; } catch(e){ return true; } })();
+const showOverlay = () => { overlay.hidden = false; btnMenu.hidden = true; hint.hidden = true; };
+(async () => {
+  let ok = false;
+  try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){}
+  if (ok){ btnVR.disabled = false; note.textContent = 'هدست آماده است. دکمهٔ ورود را بزن و وسط سکوی سنگی بایست. دور و برت باید یک متر جا باشد.'; }
+  else if (navigator.xr && inFrame) note.textContent = 'این صفحه داخل یک قاب امن نمایش داده می‌شود و ورود به VR از داخل قاب ممکن نیست. نسخهٔ مستقل را مستقیم در مرورگر کوئست باز کن. تا آن موقع با موس تمرین کن.';
+  else note.textContent = 'این مرورگر از WebXR پشتیبانی نمی‌کند. صفحه را در مرورگر هدست کوئست باز کن. با موس یا لمس هم می‌توانی تمرین کنی.';
+})();
+btnVR.addEventListener('click', async () => {
+  ensureAudio();
+  try {
+    const session = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']});
+    await renderer.xr.setSession(session);
+    if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+    mode = 'vr'; deskBlade.group.visible = false; deskBlade.trail.mesh.visible = false; overlay.hidden = true; toMenu();
+    session.addEventListener('visibilitychange', () => { if (!actx) return; session.visibilityState === 'visible' ? actx.resume() : actx.suspend(); });
+    session.addEventListener('end', () => { mode = 'none'; toMenu(); blades.forEach(s => s.trail.mesh.visible = false); renderer.setSize(innerWidth, innerHeight); resetCamera(); showOverlay(); });
+  } catch(e){ note.textContent = 'ورود به VR انجام نشد: ' + (e && e.message ? e.message : e) + '. نسخهٔ مستقل را مستقیم در مرورگر کوئست باز کن.'; }
+});
+btnDesk.addEventListener('click', () => { ensureAudio(); mode = 'desk'; deskBlade.group.visible = true; deskBlade.init = false; deskBlade.trail.init = false; overlay.hidden = true; btnMenu.hidden = false; hint.hidden = false; toMenu(); });
+btnMenu.addEventListener('click', () => { toMenu(); mode = 'none'; deskBlade.group.visible = false; deskBlade.trail.mesh.visible = false; showOverlay(); });
+addEventListener('keydown', e => {
+  if (mode !== 'desk') return;
+  const k = {'1':'classic','۱':'classic','2':'arcade','۲':'arcade'}[e.key];
+  if (k && state !== 'play'){ ensureAudio(); startGame(k); }
+  if (e.key === 'Escape') btnMenu.click();
+});
+document.addEventListener('visibilitychange', () => { if (!actx || mode==='vr') return; document.hidden ? actx.suspend() : actx.resume(); });
+
+setState('menu'); drawTitle(); drawHud();
+Promise.all([
+  document.fonts.load('700 120px "Noto Nastaliq Urdu"', 'انارشکن'),
+  document.fonts.load('400 120px Lalezar', 'امتیاز ۱۲۳ کلاسیک زمان‌دار'),
+  document.fonts.load('600 34px Vazirmatn', 'امتیاز جان ۱۲۳'),
+  document.fonts.load('800 44px Vazirmatn', 'رکورد ۱۲۳'),
+]).catch(() => {}).then(() => { drawTitle(); drawHud(); menuItems.forEach(m => m.lab.draw()); });
+})();
+</script>
+
+</body>
+</html>
