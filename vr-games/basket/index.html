@@ -495,7 +495,7 @@ function update(dt){
 }
 // desktop: click throws toward the mouse point on the hoop plane
 function desk(K){
-  const H = K.R.holder; K.mouse.ray.setFromCamera(K.mouse.ndc, K.camera); H.position.copy(K.camera.position).addScaledVector(K.mouse.ray.ray.direction, .5).add(V(.12,-.15,0));
+  const H = K.R.holder; H.visible = false; K.mouse.ray.setFromCamera(K.mouse.ndc, K.camera); H.position.copy(K.camera.position).addScaledVector(K.mouse.ray.ray.direction, .5).add(V(.12,-.15,0));
   if (K.state === 'play' && K.R.down.trigger){
     const rw = rimWorld(), pl = new THREE.Plane(V(0,0,1), -rw.z), t = V(); if (!K.mouse.ray.ray.intersectPlane(pl, t)) return;
     const p0 = H.position.clone(), T = .95, v = t.clone().sub(p0).sub(V(0, -.5*G*T*T, 0)).divideScalar(T); v.x += rand(-.05,.05); throwBall(newBall(), p0, v);

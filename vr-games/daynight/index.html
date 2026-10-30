@@ -268,7 +268,7 @@ A.init = function(cfg){
   addEventListener('keyup', e => { A.keys[e.code] = false; });
   let deskHover = null;
   function deskStep(dt){
-    camera.position.set(0, 1.6, 0); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
+    camera.position.set(...(cfg.deskPos || [0, 1.6, 0])); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
     ray.setFromCamera(A.mouseNDC, camera); const hit = hitPick(ray.ray.origin, ray.ray.direction); const obj = hit && hit.object;
     if (deskHover !== obj){ if (deskHover && deskHover.userData.onHover) deskHover.userData.onHover(false); if (obj && obj.userData.onHover) obj.userData.onHover(true); deskHover = obj; el.style.cursor = obj ? 'pointer' : 'grab'; }
     if (cfg.move === 'none') return;
@@ -342,7 +342,7 @@ function refresh(){ const ms = Date.now() + off, [lat, lon] = sunDir(ms); mat.un
 function update(dt){ if (rate) off += dt*1000*rate; acc += dt; if (acc > (rate ? .05 : 1)){ acc = 0; refresh(); } if (A.mode !== 'vr') G.desk(dt); }
 const DATES = [['اول تابستان (۳۱ خرداد)', 5, 21], ['اول زمستان (۳۰ آذر)', 11, 21], ['اعتدال بهاری (نوروز)', 2, 20]];
 A.init({
-  id:'daynight', title:'روز و شب زمین', colors:{bg:'#020308', accent:'#ffd23f', accent2:'#5ab0ff'}, bg:0x020308, move:'none',
+  id:'daynight', deskPos:[0, 1.5, .75], title:'روز و شب زمین', colors:{bg:'#020308', accent:'#ffd23f', accent2:'#5ab0ff'}, bg:0x020308, move:'none',
   tagline:'کرهٔ زمین همان‌طور که همین لحظه از فضا دیده می‌شود: نیمی در روشنایی روز و نیمی در شب با چراغ‌های شهرها. ساعت تهران، توکیو، لندن و نیویورک را کنار هم ببین و زمان را جلو ببر تا چرخش زمین را تماشا کنی.',
   rules:['دکمهٔ پهلو را نگه دار و دست را تکان بده تا کره بچرخد؛ استیک راست بزرگ‌نمایی.','از منو زمان را تند کن یا روز اول تابستان و زمستان را ببین.'],
   deskRules:'کشیدن موس کره را می‌چرخاند و چرخ موس بزرگ‌نمایی می‌کند.',

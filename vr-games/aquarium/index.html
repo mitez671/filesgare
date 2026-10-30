@@ -268,7 +268,7 @@ A.init = function(cfg){
   addEventListener('keyup', e => { A.keys[e.code] = false; });
   let deskHover = null;
   function deskStep(dt){
-    camera.position.set(0, 1.6, 0); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
+    camera.position.set(...(cfg.deskPos || [0, 1.6, 0])); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
     ray.setFromCamera(A.mouseNDC, camera); const hit = hitPick(ray.ray.origin, ray.ray.direction); const obj = hit && hit.object;
     if (deskHover !== obj){ if (deskHover && deskHover.userData.onHover) deskHover.userData.onHover(false); if (obj && obj.userData.onHover) obj.userData.onHover(true); deskHover = obj; el.style.cursor = obj ? 'pointer' : 'grab'; }
     if (cfg.move === 'none') return;

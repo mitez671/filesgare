@@ -34,7 +34,11 @@ a.game:focus-visible{outline:2px solid var(--c);outline-offset:3px}
   background:color-mix(in srgb,var(--c) 14%,transparent);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
 .game h3{margin:2px 0 4px;font:400 22px/1.25 var(--display);color:var(--ink)}
 .game p{margin:0;font-size:13.5px;line-height:1.7;color:var(--muted)}
+.secnav{position:sticky;top:0;z-index:5;display:flex;flex-wrap:wrap;gap:6px;padding:10px 0;background:color-mix(in srgb,var(--bg,#0c0b14) 92%,transparent);backdrop-filter:blur(6px)}
+.secnav a{font-size:13px;color:inherit;text-decoration:none;border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 11px}
+.secnav a:hover{border-color:#ffc857}
 .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag.new{background:var(--c);color:#111;border-color:transparent;font-weight:700}
 .tag{font-size:11.5px;color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent);border-radius:999px;padding:2px 9px}
 .vrrow{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:4px}
 .vrbtn{font:800 16px/1 var(--body);color:#1d1404;background:#ffc857;border:0;border-radius:12px;padding:14px 20px;cursor:pointer}
@@ -49,14 +53,15 @@ footer{margin-top:36px;color:var(--muted);font-size:12.5px;line-height:1.8}
 <body>
 <div class="wrap">
   <header>
-    <p class="eyebrow">۱۵ بازی و چهار تجربهٔ کاوش WebXR برای Meta Quest 3S · بدون نصب، مستقیم در مرورگر</p>
+    <p class="eyebrow">۴۵ بازی و ۳۵ برنامهٔ کاوش و یادگیری WebXR برای Meta Quest 3S · بدون نصب، مستقیم در مرورگر</p>
     <h1>بازی‌خانهٔ <span>کوئست</span></h1>
     <p class="lede">هر بازی را در مرورگر کوئست باز کن و «ورود به واقعیت مجازی» را بزن. همه با کنترلرها کار می‌کنند و روی کامپیوتر هم با موس قابل تمرین‌اند.</p>
     <div class="vrrow"><button id="bVR" class="vrbtn" type="button" disabled>ورود به سالن VR</button><span id="vrNote" class="vrnote">در حال بررسی هدست…</span></div>
     <p class="tip">قبل از بازی‌های پرتحرک مثل بوکس، شمشیرزنی و دروازه‌بانی، محدودهٔ ایمنی (Guardian) را در حالت ایستاده و با حداقل ۲×۲ متر جای خالی تنظیم کن.</p>
   </header>
+  <nav class="secnav"><a href="#s0">کاوش</a><a href="#s1">فضا و زمین</a><a href="#s2">دنیای زنده</a><a href="#s3">هنر، شعر و سینما</a><a href="#s4">طبیعت و ماجراجویی</a><a href="#s5">یادگیری</a><a href="#s6">خلاقیت</a><a href="#s7">ریتمی و موسیقی</a><a href="#s8">ورزشی</a><a href="#s9">تیراندازی و نبرد</a><a href="#s10">فکری و آرام</a><a href="#s11">پرهیجان</a></nav>
 
-  <section>
+  <section id="s0">
     <h2>کاوش</h2>
     <div class="grid">
       <a class="game" href="map/" style="--c:#3fb6ff"><span class="glyph">ز</span><div><h3>زمین‌نما</h3><p>کرهٔ زمین را بچرخان، شهر را روی میز ببین و در خیابان‌هایش با ساختمان‌های سه‌بعدی قدم بزن.</p><div class="tags"><span class="tag">دادهٔ OpenStreetMap</span><span class="tag">جستجوی مکان</span></div></div></a>
@@ -67,52 +72,148 @@ footer{margin-top:36px;color:var(--muted);font-size:12.5px;line-height:1.8}
     </div>
   </section>
 
-  <section>
+  <section id="s1">
+    <h2>فضا و زمین</h2>
+    <div class="grid">
+      <a class="game" href="solar/" style="--c:#ffb84f"><span class="glyph">م</span><div><h3>منظومهٔ شمسی</h3><p>سفر در منظومهٔ شمسی در واقعیت مجازی: خورشید، هشت سیاره و ماه‌ها با اطلاعات فارسی.</p><div class="tags"><span class="tag">۸ سیاره</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="sky/" style="--c:#8fb7f0"><span class="glyph">آ</span><div><h3>آسمان شب</h3><p>رصدخانهٔ واقعیت مجازی: آسمان واقعی همین لحظه با ۳۲۰۰ ستاره و ۸۸ صورت فلکی با نام فارسی.</p><div class="tags"><span class="tag">آسمان واقعی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="galaxy/" style="--c:#ffcf8a"><span class="glyph">ک</span><div><h3>کهکشان راه شیری</h3><p>از بیرون به کهکشان خودمان نگاه کن، تا مرکزش پرواز کن و ببین خورشید کجای آن است.</p><div class="tags"><span class="tag">پرواز</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="moon/" style="--c:#d8d4cc"><span class="glyph">ق</span><div><h3>قدم زدن روی ماه</h3><p>کنار ماه‌نشین آپولو ۱۱ روی ماه راه برو، با جاذبهٔ یک‌ششم بپر و زمین را در آسمان سیاه ببین.</p><div class="tags"><span class="tag">آپولو ۱۱</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="mars/" style="--c:#ff7a3c"><span class="glyph">م</span><div><h3>مریخ</h3><p>روی خاک سرخ مریخ کنار مریخ‌نورد راه برو، هلی‌کوپتر کوچکش را ببین و غروب آبی مریخ را تماشا کن.</p><div class="tags"><span class="tag">مریخ‌نورد</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="iss/" style="--c:#9fd0ff"><span class="glyph">ا</span><div><h3>ایستگاه فضایی</h3><p>ایستگاه فضایی بین‌المللی را زنده روی کرهٔ زمین دنبال کن و از پنجره‌اش به زمین نگاه کن.</p><div class="tags"><span class="tag">دادهٔ زنده</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="daynight/" style="--c:#ffd23f"><span class="glyph">ر</span><div><h3>روز و شب زمین</h3><p>ببین همین حالا کجای زمین روز است و کجا شب؛ با چراغ‌های شهرها و ساعت شهرهای دنیا.</p><div class="tags"><span class="tag">ساعت جهانی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="seasons/" style="--c:#ffd23f"><span class="glyph">ف</span><div><h3>فصل‌ها</h3><p>چرا تابستان گرم است و زمستان سرد؟ زمین را دور خورشید بچرخان و کج بودن محورش را ببین.</p><div class="tags"><span class="tag">آموزشی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="scale/" style="--c:#ffd23f"><span class="glyph">ا</span><div><h3>از اتم تا کهکشان</h3><p>سفری در مقیاس‌ها: از یک اتم تا کهکشان راه شیری، هر بار ده برابر بزرگ‌تر.</p><div class="tags"><span class="tag">مقیاس‌ها</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="towers/" style="--c:#ffd23f"><span class="glyph">ب</span><div><h3>برج‌های جهان</h3><p>بلندترین ساختمان‌ها و بناهای مشهور دنیا در اندازهٔ واقعی، کنار هم؛ از برج آزادی تا برج خلیفه.</p><div class="tags"><span class="tag">اندازهٔ واقعی</span><span class="tag new">تازه</span></div></div></a>
+    </div>
+  </section>
+
+  <section id="s2">
+    <h2>دنیای زنده</h2>
+    <div class="grid">
+      <a class="game" href="quakes/" style="--c:#ff7a3c"><span class="glyph">ز</span><div><h3>زمین‌لرزه‌های زنده</h3><p>زمین‌لرزه‌های واقعی همین هفته روی کرهٔ زمین، از سازمان زمین‌شناسی آمریکا.</p><div class="tags"><span class="tag">دادهٔ زنده</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="weather/" style="--c:#7affd8"><span class="glyph">آ</span><div><h3>آب‌وهوای جهان</h3><p>دمای همین لحظهٔ شهرهای ایران و جهان روی کرهٔ زمین، با پیش‌بینی هفت روزه.</p><div class="tags"><span class="tag">دادهٔ زنده</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="flights/" style="--c:#ffe36a"><span class="glyph">پ</span><div><h3>پروازهای زنده</h3><p>هواپیماهایی که همین حالا در آسمان دنیا پرواز می‌کنند، روی کرهٔ زمین.</p><div class="tags"><span class="tag">دادهٔ زنده</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="radio/" style="--c:#3cff9a"><span class="glyph">ر</span><div><h3>رادیو جهان</h3><p>کرهٔ زمین را بچرخان و رادیوهای زندهٔ شهرهای مختلف دنیا را گوش کن.</p><div class="tags"><span class="tag">رادیو زنده</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="wiki/" style="--c:#7ac8ff"><span class="glyph">د</span><div><h3>دانشنامهٔ جهان</h3><p>روی هر نقطهٔ کرهٔ زمین بزن تا مقاله‌های ویکی‌پدیای فارسی دربارهٔ جاهای همان اطراف را بخوانی.</p><div class="tags"><span class="tag">ویکی‌پدیا</span><span class="tag new">تازه</span></div></div></a>
+    </div>
+  </section>
+
+  <section id="s3">
+    <h2>هنر، شعر و سینما</h2>
+    <div class="grid">
+      <a class="game" href="poetry/" style="--c:#2f6f8a"><span class="glyph">ب</span><div><h3>باغ شعر</h3><p>در یک باغ ایرانی قدم بزن و فال حافظ بگیر یا شعر سعدی، مولانا و خیام بخوان.</p><div class="tags"><span class="tag">حافظ و سعدی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="cinema/" style="--c:#ff4a5a"><span class="glyph">س</span><div><h3>سینما</h3><p>یک سالن سینمای واقعی با پردهٔ بزرگ: فیلم‌های کلاسیک آزاد آرشیو اینترنت یا فیلم خودت را ببین.</p><div class="tags"><span class="tag">فیلم کلاسیک</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="nasa/" style="--c:#7fb2ff"><span class="glyph">گ</span><div><h3>گالری ناسا</h3><p>عکس‌های واقعی ناسا از کهکشان‌ها، سحابی‌ها، مریخ و ماه، در یک تالار دایره‌ای.</p><div class="tags"><span class="tag">عکس فضایی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="potd/" style="--c:#e8c37a"><span class="glyph">ع</span><div><h3>عکس روز</h3><p>برگزیده‌ترین عکس‌های ویکی‌مدیا کامنز، یک عکس برای هر روز، در تالاری دایره‌ای.</p><div class="tags"><span class="tag">عکس روز</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="cleveland/" style="--c:#d9a441"><span class="glyph">م</span><div><h3>موزهٔ کلیولند</h3><p>شاهکارهای آزاد موزهٔ هنر کلیولند: هنر ایران، مصر باستان، ژاپن و امپرسیونیست‌ها.</p><div class="tags"><span class="tag">هنر ایران و جهان</span><span class="tag new">تازه</span></div></div></a>
+    </div>
+  </section>
+
+  <section id="s4">
+    <h2>طبیعت و ماجراجویی</h2>
+    <div class="grid">
+      <a class="game" href="aquarium/" style="--c:#3cffd0"><span class="glyph">آ</span><div><h3>آکواریوم</h3><p>تونل شیشه‌ای زیر آب: ماهی‌های رنگی، لاک‌پشت دریایی، کوسه و عروس دریایی دورت شنا می‌کنند.</p><div class="tags"><span class="tag">زیر آب</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="deepsea/" style="--c:#ffd23f"><span class="glyph">س</span><div><h3>سفر به اعماق دریا</h3><p>با یک زیردریایی شیشه‌ای از سطح آب تا عمق ۱۱ کیلومتری گودال ماریانا پایین برو.</p><div class="tags"><span class="tag">۱۱ کیلومتر</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="forest/" style="--c:#6ab04a"><span class="glyph">ج</span><div><h3>جنگل آرام</h3><p>در یک جنگل آرام قدم بزن؛ صدای پرنده‌ها، باران یا برف و شب پرستاره با کرم‌های شب‌تاب.</p><div class="tags"><span class="tag">آرامش</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="coaster/" style="--c:#ff3c5a"><span class="glyph">ت</span><div><h3>ترن هوایی</h3><p>سوار ترن هوایی شو: سربالایی‌های بلند، سقوط‌های تند و پیچ‌های دیوانه‌وار بالای یک شهربازی.</p><div class="tags"><span class="tag">هیجان</span><span class="tag new">تازه</span></div></div></a>
+    </div>
+  </section>
+
+  <section id="s5">
+    <h2>یادگیری</h2>
+    <div class="grid">
+      <a class="game" href="molecules/" style="--c:#ff5a4a"><span class="glyph">م</span><div><h3>مولکول‌ها</h3><p>مولکول‌های واقعی را در اندازهٔ بزرگ جلوی چشمت بچرخان: آب، کافئین، آسپرین، گلوکز و…</p><div class="tags"><span class="tag">شیمی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="periodic/" style="--c:#ffd25a"><span class="glyph">ج</span><div><h3>جدول تناوبی</h3><p>دیوار بزرگ جدول تناوبی دورت؛ روی هر عنصر بزن تا مدل اتمش را ببینی.</p><div class="tags"><span class="tag">۱۱۸ عنصر</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="shapes/" style="--c:#4ab0ff"><span class="glyph">ش</span><div><h3>شکل‌های هندسی</h3><p>احجام هندسی را بزرگ جلوی چشمت بچرخان، رأس و یال و وجه‌هایشان را بشمار و فرمولشان را ببین.</p><div class="tags"><span class="tag">ریاضی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="english/" style="--c:#2a5a3a"><span class="glyph">ک</span><div><h3>کلاس انگلیسی</h3><p>اتاقی پر از وسایل: روی هر چیز بزن تا اسم انگلیسی‌اش را بشنوی، بعد در بازی پیدا کن خودت را امتحان کن.</p><div class="tags"><span class="tag">کودکان</span><span class="tag new">تازه</span></div></div></a>
+    </div>
+  </section>
+
+  <section id="s6">
+    <h2>خلاقیت</h2>
+    <div class="grid">
+      <a class="game" href="paint/" style="--c:#ff6ad5"><span class="glyph">ن</span><div><h3>نقاشی در هوا</h3><p>با دست‌هایت در فضای سه‌بعدی نقاشی کن؛ خط‌های نورانی، رنگ‌های جادویی و قلم‌موی پاشنده.</p><div class="tags"><span class="tag">نقاشی سه‌بعدی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="build/" style="--c:#f08a2a"><span class="glyph">خ</span><div><h3>خانه‌سازی</h3><p>مکعب‌های رنگی را کنار هم بگذار و خانه، برج یا هر چیزی که دوست داری بساز.</p><div class="tags"><span class="tag">ساختن</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="visualizer/" style="--c:#ff4dd0"><span class="glyph">ن</span><div><h3>نورافشان</h3><p>موسیقی را ببین: ستون‌های نور و ذره‌ها دورت با ضرب‌آهنگ می‌رقصند؛ با آهنگ خودت یا آهنگ نمونه.</p><div class="tags"><span class="tag">موسیقی</span><span class="tag new">تازه</span></div></div></a>
+    </div>
+  </section>
+
+  <section id="s7">
     <h2>ریتمی و موسیقی</h2>
     <div class="grid">
       <a class="game" href="zarb-shamshir/" style="--c:#19b3ff"><span class="glyph">ض</span><div><h3>ضرب‌شمشیر</h3><p>مکعب‌ها را با ضرب آهنگ و در جهت فلش با شمشیر نوری بشکاف.</p><div class="tags"><span class="tag">دو شمشیر</span><span class="tag">۳ سطح سختی</span></div></div></a>
       <a class="game" href="boxing/" style="--c:#ff4d4d"><span class="glyph">م</span><div><h3>ضرب‌مشت</h3><p>بوکس ریتمی: مشت بزن، زیر میله خم شو و از دیوار جاخالی بده.</p><div class="tags"><span class="tag">ورزشی</span><span class="tag">آسان و سخت</span></div></div></a>
       <a class="game" href="drums/" style="--c:#3bffb0"><span class="glyph">ط</span><div><h3>طبل‌زن</h3><p>ست درام کامل. وقتی حلقهٔ سبز بسته شد، روی طبل بکوب.</p><div class="tags"><span class="tag">۷ طبل و سنج</span><span class="tag">حالت آزاد</span></div></div></a>
       <a class="game" href="santur/" style="--c:#ffd27a"><span class="glyph">س</span><div><h3>سنتورزن</h3><p>سنتور کوک‌شده در شور با ربع‌پرده‌های واقعی. آزاد بنواز یا درس بگیر.</p><div class="tags"><span class="tag">دو مضراب</span><span class="tag">۳ درس</span></div></div></a>
+      <a class="game" href="piano/" style="--c:#ffd8a0"><span class="glyph">پ</span><div><h3>پیانو</h3><p>یک پیانوی بزرگ جلوی تو؛ آزاد بنواز یا آهنگ‌ها را با راهنمای نورانی یاد بگیر.</p><div class="tags"><span class="tag">پیانو</span><span class="tag">آموزش آهنگ</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="simon/" style="--c:#3cff7a"><span class="glyph">س</span><div><h3>سایمون</h3><p>چهار دکمهٔ نورانی یک آهنگ می‌زنند؛ به خاطر بسپار و همان را تکرار کن.</p><div class="tags"><span class="tag">حافظهٔ صدا</span><span class="tag new">تازه</span></div></div></a>
     </div>
   </section>
 
-  <section>
+  <section id="s8">
     <h2>ورزشی</h2>
     <div class="grid">
       <a class="game" href="goalkeeper/" style="--c:#c8ff3c"><span class="glyph">د</span><div><h3>دروازه‌بان</h3><p>زیر تیر دروازه بایست و شوت‌های پیچ‌دار را مهار کن.</p><div class="tags"><span class="tag">پنالتی</span><span class="tag">بقا</span></div></div></a>
       <a class="game" href="breaker/" style="--c:#ff5ccf"><span class="glyph">آ</span><div><h3>دیوارشکن</h3><p>با راکت توپ را به دیوار آجری بزن و همهٔ آجرها را بشکن.</p><div class="tags"><span class="tag">مرحله‌ای</span><span class="tag">۹۰ ثانیه</span></div></div></a>
       <a class="game" href="anarshekan/" style="--c:#ffb000"><span class="glyph">ا</span><div><h3>انارشکن</h3><p>میوه‌ها را در یک باغ ایرانی شبانه، در هوا ببُر و به بمب دست نزن.</p><div class="tags"><span class="tag">کلاسیک</span><span class="tag">زمان‌دار</span></div></div></a>
+      <a class="game" href="basket/" style="--c:#ff8a3c"><span class="glyph">ب</span><div><h3>بسکتبال</h3><p>توپ را بردار و پرتاب کن؛ پرتاب سه‌امتیازی در واقعیت مجازی.</p><div class="tags"><span class="tag">پرتاب</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="bowling/" style="--c:#ff4d6d"><span class="glyph">ب</span><div><h3>بولینگ</h3><p>توپ بولینگ را بردار، روی مسیر رها کن و همهٔ ده پین را بینداز.</p><div class="tags"><span class="tag">۱۰ فریم</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="pingpong/" style="--c:#ff6a3d"><span class="glyph">پ</span><div><h3>پینگ‌پنگ</h3><p>تنیس روی میز در برابر ربات: راکت در دست، توپ‌ها را برگردان.</p><div class="tags"><span class="tag">در برابر ربات</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="golf/" style="--c:#3fc04a"><span class="glyph">م</span><div><h3>مینی‌گلف</h3><p>گلف کوچک با مانع‌های بامزه: توپ را با چوب گلف به داخل حفره بفرست.</p><div class="tags"><span class="tag">۵ حفره</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="hockey/" style="--c:#ffd23f"><span class="glyph">ا</span><div><h3>ایرهاکی</h3><p>ایرهاکی روی میز نئونی در برابر ربات؛ دیسک را به دروازهٔ حریف بزن.</p><div class="tags"><span class="tag">در برابر ربات</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="darts/" style="--c:#d9a441"><span class="glyph">د</span><div><h3>دارت</h3><p>دارت واقعی در یک کافهٔ دنج: سه دارت در هر نوبت، بازی ۳۰۱ یا دور ساعت.</p><div class="tags"><span class="tag">۳۰۱</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="juggle/" style="--c:#ffd23f"><span class="glyph">ر</span><div><h3>روپایی</h3><p>توپ‌ها را با دست‌هایت در هوا نگه دار و نگذار زمین بخورند.</p><div class="tags"><span class="tag">روپایی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="wall/" style="--c:#4dd0ff"><span class="glyph">د</span><div><h3>دیوار</h3><p>دیوارها با سوراخ‌هایی به شکل بدن نزدیک می‌شوند؛ سر و دست‌هایت را درست جا بده.</p><div class="tags"><span class="tag">تحرک بدنی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="dodge/" style="--c:#ff3cac"><span class="glyph">ج</span><div><h3>جاخالی</h3><p>گوی‌های نورانی به سمت سرت شلیک می‌شوند؛ خم شو، کج شو و جاخالی بده.</p><div class="tags"><span class="tag">تحرک بدنی</span><span class="tag new">تازه</span></div></div></a>
     </div>
   </section>
 
-  <section>
+  <section id="s9">
     <h2>تیراندازی و نبرد</h2>
     <div class="grid">
       <a class="game" href="archery/" style="--c:#ffd23f"><span class="glyph">ک</span><div><h3>کمان‌دار</h3><p>زه را بکش و به هدف‌های نزدیک، دور و روی برج قلعه بزن.</p><div class="tags"><span class="tag">۱۰ تیر</span><span class="tag">شکار</span></div></div></a>
       <a class="game" href="castle/" style="--c:#ff9a3c"><span class="glyph">ژ</span><div><h3>دژبان</h3><p>از بالای دیوار قلعه سنگ پرتاب کن و موج‌های دشمن را عقب بزن.</p><div class="tags"><span class="tag">پرتاب</span><span class="tag">موج‌به‌موج</span></div></div></a>
       <a class="game" href="balloons/" style="--c:#ff3b5c"><span class="glyph">ب</span><div><h3>بادکنک‌باز</h3><p>با دو تفنگ لیزری بادکنک‌های چادر شهربازی را بترکان.</p><div class="tags"><span class="tag">دو تفنگ</span><span class="tag">۶۰ ثانیه</span></div></div></a>
       <a class="game" href="robot/" style="--c:#29e0ff"><span class="glyph">ر</span><div><h3>دوئل با ربات</h3><p>ضربهٔ ربات را دفع کن تا هسته‌اش باز شود، بعد بزنش.</p><div class="tags"><span class="tag">شمشیرزنی</span><span class="tag">آسان و سخت</span></div></div></a>
+      <a class="game" href="meteor/" style="--c:#4dd0ff"><span class="glyph">ش</span><div><h3>شهاب‌شکن</h3><p>از ایستگاه فضایی در برابر باران شهاب‌سنگ‌ها دفاع کن.</p><div class="tags"><span class="tag">فضایی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="clay/" style="--c:#ff6a1f"><span class="glyph">ش</span><div><h3>شکار بشقاب</h3><p>بشقاب‌پرانی در دشت: بشقاب‌های سفالی پرتاب می‌شوند؛ با تفنگ ساچمه‌ای بزنشان.</p><div class="tags"><span class="tag">تفنگ ساچمه‌ای</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="snowball/" style="--c:#2f7fd8"><span class="glyph">ب</span><div><h3>برف‌بازی</h3><p>گلوله برفی بساز و به آدم‌برفی‌های شیطون بزن، قبل از اینکه آن‌ها تو را بزنند.</p><div class="tags"><span class="tag">پرتاب</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="shield/" style="--c:#d8b04a"><span class="glyph">س</span><div><h3>سپر و شمشیر</h3><p>تیرهای کمانداران به سمتت می‌آیند؛ با سپر جلویشان را بگیر یا با شمشیر وسط هوا بشکنشان.</p><div class="tags"><span class="tag">دفاع</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="wizard/" style="--c:#9a6aff"><span class="glyph">ج</span><div><h3>جادوگر</h3><p>دو چوبدستی جادویی: روح‌های آبی را با دست راست و روح‌های آتشین را با دست چپ از بین ببر.</p><div class="tags"><span class="tag">دو دستی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="slingshot/" style="--c:#ff8a1a"><span class="glyph">ت</span><div><h3>تیرکمان</h3><p>با تیرکمان سنگ پرتاب کن و برج‌های جعبه‌ای را خراب کن تا کدوهای روی آن‌ها بیفتند.</p><div class="tags"><span class="tag">فیزیک</span><span class="tag new">تازه</span></div></div></a>
     </div>
   </section>
 
-  <section>
+  <section id="s10">
     <h2>فکری و آرام</h2>
     <div class="grid">
       <a class="game" href="tower/" style="--c:#ffb347"><span class="glyph">ج</span><div><h3>برج‌ساز</h3><p>با فیزیک واقعی آجر بچین. در حالت زلزله، فقط برج محکم می‌ماند.</p><div class="tags"><span class="tag">فیزیک</span><span class="tag">زلزله</span></div></div></a>
       <a class="game" href="rubik/" style="--c:#ffd51c"><span class="glyph">ق</span><div><h3>روبیک غول‌پیکر</h3><p>مکعب روبیک به اندازهٔ صندلی. لایه‌ها را بچرخان و حلش کن.</p><div class="tags"><span class="tag">۳×۳</span><span class="tag">رکورد زمان</span></div></div></a>
       <a class="game" href="zen/" style="--c:#c9e2a0"><span class="glyph">ذ</span><div><h3>باغ ذن</h3><p>روی شن شیار بکش، سنگ بچین و با گوی نور آرام نفس بکش.</p><div class="tags"><span class="tag">آرامش</span><span class="tag">تنفس</span></div></div></a>
+      <a class="game" href="dooz/" style="--c:#ffc83c"><span class="glyph">د</span><div><h3>دوز</h3><p>دوز سه‌بعدی در برابر رایانه: سه مهره در یک ردیف.</p><div class="tags"><span class="tag">در برابر رایانه</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="connect4/" style="--c:#ffc83c"><span class="glyph">چ</span><div><h3>چهارتایی</h3><p>مهره‌ها را در ستون‌ها بینداز و چهارتا در یک ردیف بچین؛ در برابر رایانه.</p><div class="tags"><span class="tag">در برابر رایانه</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="memory/" style="--c:#ffd23f"><span class="glyph">ج</span><div><h3>جفت‌ها</h3><p>کارت‌ها را برگردان و جفت‌های یکسان را پیدا کن؛ بازی حافظه.</p><div class="tags"><span class="tag">حافظه</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="maze/" style="--c:#3cff7a"><span class="glyph">ه</span><div><h3>هزارتو</h3><p>صفحهٔ هزارتو را با دستت کج کن تا تیله راهش را تا سوراخ پایانی پیدا کند.</p><div class="tags"><span class="tag">کج کردن</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="stacker/" style="--c:#5ad0ff"><span class="glyph">ب</span><div><h3>برج بلند</h3><p>تکه‌ها جلو و عقب می‌روند؛ درست به‌موقع ماشه را بزن تا برجت بلند و بلندتر شود.</p><div class="tags"><span class="tag">زمان‌بندی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="snake/" style="--c:#3cff9a"><span class="glyph">م</span><div><h3>مار</h3><p>بازی قدیمی مار روی یک صفحهٔ نئونی بزرگ؛ با استیک هدایتش کن و سیب‌ها را بخور.</p><div class="tags"><span class="tag">کلاسیک</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="fishing/" style="--c:#ffd23f"><span class="glyph">م</span><div><h3>ماهیگیری</h3><p>کنار یک دریاچهٔ آرام قلاب بینداز، صبر کن تا ماهی نوک بزند و با حوصله بالا بکشش.</p><div class="tags"><span class="tag">آرام</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="bubbles/" style="--c:#ff7ab6"><span class="glyph">ح</span><div><h3>حباب‌ها</h3><p>حباب‌های رنگی دورت می‌چرخند؛ با دست‌هایت بترکانشان. مناسب کودکان.</p><div class="tags"><span class="tag">کودکان</span><span class="tag new">تازه</span></div></div></a>
     </div>
   </section>
 
-  <section>
+  <section id="s11">
     <h2>پرهیجان</h2>
     <div class="grid">
       <a class="game" href="plank/" style="--c:#ffcc00"><span class="glyph">ل</span><div><h3>لبهٔ آسمان</h3><p>روی تختهٔ باریکی در ارتفاع ۲۰۰ متری راه برو و گربه را نجات بده.</p><div class="tags"><span class="tag">ترس از ارتفاع</span><span class="tag">راه رفتن واقعی</span></div></div></a>
+      <a class="game" href="race/" style="--c:#ffd23f"><span class="glyph">م</span><div><h3>مسابقهٔ ماشین</h3><p>فرمان را با دو دست بگیر، گاز بده و در یک پیست سه دور با ماشین‌های دیگر مسابقه بده.</p><div class="tags"><span class="tag">فرمان دو دستی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="drone/" style="--c:#3cff7a"><span class="glyph">پ</span><div><h3>پهپاد</h3><p>یک پهپاد کوچک را با دو استیک هدایت کن و از میان حلقه‌های نورانی رد کن.</p><div class="tags"><span class="tag">خلبانی</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="reflex/" style="--c:#3cff7a"><span class="glyph">ر</span><div><h3>رفلکس</h3><p>دیوار دکمه‌های نورانی: هر دکمه که روشن شد سریع بزنش؛ تمرین سرعت عکس‌العمل.</p><div class="tags"><span class="tag">سرعت عمل</span><span class="tag new">تازه</span></div></div></a>
+      <a class="game" href="whack/" style="--c:#ff8a3c"><span class="glyph">م</span><div><h3>موش‌کوب</h3><p>چکش بردار و موش‌هایی را که از سوراخ بیرون می‌آیند بکوب.</p><div class="tags"><span class="tag">چکش</span><span class="tag new">تازه</span></div></div></a>
     </div>
   </section>
 
-  <footer><a href="tools/fetch-images.php" style="color:inherit">بارگذاری تصاویر نگارخانه، سفر ۳۶۰ و مدل‌های گنجینه روی همین سایت</a> (فقط روی هاست با PHP). صداها و مدل‌های بازی‌ها با کد ساخته شده‌اند. داده‌های زمین‌نما از © OpenStreetMap contributors، OpenMapTiles و OpenFreeMap می‌آید. عکس‌های سفر ۳۶۰ از Wikimedia Commons و با نام عکاس هر عکس نمایش داده می‌شوند. مدل‌های گنجینه اسکن‌های سه‌بعدی دسترسی آزاد (CC0) اسمیتسونین هستند. Hello WebXR ساختهٔ Mozilla Mixed Reality است (مجوز MIT؛ منابع در hello-webxr/CREDITS.md). بهترین امتیاز هر بازی در همان مرورگر ذخیره می‌شود.</footer>
+  <footer><a href="tools/fetch-images.php" style="color:inherit">بارگذاری تصاویر نگارخانه، سفر ۳۶۰ و مدل‌های گنجینه روی همین سایت</a> (فقط روی هاست با PHP). صداها و مدل‌های بازی‌ها با کد ساخته شده‌اند. داده‌های زمین‌نما از © OpenStreetMap contributors، OpenMapTiles و OpenFreeMap می‌آید. عکس‌های سفر ۳۶۰ از Wikimedia Commons و با نام عکاس هر عکس نمایش داده می‌شوند. مدل‌های گنجینه اسکن‌های سه‌بعدی دسترسی آزاد (CC0) اسمیتسونین هستند. دادهٔ برنامه‌های زنده از USGS، Open-Meteo، OpenSky Network، radio-browser.info، wheretheiss.at، ویکی‌پدیا، گنجور، ناسا، ویکی‌مدیا کامنز، موزهٔ هنر کلیولند، Internet Archive و PubChem می‌آید؛ نقشهٔ ستاره‌ها از d3-celestial. Hello WebXR ساختهٔ Mozilla Mixed Reality است (مجوز MIT؛ منابع در hello-webxr/CREDITS.md). بهترین امتیاز هر بازی در همان مرورگر ذخیره می‌شود.</footer>
 </div>
 
 <div id="xr"></div>
@@ -159,19 +260,29 @@ function build(){
   const tc = document.createElement('canvas'); tc.width = 1024; tc.height = 200; const tx = tc.getContext('2d'); tx.direction = 'rtl'; tx.textAlign = 'center'; tx.textBaseline = 'middle';
   tx.font = '400 110px Lalezar, Vazirmatn, sans-serif'; tx.fillStyle = '#ffffff'; tx.fillText('بازی‌خانهٔ کوئست', 512, 80); tx.font = '600 36px Vazirmatn, Tahoma, sans-serif'; tx.fillStyle = '#a49fbe'; tx.fillText('دسته را روی یک کارت بگیر و ماشه را بزن', 512, 165);
   const title = new THREE.Mesh(new THREE.PlaneGeometry(1.6, .3125), new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(tc), transparent:true})); title.position.set(0, 2.35, -2.1); scene.add(title);
-  // cards on an arc: 2 rows
-  const perRow = Math.ceil(cards.length/2), span = 2.3, R = 2.1;
-  cards.forEach((c,i) => { const row = Math.floor(i/perRow), col = i % perRow; const a = (perRow === 1 ? 0 : (col/(perRow-1) - .5))*span; const m = cardPanel(c);
-    m.position.set(-Math.sin(a)*R, 1.72 - row*.38, -Math.cos(a)*R); m.lookAt(0, m.position.y, 0); scene.add(m); panels.push(m); });
+  // VR lobby: section tabs on top, the selected section's cards on an arc below
+  const sections = [...new Set(cards.map(c => c.section))]; let tabs = [];
+  function tabPanel(name, i){ const cv = document.createElement('canvas'); cv.width = 320; cv.height = 96; const tex = new THREE.CanvasTexture(cv);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(.36, .108), new THREE.MeshBasicMaterial({map:tex, transparent:true}));
+    const draw = (hov) => { const x = cv.getContext('2d'); x.clearRect(0,0,320,96); rr(x,4,4,312,88,26); const on = i === cur; x.fillStyle = on ? '#ffc857' : hov ? '#2c2840' : '#16141f'; x.fill(); x.lineWidth = 3; x.strokeStyle = on ? '#ffc857' : 'rgba(255,255,255,.25)'; x.stroke(); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = '600 30px Vazirmatn, Tahoma, sans-serif'; x.fillStyle = on ? '#1a1206' : '#ffffff'; x.fillText(name, 160, 50); tex.needsUpdate = true; };
+    draw(false); m.userData = {tab:i, draw}; return m; }
+  let cur = 0;
+  function showSection(k){ cur = k; for (const m of panels){ scene.remove(m); m.material.map.dispose(); } panels.length = 0; tabs.forEach(t => t.userData.draw(false));
+    const list = cards.filter(c => c.section === sections[k]), rows = list.length > 10 ? 3 : list.length > 4 ? 2 : 1, perRow = Math.ceil(list.length/rows), step = .27, R = 2.0;
+    list.forEach((c, i) => { const row = Math.floor(i/perRow), col = i % perRow, n = Math.min(perRow, list.length - row*perRow); const a = (col - (n - 1)/2)*step; const m = cardPanel(c);
+      m.position.set(-Math.sin(a)*R, 1.62 - row*.36, -Math.cos(a)*R); m.lookAt(0, m.position.y, 0); scene.add(m); panels.push(m); }); }
+  const tstep = .19, TR = 2.15; sections.forEach((name, i) => { const t = tabPanel(name, i); const a = (i - (sections.length - 1)/2)*tstep; t.position.set(-Math.sin(a)*TR, 2.05, -Math.cos(a)*TR); t.lookAt(0, 2.05, 0); scene.add(t); tabs.push(t); });
+  title.position.set(0, 2.42, -2.2);
+  showSection(0);
   // controllers
   for (let i=0;i<2;i++){ const ctrl = renderer.xr.getController(i); scene.add(ctrl);
     const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints([V(), V(0,0,-1)]), new THREE.LineBasicMaterial({color:0xffffff})); line.scale.z = 4; ctrl.add(line);
-    ctrl.addEventListener('selectstart', () => { if (ctrl.userData.hover) launch(ctrl.userData.hover.userData.c.href); }); ctrl.userData.ray = new THREE.Raycaster(); }
+    ctrl.addEventListener('selectstart', () => { const h = ctrl.userData.hover; if (!h) return; if (h.userData.tab != null) showSection(h.userData.tab); else launch(h.userData.c.href); }); ctrl.userData.ray = new THREE.Raycaster(); }
   const ctrls = [renderer.xr.getController(0), renderer.xr.getController(1)], q = new THREE.Quaternion(), o = V(), d = V();
   renderer.setAnimationLoop(() => {
     let hov = null;
-    for (const ctrl of ctrls){ ctrl.getWorldPosition(o); ctrl.getWorldQuaternion(q); d.set(0,0,-1).applyQuaternion(q); ctrl.userData.ray.set(o, d); const hit = ctrl.userData.ray.intersectObjects(panels, false)[0]; ctrl.userData.hover = hit ? hit.object : null; if (hit) hov = hit.object; }
-    if (hov !== hovered){ if (hovered){ hovered.userData.draw(false); hovered.scale.setScalar(1); } if (hov){ hov.userData.draw(true); hov.scale.setScalar(1.06); } hovered = hov; }
+    for (const ctrl of ctrls){ ctrl.getWorldPosition(o); ctrl.getWorldQuaternion(q); d.set(0,0,-1).applyQuaternion(q); ctrl.userData.ray.set(o, d); const hit = ctrl.userData.ray.intersectObjects(panels.concat(tabs), false)[0]; ctrl.userData.hover = hit ? hit.object : null; if (hit) hov = hit.object; }
+    if (hov !== hovered){ if (hovered && hovered.parent){ hovered.userData.draw(false); hovered.scale.setScalar(1); } if (hov){ hov.userData.draw(true); hov.scale.setScalar(1.06); } hovered = hov; }
     renderer.render(scene, camera);
   });
 }

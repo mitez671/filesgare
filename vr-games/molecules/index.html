@@ -268,7 +268,7 @@ A.init = function(cfg){
   addEventListener('keyup', e => { A.keys[e.code] = false; });
   let deskHover = null;
   function deskStep(dt){
-    camera.position.set(0, 1.6, 0); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
+    camera.position.set(...(cfg.deskPos || [0, 1.6, 0])); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
     ray.setFromCamera(A.mouseNDC, camera); const hit = hitPick(ray.ray.origin, ray.ray.direction); const obj = hit && hit.object;
     if (deskHover !== obj){ if (deskHover && deskHover.userData.onHover) deskHover.userData.onHover(false); if (obj && obj.userData.onHover) obj.userData.onHover(true); deskHover = obj; el.style.cursor = obj ? 'pointer' : 'grab'; }
     if (cfg.move === 'none') return;
@@ -347,7 +347,7 @@ async function load(i){
   const f = build(data); A.card(info, fa_, desc + '\n\nفرمول اتم‌ها: ' + f + '\nتعداد اتم: ' + fa(data[0].length) + '\n\nرنگ‌ها: سفید هیدروژن، خاکستری کربن، قرمز اکسیژن، آبی نیتروژن، زرد گوگرد', {size:30}); A.status(fa_, 3); A.refreshDeskUI();
 }
 A.init({
-  id:'molecules', title:'مولکول‌ها', colors:{bg:'#0b0f18', accent:'#ff5a4a', accent2:'#3050f8'}, bg:0x0b0f18, move:'none',
+  id:'molecules', deskPos:[0, 1.5, .75], title:'مولکول‌ها', colors:{bg:'#0b0f18', accent:'#ff5a4a', accent2:'#3050f8'}, bg:0x0b0f18, move:'none',
   tagline:'اتم‌ها را میلیاردها برابر بزرگ کرده‌ایم تا بتوانی مولکول کافئین چای، قند خون یا آسپرین را در دستت بچرخانی. ساختارها دادهٔ سه‌بعدی واقعی از پایگاه PubChem هستند.',
   rules:['دکمهٔ پهلو (Grip) را نگه دار و دستت را بچرخان تا مولکول هم بچرخد.','استیک راست را بالا و پایین ببر تا بزرگ و کوچک شود.','از منو مولکول دیگری انتخاب کن.'],
   deskRules:'کشیدن موس مولکول را می‌چرخاند و چرخ موس بزرگ‌نمایی می‌کند.',

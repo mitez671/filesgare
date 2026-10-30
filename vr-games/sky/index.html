@@ -29,6 +29,78 @@ A.json = async function(url, ms=15000, opt={}){ const ac = new AbortController()
 A.tex = (url) => new Promise((res, rej) => new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, res, undefined, rej));
 A.say = function(text, lang='en-US'){ try { const u = new SpeechSynthesisUtterance(text); u.lang = lang; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch(e){} };
 
+/* ---------- globe helper (shared by the live-data apps) ---------- */
+A.ll2v = function(lat, lon, r){ const ph = (lon + 180)*Math.PI/180, th = (90 - lat)*Math.PI/180; return new THREE.Vector3(-r*Math.sin(th)*Math.cos(ph), r*Math.cos(th), r*Math.sin(th)*Math.sin(ph)); };
+A.makeGlobe = function(o={}){
+  const r = o.r || .5, G = {r, scale:1, group:new THREE.Group(), spin:new THREE.Group()};
+  G.group.position.set(...(o.pos || [0, 1.25, -1.1])); A.scene.add(G.group); G.group.add(G.spin);
+  const mat = new THREE.MeshPhongMaterial({color:0xffffff, shininess:8}); A.tex('../_shared/earth.jpg').then(t => { mat.map = t; mat.needsUpdate = true; }).catch(() => { mat.color.setHex(0x2a6fd1); });
+  G.earth = new THREE.Mesh(new THREE.SphereGeometry(r, 72, 48), mat); G.spin.add(G.earth);
+  if (o.clouds !== false){ const cm = new THREE.MeshLambertMaterial({transparent:true, opacity:.35, depthWrite:false}); A.tex('../_shared/clouds.png').then(t => { cm.map = t; cm.alphaMap = t; cm.needsUpdate = true; }).catch(() => {}); G.clouds = new THREE.Mesh(new THREE.SphereGeometry(r*1.01, 48, 32), cm); G.spin.add(G.clouds); }
+  const atm = new THREE.Mesh(new THREE.SphereGeometry(r*1.06, 48, 32), new THREE.MeshBasicMaterial({color:0x5fa8ff, transparent:true, opacity:.09, side:THREE.BackSide, depthWrite:false})); G.group.add(atm);
+  G.v = (lat, lon, h=0) => A.ll2v(lat, lon, r*(1 + h));
+  G.face = function(lat, lon){ // rotate so lat/lon faces the viewer
+    G.spin.rotation.set(0, 0, 0); const v = A.ll2v(lat, lon, 1); const yaw = Math.atan2(v.x, v.z); G.spin.rotation.y = -yaw; const p = Math.asin(v.y); G.spin.rotation.x = p; };
+  let grab = null; const _p = new THREE.Vector3();
+  G.vr = function(dt, hs){
+    for (const H of hs){ if (H.down.grip && !grab){ grab = {H, last:H.pos.clone()}; } }
+    if (grab){ if (!grab.H.btn.grip){ grab = null; } else { _p.copy(grab.H.pos).sub(grab.last); G.spin.rotation.y += _p.x*5/G.scale; G.spin.rotation.x = A.clamp(G.spin.rotation.x - _p.y*5/G.scale, -1.4, 1.4); grab.last.copy(grab.H.pos); } }
+    const R = A.R; if (R.ctrl && Math.abs(R.axes[1]) > .3){ G.setScale(G.scale*(1 - R.axes[1]*dt*1.2)); }
+    if (o.autoSpin !== false && !grab) G.spin.rotation.y += dt*.03;
+  };
+  G.setScale = s => { G.scale = A.clamp(s, .4, 6); G.group.scale.setScalar(G.scale); };
+  G.drag = (dx, dy) => { G.spin.rotation.y += dx*.006/G.scale; G.spin.rotation.x = A.clamp(G.spin.rotation.x + dy*.006/G.scale, -1.4, 1.4); return true; };
+  G.wheel = d => G.setScale(G.scale*(d > 0 ? .9 : 1.1));
+  G.desk = dt => { if (o.autoSpin !== false) G.spin.rotation.y += dt*.03; };
+  return G;
+};
+// point cloud of markers on the globe, pickable by angle from a ray
+A.markers = function(G, list, colorOf, sizeOf){
+  const n = list.length, pos = new Float32Array(n*3), col = new Float32Array(n*3), size = new Float32Array(n), c = new THREE.Color();
+  list.forEach((m, i) => { const v = G.v(m.lat, m.lon, .02); pos.set([v.x, v.y, v.z], i*3); c.set(colorOf(m)); col.set([c.r, c.g, c.b], i*3); size[i] = sizeOf ? sizeOf(m) : 8; });
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setAttribute('size', new THREE.BufferAttribute(size, 1));
+  const mat = new THREE.ShaderMaterial({uniforms:{k:{value:1}}, transparent:true, depthWrite:false, vertexShader:'attribute float size; attribute vec3 color; varying vec3 vC; uniform float k; void main(){ vC = color; vec4 mv = modelViewMatrix*vec4(position,1.0); gl_PointSize = size*k*.0007*projectionMatrix[1][1]*600.0/ -mv.z; gl_Position = projectionMatrix*mv; }', fragmentShader:'varying vec3 vC; void main(){ float d = length(gl_PointCoord - .5); if (d > .5) discard; gl_FragColor = vec4(vC*(1.15 - d), smoothstep(.5,.35,d)); }'});
+  const pts = new THREE.Points(g, mat); pts.frustumCulled = false; G.spin.add(pts);
+  pts.userData.list = list;
+  pts.nearest = function(o, d, maxAng = .03){ const w = new THREE.Vector3(), cam = new THREE.Vector3(); A.camera.getWorldPosition(cam); const center = new THREE.Vector3(); G.group.getWorldPosition(center); let best = null, bd = Math.cos(maxAng);
+    for (let i=0;i<n;i++){ w.set(pos[i*3], pos[i*3+1], pos[i*3+2]).applyMatrix4(pts.matrixWorld); const nrm = w.clone().sub(center); if (nrm.dot(w.clone().sub(cam)) > 0) continue; const dir = w.clone().sub(o).normalize(), dt = dir.dot(d); if (dt > bd){ bd = dt; best = i; } } return best == null ? null : list[best]; };
+  return pts;
+};
+
+/* ---------- circular photo gallery helper ---------- */
+A.makeGallery = function(o={}){
+  const Gy = {group:new THREE.Group(), frames:[], zoom:null}; A.scene.add(Gy.group);
+  const R = o.radius || 3.2, frameMat = new THREE.MeshLambertMaterial({color:o.frame || 0x2a2018});
+  const z = Gy.zoomGroup = new THREE.Group(); z.visible = false; A.scene.add(z);
+  const dim = new THREE.Mesh(new THREE.SphereGeometry(2.5, 24, 16), new THREE.MeshBasicMaterial({color:0, transparent:true, opacity:.85, side:THREE.BackSide, depthWrite:false})); dim.renderOrder = 20; z.add(dim);
+  const zp = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, depthTest:false})); zp.renderOrder = 21; z.add(zp);
+  const zi = A.panel(1024, 300, 1.5, z); zi.m.renderOrder = 22; zi.m.material.depthTest = false;
+  dim.userData.onClick = () => Gy.close(); zp.userData.onClick = () => Gy.close(); A.pickables.push(dim, zp);
+  let zt = null;
+  Gy.close = () => { z.visible = false; if (zt){ zt.dispose(); zt = null; } };
+  Gy.open = function(it, tex){
+    const h = new THREE.Vector3(); A.camera.getWorldPosition(h); const d = new THREE.Vector3(); A.camera.getWorldDirection(d); d.y = 0; d.normalize();
+    z.position.copy(h); z.lookAt(h.clone().sub(d)); z.visible = true;
+    const a = tex && tex.image ? tex.image.width/tex.image.height : 1.4; let w = 2, hh = w/a; if (hh > 1.4){ hh = 1.4; w = hh*a; }
+    zp.scale.set(w, hh, 1); zp.position.set(0, .15, -1.6); zp.material.map = tex || null; zp.material.needsUpdate = true;
+    zi.m.position.set(0, .15 - hh/2 - .25, -1.55); A.card(zi, it.title, it.desc || '', {size:26, sub:it.sub || '', titleSize:44});
+    if (it.big && tex){ A.tex(it.big).then(t => { if (!z.visible || zp.material.map !== tex){ t.dispose(); return; } zt = t; zp.material.map = t; zp.material.needsUpdate = true; }).catch(() => {}); }
+  };
+  Gy.set = function(items){
+    for (const f of Gy.frames){ A.dispose(f.g); if (f.tex) f.tex.dispose(); } Gy.frames = []; Gy.close();
+    const n = items.length, rows = n > 12 ? 2 : 1, per = Math.ceil(n/rows);
+    items.forEach((it, i) => { const row = Math.floor(i/per), k = i % per, ang = (k + .5)/per*Math.PI*2*(o.arc || 1) - Math.PI*(o.arc || 1) + Math.PI;
+      const g = new THREE.Group(); g.position.set(Math.sin(ang)*R, rows === 1 ? 1.55 : (row ? 1.0 : 2.15), Math.cos(ang)*R); g.lookAt(0, g.position.y, 0); Gy.group.add(g);
+      const fr = new THREE.Mesh(new THREE.BoxGeometry(1, 1, .04), frameMat); g.add(fr);
+      const pic = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({color:0x222222})); pic.position.z = .025; g.add(pic);
+      const f = {g, pic, fr, it, tex:null}; Gy.frames.push(f); const W = rows === 1 ? 1.1 : .95; const setSize = a => { let w = W, h = W/a; if (h > W*.85){ h = W*.85; w = h*a; } pic.scale.set(w, h, 1); fr.scale.set(w + .08, h + .08, 1); }; setSize(1.4);
+      pic.userData.onClick = () => Gy.open(it, f.tex); A.pickables.push(pic);
+      A.tex(it.src).then(t => { if (!Gy.frames.includes(f)){ t.dispose(); return; } f.tex = t; pic.material.map = t; pic.material.color.setHex(0xffffff); pic.material.needsUpdate = true; setSize(t.image.width/t.image.height); }).catch(() => { pic.material.color.setHex(0x553333); });
+    });
+  };
+  return Gy;
+};
+
 /* ---------- audio ---------- */
 A.audio = function(){ if (!A.ac){ A.ac = new (window.AudioContext || window.webkitAudioContext)(); A.out = A.ac.createGain(); A.out.gain.value = .8; A.out.connect(A.ac.destination); A.noiseBuf = A.ac.createBuffer(1, A.ac.sampleRate*2, A.ac.sampleRate); const d = A.noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1; } if (A.ac.state === 'suspended') A.ac.resume(); return A.ac; };
 A.tone = function(f, dec=.2, type='sine', peak=.15, f2){ if (!A.ac) return; const t = A.ac.currentTime, o = A.ac.createOscillator(), g = A.ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dec); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + dec); o.connect(g); g.connect(A.out); o.start(t); o.stop(t + dec + .05); };
@@ -196,7 +268,7 @@ A.init = function(cfg){
   addEventListener('keyup', e => { A.keys[e.code] = false; });
   let deskHover = null;
   function deskStep(dt){
-    camera.position.set(0, 1.6, 0); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
+    camera.position.set(...(cfg.deskPos || [0, 1.6, 0])); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
     ray.setFromCamera(A.mouseNDC, camera); const hit = hitPick(ray.ray.origin, ray.ray.direction); const obj = hit && hit.object;
     if (deskHover !== obj){ if (deskHover && deskHover.userData.onHover) deskHover.userData.onHover(false); if (obj && obj.userData.onHover) obj.userData.onHover(true); deskHover = obj; el.style.cursor = obj ? 'pointer' : 'grab'; }
     if (cfg.move === 'none') return;

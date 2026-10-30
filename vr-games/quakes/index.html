@@ -67,6 +67,40 @@ A.markers = function(G, list, colorOf, sizeOf){
   return pts;
 };
 
+/* ---------- circular photo gallery helper ---------- */
+A.makeGallery = function(o={}){
+  const Gy = {group:new THREE.Group(), frames:[], zoom:null}; A.scene.add(Gy.group);
+  const R = o.radius || 3.2, frameMat = new THREE.MeshLambertMaterial({color:o.frame || 0x2a2018});
+  const z = Gy.zoomGroup = new THREE.Group(); z.visible = false; A.scene.add(z);
+  const dim = new THREE.Mesh(new THREE.SphereGeometry(2.5, 24, 16), new THREE.MeshBasicMaterial({color:0, transparent:true, opacity:.85, side:THREE.BackSide, depthWrite:false})); dim.renderOrder = 20; z.add(dim);
+  const zp = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({color:0xffffff, transparent:true, depthTest:false})); zp.renderOrder = 21; z.add(zp);
+  const zi = A.panel(1024, 300, 1.5, z); zi.m.renderOrder = 22; zi.m.material.depthTest = false;
+  dim.userData.onClick = () => Gy.close(); zp.userData.onClick = () => Gy.close(); A.pickables.push(dim, zp);
+  let zt = null;
+  Gy.close = () => { z.visible = false; if (zt){ zt.dispose(); zt = null; } };
+  Gy.open = function(it, tex){
+    const h = new THREE.Vector3(); A.camera.getWorldPosition(h); const d = new THREE.Vector3(); A.camera.getWorldDirection(d); d.y = 0; d.normalize();
+    z.position.copy(h); z.lookAt(h.clone().sub(d)); z.visible = true;
+    const a = tex && tex.image ? tex.image.width/tex.image.height : 1.4; let w = 2, hh = w/a; if (hh > 1.4){ hh = 1.4; w = hh*a; }
+    zp.scale.set(w, hh, 1); zp.position.set(0, .15, -1.6); zp.material.map = tex || null; zp.material.needsUpdate = true;
+    zi.m.position.set(0, .15 - hh/2 - .25, -1.55); A.card(zi, it.title, it.desc || '', {size:26, sub:it.sub || '', titleSize:44});
+    if (it.big && tex){ A.tex(it.big).then(t => { if (!z.visible || zp.material.map !== tex){ t.dispose(); return; } zt = t; zp.material.map = t; zp.material.needsUpdate = true; }).catch(() => {}); }
+  };
+  Gy.set = function(items){
+    for (const f of Gy.frames){ A.dispose(f.g); if (f.tex) f.tex.dispose(); } Gy.frames = []; Gy.close();
+    const n = items.length, rows = n > 12 ? 2 : 1, per = Math.ceil(n/rows);
+    items.forEach((it, i) => { const row = Math.floor(i/per), k = i % per, ang = (k + .5)/per*Math.PI*2*(o.arc || 1) - Math.PI*(o.arc || 1) + Math.PI;
+      const g = new THREE.Group(); g.position.set(Math.sin(ang)*R, rows === 1 ? 1.55 : (row ? 1.0 : 2.15), Math.cos(ang)*R); g.lookAt(0, g.position.y, 0); Gy.group.add(g);
+      const fr = new THREE.Mesh(new THREE.BoxGeometry(1, 1, .04), frameMat); g.add(fr);
+      const pic = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({color:0x222222})); pic.position.z = .025; g.add(pic);
+      const f = {g, pic, fr, it, tex:null}; Gy.frames.push(f); const W = rows === 1 ? 1.1 : .95; const setSize = a => { let w = W, h = W/a; if (h > W*.85){ h = W*.85; w = h*a; } pic.scale.set(w, h, 1); fr.scale.set(w + .08, h + .08, 1); }; setSize(1.4);
+      pic.userData.onClick = () => Gy.open(it, f.tex); A.pickables.push(pic);
+      A.tex(it.src).then(t => { if (!Gy.frames.includes(f)){ t.dispose(); return; } f.tex = t; pic.material.map = t; pic.material.color.setHex(0xffffff); pic.material.needsUpdate = true; setSize(t.image.width/t.image.height); }).catch(() => { pic.material.color.setHex(0x553333); });
+    });
+  };
+  return Gy;
+};
+
 /* ---------- audio ---------- */
 A.audio = function(){ if (!A.ac){ A.ac = new (window.AudioContext || window.webkitAudioContext)(); A.out = A.ac.createGain(); A.out.gain.value = .8; A.out.connect(A.ac.destination); A.noiseBuf = A.ac.createBuffer(1, A.ac.sampleRate*2, A.ac.sampleRate); const d = A.noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1; } if (A.ac.state === 'suspended') A.ac.resume(); return A.ac; };
 A.tone = function(f, dec=.2, type='sine', peak=.15, f2){ if (!A.ac) return; const t = A.ac.currentTime, o = A.ac.createOscillator(), g = A.ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dec); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + dec); o.connect(g); g.connect(A.out); o.start(t); o.stop(t + dec + .05); };
@@ -234,7 +268,7 @@ A.init = function(cfg){
   addEventListener('keyup', e => { A.keys[e.code] = false; });
   let deskHover = null;
   function deskStep(dt){
-    camera.position.set(0, 1.6, 0); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
+    camera.position.set(...(cfg.deskPos || [0, 1.6, 0])); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
     ray.setFromCamera(A.mouseNDC, camera); const hit = hitPick(ray.ray.origin, ray.ray.direction); const obj = hit && hit.object;
     if (deskHover !== obj){ if (deskHover && deskHover.userData.onHover) deskHover.userData.onHover(false); if (obj && obj.userData.onHover) obj.userData.onHover(true); deskHover = obj; el.style.cursor = obj ? 'pointer' : 'grab'; }
     if (cfg.move === 'none') return;
@@ -307,7 +341,7 @@ function show(q, face){
 }
 function aim(o, d){ if (!pts) return; const q = pts.nearest(o, d, .035); if (q){ show(q); A.click(); } }
 A.init({
-  id:'quakes', title:'زمین‌لرزه‌ها', colors:{bg:'#05070d', accent:'#ff7a3c', accent2:'#6ad0ff'}, bg:0x05070d, move:'none',
+  id:'quakes', deskPos:[0, 1.5, .75], title:'زمین‌لرزه‌ها', colors:{bg:'#05070d', accent:'#ff7a3c', accent2:'#6ad0ff'}, bg:0x05070d, move:'none',
   tagline:'کرهٔ زمین جلوی تو معلق است و هر نقطهٔ روشن یک زمین‌لرزهٔ واقعی است که در همین روزها رخ داده. داده‌ها هر بار که برنامه را باز می‌کنی تازه از سازمان زمین‌شناسی آمریکا (USGS) گرفته می‌شود.',
   rules:['دکمهٔ پهلو (Grip) را نگه دار و دستت را تکان بده تا کره بچرخد. استیک راست بالا و پایین بزرگ و کوچکش می‌کند.','دسته را به یک نقطه بگیر و ماشه را بزن تا جزئیاتش را ببینی.','از منو بازهٔ زمانی را عوض کن.'],
   deskRules:'کشیدن موس کره را می‌چرخاند، چرخ موس بزرگ‌نمایی و کلیک روی نقطه جزئیات.',
