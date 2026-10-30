@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>منظومهٔ شمسی</title>
+<meta name="description" content="سفر در منظومهٔ شمسی در واقعیت مجازی: خورشید، هشت سیاره و ماه‌ها با اطلاعات فارسی.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+</head>
+<body>
+<script>
+/* App kit: shared shell for the explore/learn apps (Quest WebXR). Exposes window.A */
+(function(){
+'use strict';
+const A = window.A = {};
+const V = A.V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+A.fa = n => Math.round(n).toLocaleString('fa-IR');
+A.fa1 = (n, d=1) => (+n).toLocaleString('fa-IR', {maximumFractionDigits:d});
+A.clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+A.rand = (a,b) => a + Math.random()*(b-a);
+A.pick = a => a[Math.floor(Math.random()*a.length)];
+A.F_DISP = 'Lalezar, Vazirmatn, Tahoma, sans-serif'; A.F_BODY = 'Vazirmatn, Tahoma, sans-serif';
+A.cv = function(w,h,draw,rep){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; if (rep){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rep[0], rep[1]); } return t; };
+A.rr = function(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); };
+A.wrap = function(x, text, maxW){ const out = []; for (const para of String(text || '').split('\n')){ let line = ''; for (const w of para.split(/\s+/)){ if (!w) continue; const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line){ out.push(line); line = w; } else line = t; } out.push(line); } return out; };
+A.json = async function(url, ms=15000, opt={}){ const ac = new AbortController(); const tm = setTimeout(() => ac.abort(), ms); try { const r = await fetch(url, Object.assign({signal:ac.signal}, opt)); if (!r.ok) throw new Error('HTTP ' + r.status); return await r.json(); } finally { clearTimeout(tm); } };
+A.tex = (url) => new Promise((res, rej) => new THREE.TextureLoader().setCrossOrigin('anonymous').load(url, res, undefined, rej));
+A.say = function(text, lang='en-US'){ try { const u = new SpeechSynthesisUtterance(text); u.lang = lang; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch(e){} };
+
+/* ---------- audio ---------- */
+A.audio = function(){ if (!A.ac){ A.ac = new (window.AudioContext || window.webkitAudioContext)(); A.out = A.ac.createGain(); A.out.gain.value = .8; A.out.connect(A.ac.destination); A.noiseBuf = A.ac.createBuffer(1, A.ac.sampleRate*2, A.ac.sampleRate); const d = A.noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1; } if (A.ac.state === 'suspended') A.ac.resume(); return A.ac; };
+A.tone = function(f, dec=.2, type='sine', peak=.15, f2){ if (!A.ac) return; const t = A.ac.currentTime, o = A.ac.createOscillator(), g = A.ac.createGain(); o.type = type; o.frequency.setValueAtTime(f, t); if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + dec); g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + .005); g.gain.exponentialRampToValueAtTime(.0001, t + dec); o.connect(g); g.connect(A.out); o.start(t); o.stop(t + dec + .05); };
+A.click = () => A.tone(900, .06, 'triangle', .1, 1300);
+
+/* ---------- UI shell ---------- */
+function injectUI(cfg){
+  const c = Object.assign({bg:'#0c1018', ink:'#eef2f7', muted:'#a3adbd', accent:'#4fb3ff', accent2:'#ffb84f'}, cfg.colors || {});
+  const st = document.createElement('style');
+  st.textContent = `:root{--bg:${c.bg};--ink:${c.ink};--muted:${c.muted};--accent:${c.accent};--accent2:${c.accent2};--panel:rgba(10,14,22,.86);--line:rgba(255,255,255,.16);--display:Lalezar,Vazirmatn,Tahoma,sans-serif;--body:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;color-scheme:dark}
+[hidden]{display:none!important}*{box-sizing:border-box}html,body{height:100%}body{margin:0;-webkit-user-select:none;user-select:none;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden}
+#stage{position:fixed;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#ov{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:color-mix(in srgb,var(--bg) 72%,transparent);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.card{width:100%;max-width:560px;display:flex;flex-direction:column;gap:14px;text-align:right}
+.back{align-self:flex-start;color:var(--muted);text-decoration:none;font-size:13px;border:1px solid var(--line);border-radius:999px;padding:6px 12px}.back:hover{color:var(--ink);border-color:var(--accent)}
+.eyebrow{margin:0;color:var(--muted);font-size:13px}
+h1{margin:0;font:400 clamp(48px,13vw,88px)/1.05 var(--display);color:var(--accent)}
+.lede{margin:0;font-size:15.5px;line-height:1.9;max-width:62ch}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:600 15px/1 var(--body);color:var(--ink);background:rgba(255,255,255,.06);border:1.5px solid var(--line);border-radius:12px;padding:14px 18px;cursor:pointer}.btn:hover{border-color:var(--accent)}
+.btn:focus-visible,.back:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#06101c;font-weight:800}.btn[disabled]{opacity:.4;cursor:not-allowed}
+.note{margin:0;font-size:13px;line-height:1.8;color:var(--muted);border-right:3px solid var(--accent);padding-right:10px}.note a{color:var(--ink)}
+.how{margin:0;padding:0 18px 0 0;font-size:14px;line-height:1.8}
+#bMenu{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:calc(10px + env(safe-area-inset-right,0px));font:600 14px/1 var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer}
+#status{position:fixed;bottom:calc(10px + env(safe-area-inset-bottom,0px));right:max(12px,env(safe-area-inset-right,0px));max-width:calc(100% - 24px);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 12px;font-size:13px;color:var(--muted);pointer-events:none}
+#deskui{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));left:max(10px,env(safe-area-inset-left,0px));right:120px;display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;direction:rtl}
+#deskui button{font:600 13px/1 var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:9px 12px;cursor:pointer}#deskui button:hover{border-color:var(--accent)}`;
+  document.head.appendChild(st);
+  const stage = document.createElement('div'); stage.id = 'stage'; document.body.appendChild(stage);
+  const ov = document.createElement('div'); ov.id = 'ov'; ov.dir = 'rtl';
+  ov.innerHTML = `<main class="card"><a class="back" href="../index.html">→ همهٔ بازی‌ها و برنامه‌ها</a><p class="eyebrow">${cfg.eyebrow || 'برنامهٔ واقعیت مجازی برای Meta Quest'}</p><h1>${cfg.title}</h1><p class="lede">${cfg.tagline}</p>
+  <div class="actions"><button id="bVR" class="btn primary" type="button" disabled>ورود به واقعیت مجازی</button><button id="bDesk" class="btn" type="button">${cfg.deskLabel || 'دیدن با موس'}</button></div>
+  <ul class="how">${(cfg.rules || []).map(r => '<li>' + r + '</li>').join('')}<li>در VR: دکمهٔ B یا Y منو را باز می‌کند و از آنجا به صفحهٔ اول برمی‌گردی.</li>${cfg.deskRules ? '<li>با موس: ' + cfg.deskRules + '</li>' : ''}</ul>
+  <p class="note" id="xrNote">${cfg.note || ''}</p></main>`;
+  document.body.appendChild(ov);
+  const bm = document.createElement('button'); bm.id = 'bMenu'; bm.hidden = true; bm.textContent = 'منو'; document.body.appendChild(bm);
+  const du = document.createElement('div'); du.id = 'deskui'; du.hidden = true; document.body.appendChild(du);
+  const s = document.createElement('div'); s.id = 'status'; s.hidden = true; s.dir = 'rtl'; document.body.appendChild(s);
+  return stage;
+}
+
+A.init = function(cfg){
+  A.cfg = cfg;
+  const stage = injectUI(cfg);
+  const renderer = A.renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWidth, innerHeight);
+  renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
+  stage.appendChild(renderer.domElement);
+  const scene = A.scene = new THREE.Scene(); scene.background = new THREE.Color(cfg.bg != null ? cfg.bg : 0x0c1018);
+  if (cfg.fog) scene.fog = new THREE.Fog(cfg.bg != null ? cfg.bg : 0x0c1018, cfg.fog[0], cfg.fog[1]);
+  const rig = A.rig = new THREE.Group(); scene.add(rig);
+  const camera = A.camera = new THREE.PerspectiveCamera(cfg.fov || 65, innerWidth/innerHeight, cfg.near || .05, cfg.far || 2000); camera.position.set(0, 1.6, 0); rig.add(camera);
+  if (cfg.lights !== false){ A.hemi = new THREE.HemisphereLight(0xeef3ff, 0x30302c, .9); scene.add(A.hemi); A.sun = new THREE.DirectionalLight(0xffffff, .7); A.sun.position.set(3, 8, 4); scene.add(A.sun); }
+  const start = cfg.start || [0, 0, 0];
+  A.home = () => { rig.position.set(start[0], start[1], start[2]); rig.rotation.set(0, cfg.startYaw || 0, 0); A.look.yaw = 0; A.look.pitch = 0; };
+  A.look = {yaw:0, pitch:0}; A.home();
+  A.head = V(); A.headDir = V();
+  A.pickables = [];   // meshes with userData.onClick(hitPoint, hand) and optional userData.onHover(bool)
+  A.bounds = cfg.bounds || null; // {x0,x1,z0,z1}
+  A.flyY = cfg.move === 'fly';
+
+  /* head-locked status panel (VR) */
+  const sc = document.createElement('canvas'); sc.width = 1024; sc.height = 96; const stex = new THREE.CanvasTexture(sc);
+  const sm = new THREE.Mesh(new THREE.PlaneGeometry(.9, .9*96/1024), new THREE.MeshBasicMaterial({map:stex, transparent:true, depthTest:false, depthWrite:false, fog:false})); sm.renderOrder = 60; sm.position.set(0, -.36, -1); sm.visible = false; camera.add(sm);
+  let statusText = '', statusT = 0;
+  A.status = function(text, secs=0){
+    statusText = text || ''; statusT = secs; const el = document.getElementById('status'); el.textContent = statusText; el.hidden = !statusText || A.mode !== 'desk';
+    const x = sc.getContext('2d'); x.clearRect(0,0,1024,96); if (statusText){ x.font = '600 38px ' + A.F_BODY; const w = Math.min(1000, x.measureText(statusText).width + 60); A.rr(x, 512 - w/2, 10, w, 76, 30); x.fillStyle = 'rgba(10,14,22,.85)'; x.fill(); x.fillStyle = '#eef2f7'; x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(statusText, 512, 50); }
+    stex.needsUpdate = true; sm.visible = !!statusText && A.mode === 'vr';
+  };
+
+  /* panels & buttons */
+  A.panel = function(w, h, worldW, parent){
+    const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldW*h/w), new THREE.MeshBasicMaterial({map:tex, transparent:true, fog:false}));
+    (parent || scene).add(m); return {c, x, tex, m, W:w, H:h};
+  };
+  A.card = function(p, title, body, opt={}){   // draws an RTL info card on a panel
+    const {x, c} = p; x.clearRect(0,0,c.width,c.height); A.rr(x,4,4,c.width-8,c.height-8,26); x.fillStyle = opt.bg || 'rgba(10,14,22,.9)'; x.fill(); x.lineWidth = 4; x.strokeStyle = opt.border || (cfg.colors && cfg.colors.accent) || '#4fb3ff'; x.stroke();
+    x.direction = 'rtl'; x.textAlign = 'right'; x.textBaseline = 'alphabetic'; const pad = 36; let y = 0;
+    if (title){ x.fillStyle = opt.titleColor || (cfg.colors && cfg.colors.accent) || '#4fb3ff'; x.font = `400 ${opt.titleSize || 64}px ${A.F_DISP}`; y = (opt.titleSize || 64) + 22; x.fillText(title, c.width - pad, y); }
+    if (opt.sub){ x.fillStyle = '#a3adbd'; x.font = `600 ${opt.subSize || 28}px ${A.F_BODY}`; y += (opt.subSize || 28) + 14; x.direction = opt.subDir || 'rtl'; x.textAlign = opt.subDir === 'ltr' ? 'left' : 'right'; x.fillText(opt.sub, opt.subDir === 'ltr' ? pad : c.width - pad, y); x.direction = 'rtl'; x.textAlign = 'right'; }
+    const fs = opt.size || 32; x.fillStyle = '#e6ebf2'; x.font = `400 ${fs}px ${A.F_BODY}`; y += 18;
+    for (const l of A.wrap(x, body, c.width - pad*2)){ y += fs*1.55; if (y > c.height - 20) break; x.fillText(l, c.width - pad, y); }
+    p.tex.needsUpdate = true;
+  };
+  A.button = function(label, color, act, w=.5, parent){
+    const c = document.createElement('canvas'); c.width = 512; c.height = 110; const t = new THREE.CanvasTexture(c);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w*110/512), new THREE.MeshBasicMaterial({map:t, transparent:true, fog:false}));
+    const b = {m, label, color, act, on:false, draw(h){ const x = c.getContext('2d'); x.clearRect(0,0,512,110); A.rr(x,4,4,504,102,22); x.fillStyle = h || b.on ? b.color : 'rgba(10,14,22,.92)'; x.fill(); x.strokeStyle = b.color; x.lineWidth = 4; x.stroke(); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `600 ${b.label.length > 18 ? 30 : 38}px ${A.F_BODY}`; x.fillStyle = h || b.on ? '#081018' : '#eef2f7'; x.fillText(b.label, 256, 58); t.needsUpdate = true; }};
+    m.userData.onClick = () => { A.click(); act(); }; m.userData.onHover = h => b.draw(h); b.draw(false);
+    (parent || scene).add(m); A.pickables.push(m); return b;
+  };
+  A.unpick = m => { const i = A.pickables.indexOf(m); if (i >= 0) A.pickables.splice(i, 1); };
+  A.dispose = function(root){ root.traverse(o => { A.unpick(o); if (o.geometry) o.geometry.dispose(); const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms){ for (const k in m){ const v = m[k]; if (v && v.isTexture) v.dispose(); } m.dispose(); } }); if (root.parent) root.parent.remove(root); };
+
+  /* B/Y menu */
+  const menu = A.menuGroup = new THREE.Group(); menu.visible = false; scene.add(menu); let menuBtns = [];
+  A.menuOpen = false;
+  function buildMenu(){
+    for (const b of menuBtns) A.dispose(b.m); menuBtns = [];
+    const items = (cfg.menu ? cfg.menu(A) : []).concat([{label:'→ صفحهٔ اول', color:'#ff8a8a', act:() => { location.href = '../index.html'; }}]);
+    const cols = items.length > 6 ? 2 : 1;
+    items.forEach((it, i) => { const b = A.button(it.label, it.color || ((cfg.colors && cfg.colors.accent) || '#4fb3ff'), () => { A.closeMenu(); it.act(); }, .5, menu); b.on = !!it.on; b.draw(false); const r = Math.floor(i/cols), cI = i % cols; b.m.position.set(cols === 2 ? (cI ? -.27 : .27) : 0, .25 - r*.13, 0); b.m.renderOrder = 40; b.m.material.depthTest = false; menuBtns.push(b); });
+  }
+  A.openMenu = function(){ buildMenu(); const h = V(); camera.getWorldPosition(h); const d = V(); camera.getWorldDirection(d); d.y = 0; d.normalize(); menu.position.copy(h).addScaledVector(d, 1.2); menu.position.y = h.y - .1; menu.lookAt(h.x, menu.position.y, h.z); menu.visible = true; A.menuOpen = true; };
+  A.closeMenu = function(){ menu.visible = false; A.menuOpen = false; };
+  A.refreshDeskUI = function(){ const du = document.getElementById('deskui'); du.innerHTML = ''; for (const it of (cfg.menu ? cfg.menu(A) : [])){ const b = document.createElement('button'); b.type = 'button'; b.textContent = it.label; if (it.on) b.style.borderColor = 'var(--accent)'; b.onclick = () => { A.audio(); it.act(); A.refreshDeskUI(); }; du.appendChild(b); } };
+
+  /* controllers */
+  A.hands = [0,1].map(h => ({h, ctrl:null, src:null, btn:{}, down:{}, up:{}, axes:[0,0], pos:V(), dir:V(), quat:new THREE.Quaternion(), snap:true, aiming:false, hit:null, hover:null}));
+  A.L = A.hands[0]; A.R = A.hands[1];
+  const rayGeo = new THREE.BufferGeometry().setFromPoints([V(), V(0,0,-1)]);
+  for (let i=0;i<2;i++){ const c = renderer.xr.getController(i); rig.add(c); const line = new THREE.Line(rayGeo, new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.55})); line.scale.z = 5; c.add(line); c.userData.line = line;
+    c.addEventListener('connected', e => { const h = e.data.handedness === 'left' ? 0 : 1; A.hands[h].ctrl = c; A.hands[h].src = e.data; cfg.onConnect && cfg.onConnect(A.hands[h], c); });
+    c.addEventListener('disconnected', () => { for (const H of A.hands) if (H.ctrl === c){ H.ctrl = null; H.src = null; } }); }
+  A.handGroup = (H) => H.ctrl;
+  const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(new Array(48).fill(0).map(() => V())), new THREE.LineBasicMaterial({color:(cfg.colors && cfg.colors.accent) ? new THREE.Color(cfg.colors.accent) : 0x4fb3ff})); arc.visible = false; arc.frustumCulled = false; scene.add(arc);
+  const tpMark = new THREE.Mesh(new THREE.RingGeometry(.2, .28, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0xffffff})); tpMark.visible = false; scene.add(tpMark);
+  const ray = A.ray = new THREE.Raycaster();
+  A.inBounds = (x, z) => !A.bounds || (x > A.bounds.x0 && x < A.bounds.x1 && z > A.bounds.z0 && z < A.bounds.z1);
+  function hitPick(o, d){ ray.set(o, d); ray.far = cfg.pickFar || 40; const list = A.pickables.filter(m => { let p = m; while (p){ if (!p.visible) return false; p = p.parent; } return true; }); const hits = ray.intersectObjects(list, false); return hits[0] || null; }
+  A.hitPick = hitPick;
+
+  function vrStep(dt){
+    for (const H of A.hands){ const prev = H.btn; if (H.ctrl && H.src && H.src.gamepad){ const b = H.src.gamepad.buttons, a = H.src.gamepad.axes; H.btn = {trigger:!!(b[0] && (b[0].pressed || b[0].value > .5)), grip:!!(b[1] && b[1].pressed), a:!!(b[4] && b[4].pressed), b:!!(b[5] && b[5].pressed)}; H.axes = [a[2]||0, a[3]||0]; H.ctrl.getWorldPosition(H.pos); H.ctrl.getWorldQuaternion(H.quat); H.dir.set(0,0,-1).applyQuaternion(H.quat); H.ctrl.userData.line.visible = true; } else H.btn = {}; for (const k of ['trigger','grip','a','b']){ H.down[k] = !!H.btn[k] && !prev[k]; H.up[k] = !H.btn[k] && !!prev[k]; } }
+    const hs = A.hands.filter(H => H.ctrl && H.src);
+    if (hs.some(H => H.down.b)){ if (A.menuOpen) A.closeMenu(); else A.openMenu(); }
+    // hover + click
+    for (const H of hs){ const hit = hitPick(H.pos, H.dir); const obj = hit && hit.object; if (H.hover !== obj){ if (H.hover && H.hover.userData.onHover) H.hover.userData.onHover(false); if (obj && obj.userData.onHover) obj.userData.onHover(true); H.hover = obj; } H.ctrl.userData.line.scale.z = hit ? hit.distance : 5;
+      if (H.down.trigger && obj && obj.userData.onClick && !H.aiming){ obj.userData.onClick(hit.point, H); H.consumed = true; } }
+    if (A.menuOpen){ arc.visible = tpMark.visible = false; return; }
+    cfg.vr && cfg.vr(dt, A, hs);
+    if (cfg.move === 'none') return;
+    const head = V(); camera.getWorldPosition(head); const fw = V(); camera.getWorldDirection(fw); if (!A.flyY) fw.y = 0; fw.normalize(); const side = V(-fw.z, 0, fw.x).normalize();
+    const L = A.L, R = A.R, sp = (cfg.speed || 2)*dt*(L.btn.grip ? 3 : 1);
+    if (L.ctrl && (Math.abs(L.axes[0]) > .15 || Math.abs(L.axes[1]) > .15)){ const d = fw.clone().multiplyScalar(-L.axes[1]*sp).addScaledVector(side, L.axes[0]*sp); if (A.inBounds(head.x + d.x, head.z + d.z)){ rig.position.add(d); if (cfg.minY != null) rig.position.y = Math.max(cfg.minY, rig.position.y); } }
+    if (R.ctrl){ if (Math.abs(R.axes[0]) > .7 && R.snap){ R.snap = false; const a = -Math.sign(R.axes[0])*Math.PI/6; const off = rig.position.clone().sub(head); off.y = 0; off.applyAxisAngle(V(0,1,0), a); rig.position.x = head.x + off.x; rig.position.z = head.z + off.z; rig.rotation.y += a; } if (Math.abs(R.axes[0]) < .3) R.snap = true;
+      if (A.flyY && Math.abs(R.axes[1]) > .3) rig.position.y = Math.max(cfg.minY != null ? cfg.minY : -1e9, rig.position.y - R.axes[1]*sp); }
+    if (cfg.move !== 'teleport'){ arc.visible = tpMark.visible = false; return; }
+    let shown = false;
+    for (const H of hs){
+      if (H.down.trigger && !H.consumed && !H.hover) H.aiming = true;
+      if (H.aiming){
+        if (H.btn.trigger){ const pts = arc.geometry.attributes.position; let p = H.pos.clone(), v = H.dir.clone().multiplyScalar(9), hit = null; const fy = cfg.floorY || 0;
+          for (let i=0;i<48;i++){ pts.setXYZ(i, p.x, p.y, p.z); if (!hit){ const np = p.clone().addScaledVector(v, .05); v.y -= 9.8*.05; if (np.y <= fy){ hit = p.clone().lerp(np, (p.y - fy)/(p.y - np.y)); p = hit.clone(); } else p = np; } }
+          pts.needsUpdate = true; shown = true; H.hit = hit && A.inBounds(hit.x, hit.z) ? hit : null; tpMark.visible = !!H.hit; if (H.hit) tpMark.position.copy(H.hit).add(V(0,.02,0)); }
+        else { H.aiming = false; if (H.hit){ rig.position.x += H.hit.x - head.x; rig.position.z += H.hit.z - head.z; } H.hit = null; tpMark.visible = false; }
+      }
+      if (!H.btn.trigger) H.consumed = false;
+    }
+    arc.visible = shown;
+  }
+
+  /* desktop */
+  A.keys = {}; let drag = null;
+  const el = renderer.domElement;
+  A.mouseNDC = new THREE.Vector2();
+  el.addEventListener('pointerdown', e => { A.audio(); drag = {x:e.clientX, y:e.clientY, m:0}; try { el.setPointerCapture(e.pointerId); } catch(_){} });
+  el.addEventListener('pointermove', e => { const r = el.getBoundingClientRect(); A.mouseNDC.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1); if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.m += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY; if (cfg.deskDrag && cfg.deskDrag(dx, dy, A)) return; A.look.yaw -= dx*.004; A.look.pitch = A.clamp(A.look.pitch - dy*.004, -1.4, 1.4); });
+  el.addEventListener('pointerup', e => { const click = drag && drag.m < 6; drag = null; if (!click || A.mode !== 'desk') return; ray.setFromCamera(A.mouseNDC, camera); const hit = hitPick(ray.ray.origin, ray.ray.direction); if (hit && hit.object.userData.onClick) hit.object.userData.onClick(hit.point, null); else cfg.deskClick && cfg.deskClick(ray.ray, A); });
+  el.addEventListener('wheel', e => { if (A.mode === 'desk' && cfg.wheel) { cfg.wheel(e.deltaY, A); e.preventDefault(); } }, {passive:false});
+  addEventListener('keydown', e => { A.keys[e.code] = true; if (A.mode === 'desk' && e.code === 'Escape') toOverlay(); cfg.onKey && A.mode === 'desk' && cfg.onKey(e, A); });
+  addEventListener('keyup', e => { A.keys[e.code] = false; });
+  let deskHover = null;
+  function deskStep(dt){
+    camera.position.set(0, 1.6, 0); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ');
+    ray.setFromCamera(A.mouseNDC, camera); const hit = hitPick(ray.ray.origin, ray.ray.direction); const obj = hit && hit.object;
+    if (deskHover !== obj){ if (deskHover && deskHover.userData.onHover) deskHover.userData.onHover(false); if (obj && obj.userData.onHover) obj.userData.onHover(true); deskHover = obj; el.style.cursor = obj ? 'pointer' : 'grab'; }
+    if (cfg.move === 'none') return;
+    const yaw = A.look.yaw + rig.rotation.y, sp = ((A.keys.ShiftLeft || A.keys.ShiftRight) ? 3.5 : 1)*(cfg.speed || 2)*dt;
+    const fw = V(-Math.sin(yaw), A.flyY ? Math.sin(A.look.pitch) : 0, -Math.cos(yaw)).normalize(), side = V(Math.cos(yaw), 0, -Math.sin(yaw)), mv = V();
+    if (A.keys.KeyW || A.keys.ArrowUp) mv.add(fw); if (A.keys.KeyS || A.keys.ArrowDown) mv.sub(fw); if (A.keys.KeyA || A.keys.ArrowLeft) mv.sub(side); if (A.keys.KeyD || A.keys.ArrowRight) mv.add(side);
+    if (A.flyY){ if (A.keys.KeyE || A.keys.Space) mv.y += 1; if (A.keys.KeyQ) mv.y -= 1; }
+    if (mv.lengthSq()){ mv.normalize().multiplyScalar(sp); if (A.inBounds(rig.position.x + mv.x, rig.position.z + mv.z)){ rig.position.add(mv); if (cfg.minY != null) rig.position.y = Math.max(cfg.minY, rig.position.y); } }
+  }
+  addEventListener('resize', () => { if (renderer.xr.isPresenting) return; renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+
+  /* flow */
+  A.mode = 'none';
+  const ov = document.getElementById('ov'), bVR = document.getElementById('bVR'), bDesk = document.getElementById('bDesk'), bMenu = document.getElementById('bMenu'), du = document.getElementById('deskui'), note = document.getElementById('xrNote');
+  function toOverlay(){ A.mode = 'none'; ov.hidden = false; bMenu.hidden = true; du.hidden = true; document.getElementById('status').hidden = true; cfg.onExit && cfg.onExit(A); }
+  bMenu.onclick = toOverlay;
+  bDesk.onclick = () => { A.audio(); A.mode = 'desk'; ov.hidden = true; bMenu.hidden = false; du.hidden = false; A.refreshDeskUI(); A.status(statusText); cfg.onEnter && cfg.onEnter(A); };
+  async function enterVR(){
+    if (renderer.xr.isPresenting) return; A.audio();
+    try { const s = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']}); await renderer.xr.setSession(s); if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+      A.mode = 'vr'; ov.hidden = true; bMenu.hidden = true; du.hidden = true; camera.position.set(0,0,0); camera.rotation.set(0,0,0); A.look.yaw = A.look.pitch = 0; A.status(statusText); cfg.onEnter && cfg.onEnter(A);
+      s.addEventListener('end', () => { renderer.setSize(innerWidth, innerHeight); camera.position.set(0,1.6,0); toOverlay(); });
+      s.addEventListener('select', () => A.audio());
+    } catch(e){ note.textContent = 'ورود به VR انجام نشد: ' + (e && e.message || e); }
+  }
+  A.enterVR = enterVR;
+  (async () => { let ok = false; try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){} bVR.disabled = !ok; if (!ok && !cfg.note) note.textContent = 'این مرورگر واقعیت مجازی ندارد؛ صفحه را در مرورگر کوئست باز کن. با موس هم می‌شود دید.'; })();
+  bVR.onclick = enterVR;
+  if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
+
+  const clock = new THREE.Clock(); A.t = 0;
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), .05); A.t += dt; A.dt = dt;
+    if (renderer.xr.isPresenting) vrStep(dt);
+    else { for (const H of A.hands) if (H.ctrl) H.ctrl.userData.line.visible = false; arc.visible = tpMark.visible = false;
+      if (A.mode === 'desk') deskStep(dt); else if (cfg.idle !== false){ A.look.yaw += dt*.04; camera.position.set(0, 1.6, 0); camera.rotation.set(A.look.pitch, A.look.yaw, 0, 'YXZ'); } }
+    camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
+    if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
+    cfg.update && cfg.update(dt, A);
+    renderer.render(scene, camera);
+  });
+  cfg.setup && cfg.setup(A);
+  Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
+};
+})();
+
+</script>
+<script>
+// @title منظومهٔ شمسی
+// @desc سفر در منظومهٔ شمسی در واقعیت مجازی: خورشید، هشت سیاره و ماه‌ها با اطلاعات فارسی.
+(function(){
+const {V, fa, fa1, rand} = A;
+const P = [
+  {k:'mercury', n:'عطارد', km:2440, au:.39, d:88, moons:0, c:['#8c8580','#b5ada6'], f:'کوچک‌ترین و نزدیک‌ترین سیاره به خورشید. روزهایش ۴۳۰ درجه داغ و شب‌هایش ۱۸۰ درجه زیر صفر است، چون هوایی ندارد که گرما را نگه دارد.'},
+  {k:'venus', n:'زهره (ناهید)', km:6052, au:.72, d:225, moons:0, c:['#d9b26f','#f0d9a0'], f:'داغ‌ترین سیارهٔ منظومه با دمای حدود ۴۶۵ درجه. ابرهای اسید سولفوریک گرما را زندانی کرده‌اند. برعکس بیشتر سیاره‌ها به دور خودش می‌چرخد.'},
+  {k:'earth', n:'زمین', km:6371, au:1, d:365.25, moons:1, c:['#2a6fd1','#3fa34d'], f:'تنها جایی که می‌دانیم زندگی در آن هست. ۷۱ درصد سطحش را آب پوشانده و نور خورشید حدود ۸ دقیقه طول می‌کشد تا به آن برسد.'},
+  {k:'mars', n:'مریخ (بهرام)', km:3390, au:1.52, d:687, moons:2, c:['#b5502d','#d97a4a'], f:'سیارهٔ سرخ. بلندترین کوه منظومه، المپوس، با ارتفاع حدود ۲۲ کیلومتر روی مریخ است. چند مریخ‌نورد همین حالا روی سطحش کار می‌کنند.'},
+  {k:'jupiter', n:'مشتری (برجیس)', km:69911, au:5.2, d:4333, moons:95, c:['#c9a27a','#e8d2b0','#a8744f'], f:'بزرگ‌ترین سیاره؛ بیش از ۱۳۰۰ زمین در آن جا می‌شود. لکهٔ سرخ بزرگش طوفانی است که قرن‌ها ادامه دارد و از زمین بزرگ‌تر است.'},
+  {k:'saturn', n:'زحل (کیوان)', km:58232, au:9.54, d:10759, moons:146, c:['#d9c08c','#efe0b8','#b89a63'], ring:true, f:'حلقه‌های زیبایش از تکه‌های یخ و سنگ ساخته شده‌اند. چگالی‌اش از آب کمتر است؛ اگر اقیانوسی به اندازهٔ کافی بزرگ بود، روی آب شناور می‌ماند.'},
+  {k:'uranus', n:'اورانوس', km:25362, au:19.2, d:30687, moons:28, c:['#8fd3dc','#b4e6ea'], f:'به پهلو خوابیده! محور چرخشش حدود ۹۸ درجه کج است، برای همین هر قطبش ۴۲ سال روز و ۴۲ سال شب دارد.'},
+  {k:'neptune', n:'نپتون', km:24622, au:30.06, d:60190, moons:16, c:['#2f56c9','#4a78e6'], f:'دورترین سیاره. سریع‌ترین بادهای منظومه با سرعت بیش از ۲۰۰۰ کیلومتر در ساعت آنجا می‌وزد. هر سالش ۱۶۵ سال زمینی است.'},
+];
+const SUN = {n:'خورشید', km:696340, f:'ستارهٔ ما؛ ۹۹٫۸ درصد جرم کل منظومه در آن است. دمای سطحش حدود ۵۵۰۰ درجه و دمای مرکزش حدود ۱۵ میلیون درجه است. حدود ۱۰۹ زمین کنار هم قطر خورشید می‌شود.'};
+let speed = 1, paused = false, info, planets = [], sunMesh, follow = null;
+const rDisp = km => .25*Math.sqrt(km/6371);
+const dDisp = au => 6 + 9*Math.pow(au, .62);
+
+function noiseTex(cols, bands, seed){
+  return A.cv(512, 256, (x, w, h) => {
+    x.fillStyle = cols[0]; x.fillRect(0,0,w,h);
+    if (bands){ for (let y=0;y<h;y+=2){ const t = Math.sin(y*.09 + seed) + Math.sin(y*.23 + seed*2)*.5; x.fillStyle = cols[t > .4 ? 1 : t < -.6 ? (cols[2] || cols[0]) : 0]; x.globalAlpha = .55; x.fillRect(0,y,w,2); } x.globalAlpha = 1; }
+    else { for (let i=0;i<500;i++){ x.fillStyle = cols[i%cols.length]; x.globalAlpha = rand(.15,.5); x.beginPath(); x.ellipse(rand(0,w), rand(0,h), rand(4,40), rand(3,22), rand(0,3), 0, 7); x.fill(); } x.globalAlpha = 1; }
+  });
+}
+function earthTex(){ return A.cv(1024, 512, (x, w, h) => { x.fillStyle = '#1f5fbf'; x.fillRect(0,0,w,h); const land = [[.18,.3,.12,.16],[.27,.62,.06,.17],[.5,.3,.07,.1],[.53,.55,.09,.18],[.7,.32,.18,.14],[.82,.68,.06,.06]];
+  for (const [cx,cy,rx,ry] of land){ for (let i=0;i<60;i++){ x.fillStyle = i%3 ? '#3e9a4a' : '#b9a46a'; x.beginPath(); x.ellipse((cx + rand(-rx,rx)*.8)*w, (cy + rand(-ry,ry)*.8)*h, rand(.02,.06)*w, rand(.02,.05)*h, rand(0,3), 0, 7); x.fill(); } }
+  x.fillStyle = '#f2f6fa'; x.fillRect(0,0,w,h*.06); x.fillRect(0,h*.94,w,h*.06); for (let i=0;i<120;i++){ x.globalAlpha = .45; x.fillStyle = '#fff'; x.beginPath(); x.ellipse(rand(0,w), rand(0,h), rand(10,60), rand(3,10), 0, 0, 7); x.fill(); } x.globalAlpha = 1; }); }
+
+function setup(A){
+  const s = A.scene;
+  // stars
+  const n = 4000, pos = new Float32Array(n*3); for (let i=0;i<n;i++){ const v = V(rand(-1,1), rand(-1,1), rand(-1,1)).normalize().multiplyScalar(rand(400, 900)); pos.set([v.x, v.y, v.z], i*3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); s.add(new THREE.Points(g, new THREE.PointsMaterial({color:0xffffff, size:1.6, sizeAttenuation:false})));
+  A.hemi.intensity = .12; A.sun.intensity = 0;
+  s.add(new THREE.PointLight(0xfff2dd, 2.2, 0, 0));
+  sunMesh = new THREE.Mesh(new THREE.SphereGeometry(3, 48, 32), new THREE.MeshBasicMaterial({map:noiseTex(['#ffb020','#ffd560','#ff8a10'], false, 1)})); s.add(sunMesh);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:A.cv(256,256,(x)=>{ const gr = x.createRadialGradient(128,128,20,128,128,128); gr.addColorStop(0,'rgba(255,200,90,.9)'); gr.addColorStop(1,'rgba(255,140,30,0)'); x.fillStyle = gr; x.fillRect(0,0,256,256); }), blending:THREE.AdditiveBlending, depthWrite:false})); glow.scale.set(14,14,1); sunMesh.add(glow);
+  sunMesh.userData.onClick = () => select(null); A.pickables.push(sunMesh);
+  for (const p of P){
+    const r = rDisp(p.km), d = dDisp(p.au), pivot = new THREE.Group(); s.add(pivot);
+    const mat = new THREE.MeshStandardMaterial({map: p.k === 'earth' ? earthTex() : noiseTex(p.c, p.km > 20000, p.au), roughness:.9, metalness:0});
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r, 40, 28), mat); m.position.x = d; pivot.add(m);
+    if (p.ring){ const rg = new THREE.RingGeometry(r*1.3, r*2.3, 64); const ringT = A.cv(256, 8, (x,w,h) => { for (let i=0;i<w;i++){ x.fillStyle = `rgba(220,200,160,${.3 + .5*Math.abs(Math.sin(i*.17))})`; x.fillRect(i,0,1,h); } });
+      const uv = rg.attributes.uv, ps = rg.attributes.position; for (let i=0;i<uv.count;i++){ const l = Math.hypot(ps.getX(i), ps.getY(i)); uv.setXY(i, (l - r*1.3)/(r), .5); }
+      const ring = new THREE.Mesh(rg, new THREE.MeshBasicMaterial({map:ringT, side:THREE.DoubleSide, transparent:true})); ring.rotation.x = -Math.PI/2 + .45; m.add(ring); }
+    if (p.k === 'earth'){ const moon = new THREE.Mesh(new THREE.SphereGeometry(r*.27, 20, 14), new THREE.MeshStandardMaterial({color:0xbbbbbb})); moon.position.x = r*2.4; const mp = new THREE.Group(); mp.add(moon); m.add(mp); p.moonPivot = mp; }
+    m.rotation.z = p.k === 'uranus' ? 1.7 : .3;
+    const orbit = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(new Array(128).fill(0).map((_, i) => V(Math.cos(i/128*Math.PI*2)*d, 0, Math.sin(i/128*Math.PI*2)*d))), new THREE.LineBasicMaterial({color:0x44506a, transparent:true, opacity:.6})); s.add(orbit);
+    pivot.rotation.y = rand(0, 6.28);
+    m.userData.onClick = () => select(p); A.pickables.push(m);
+    p.m = m; p.pivot = pivot; p.r = r; planets.push(p);
+  }
+  info = A.panel(1024, 600, 1.3); info.m.visible = false;
+  A.status('روی یک سیاره بزن تا درباره‌اش بخوانی', 8);
+}
+function select(p){
+  const o = p || SUN;
+  const body = p ? `${o.f}\n\nفاصله از خورشید: ${fa1(p.au, 2)} واحد نجومی (${fa(p.au*149.6)} میلیون کیلومتر)\nقطر: ${fa(p.km*2)} کیلومتر\nیک سال: ${p.d < 1000 ? fa(p.d) + ' روز' : fa1(p.d/365.25) + ' سال زمینی'}\nماه‌ها: ${fa(p.moons)}` : o.f + `\n\nقطر: ${fa(o.km*2)} کیلومتر`;
+  A.card(info, o.n, body, {size:31, sub:'ماشه یا کلیک روی سیارهٔ دیگر: رفتن به آن'});
+  info.m.visible = true; follow = p; goTo(p); A.click();
+}
+function goTo(p){
+  const wp = V(); (p ? p.m : sunMesh).getWorldPosition(wp); const r = p ? p.r : 3;
+  const dir = wp.clone().setY(0); if (dir.lengthSq() < .01) dir.set(0,0,1); dir.normalize();
+  const dist = r*4 + 1.6, stand = wp.clone().addScaledVector(dir, p ? -dist : dist); stand.y = wp.y - 1.6 + r*.6;
+  if (A.mode === 'vr'){ const h = V(); A.camera.getWorldPosition(h); A.rig.position.add(stand.clone().sub(h)); }
+  else { A.rig.position.copy(stand).setY(stand.y); const look = wp.clone().sub(V(stand.x, stand.y + 1.6, stand.z)); A.look.yaw = Math.atan2(-look.x, -look.z) - A.rig.rotation.y; A.look.pitch = Math.atan2(look.y, Math.hypot(look.x, look.z)); }
+  setTimeout(placeInfo, 60);
+}
+function placeInfo(){ const h = V(); A.camera.getWorldPosition(h); const d = V(); A.camera.getWorldDirection(d); d.y = 0; d.normalize(); const side = V(-d.z, 0, d.x); info.m.position.copy(h).addScaledVector(d, 1.6).addScaledVector(side, -.75); info.m.position.y = h.y - .1; info.m.lookAt(h); }
+function update(dt){
+  const k = paused ? 0 : speed;
+  sunMesh.rotation.y += dt*.03;
+  for (const p of planets){ p.pivot.rotation.y += dt*k*2*Math.PI/(60*p.d/365.25); p.m.rotation.y += dt*.5; if (p.moonPivot) p.moonPivot.rotation.y += dt*k*2*Math.PI*13.4/60; }
+}
+A.init({
+  id:'solar', title:'منظومهٔ شمسی', colors:{bg:'#03040a', accent:'#ffb84f', accent2:'#4fb3ff'}, bg:0x03040a, move:'fly', speed:4, far:3000, start:[0, 1, 26],
+  tagline:'وسط فضا معلق هستی. کنار خورشید پرواز کن، دور زحل بچرخ و ببین زمین در مقایسه با مشتری چقدر کوچک است. اندازه‌ها و فاصله‌ها برای دیده شدن فشرده شده‌اند، ولی ترتیب و نسبت‌ها درست است.',
+  rules:['ماشه روی هر سیاره: رفتن کنار آن و خواندن اطلاعاتش.','استیک چپ پرواز می‌کند (به هر طرف که نگاه کنی). استیک راست: بالا و پایین رفتن و چرخیدن. نگه داشتن دکمهٔ پهلوی چپ سرعت را سه برابر می‌کند.'],
+  deskRules:'W/A/S/D پرواز، E و Q بالا و پایین، کشیدن موس نگاه، کلیک روی سیاره رفتن به آن.',
+  menu: () => [{label:'خورشید', act:() => select(null)}].concat(P.map(p => ({label:p.n, act:() => select(p)}))).concat([{label: paused ? 'ادامهٔ گردش' : 'توقف گردش', color:'#4fb3ff', act:() => { paused = !paused; }}, {label: speed > 1 ? 'سرعت عادی' : 'گردش ۱۰ برابر', color:'#4fb3ff', act:() => { speed = speed > 1 ? 1 : 10; }}]),
+  setup, update,
+});
+window.__app = {select, planets};
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>دوز</title>
+<meta name="description" content="دوز سه‌بعدی در برابر رایانه: سه مهره در یک ردیف.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+</head>
+<body>
+<script>
+/* VR kit: shared engine for the Quest WebXR games. Exposes window.K */
+(function(){
+'use strict';
+const K = window.K = {};
+const V = K.V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
+K.fa = n => Math.round(n).toLocaleString('fa-IR');
+K.fa1 = n => (Math.round(n*10)/10).toLocaleString('fa-IR');
+K.clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+K.rand = (a,b) => a + Math.random()*(b-a);
+K.pick = a => a[Math.floor(Math.random()*a.length)];
+K.cv = function(w,h,draw){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t; };
+K.rr = function(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); };
+K.basic = (c, o={}) => new THREE.MeshBasicMaterial(Object.assign({color:c}, o));
+K.std = (c, ei=.2, o={}) => new THREE.MeshStandardMaterial(Object.assign({color:c, emissive:c, emissiveIntensity:ei, roughness:.5, metalness:.1}, o));
+K.lambert = (c, o={}) => new THREE.MeshLambertMaterial(Object.assign({color:c}, o));
+const F_DISP = 'Lalezar, Vazirmatn, Tahoma, sans-serif', F_BODY = 'Vazirmatn, Tahoma, sans-serif';
+K.F_DISP = F_DISP; K.F_BODY = F_BODY;
+
+/* ---------- geometry helpers ---------- */
+const _ab = V(), _ap = V(), _c = V(), _a = V(), _b = V();
+K.segDist = function(p,a,b){ _ab.subVectors(b,a); const t = K.clamp(_ap.subVectors(p,a).dot(_ab)/Math.max(_ab.lengthSq(),1e-6),0,1); return _c.copy(a).addScaledVector(_ab,t).distanceTo(p); };
+K.sweptDist = function(p,H){ let m = 1e9; for (let k=0;k<=3;k++){ const f = k/3; _a.lerpVectors(H.prevBase,H.base,f); _b.lerpVectors(H.prevTip,H.tip,f); m = Math.min(m, K.segDist(p,_a,_b)); } return m; };
+K.sweptPoint = function(p,H){ let m = 1e9; for (let k=0;k<=4;k++){ _a.lerpVectors(H.prevTip,H.tip,k/4); m = Math.min(m, _a.distanceTo(p)); } return m; };
+
+/* ---------- CSS + overlay ---------- */
+function injectUI(cfg){
+  const c = Object.assign({bg:'#0b0d1c', ink:'#eeeaff', muted:'#a39fc4', accent:'#7c5cff', accent2:'#ff4d6d'}, cfg.colors || {});
+  const st = document.createElement('style');
+  st.textContent = `
+:root{--bg:${c.bg};--ink:${c.ink};--muted:${c.muted};--accent:${c.accent};--accent2:${c.accent2};--panel:rgba(10,10,24,.8);--line:rgba(255,255,255,.16);
+--display:Lalezar,Vazirmatn,Tahoma,sans-serif;--body:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;color-scheme:dark}
+[hidden]{display:none!important}
+html,body{height:100%}body{margin:0;-webkit-user-select:none;user-select:none;background:var(--bg);color:var(--ink);font-family:var(--body);overflow:hidden}
+#stage{position:fixed;inset:0}#stage canvas{display:block;width:100%;height:100%;touch-action:none}
+#ov{position:fixed;inset:0;overflow:auto;display:grid;place-items:center;padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px));
+padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.card{width:100%;max-width:540px;display:flex;flex-direction:column;gap:16px;text-align:right}
+.back{align-self:flex-start;color:var(--muted);text-decoration:none;font-size:14px;border:1px solid var(--line);border-radius:999px;padding:6px 14px}
+.back:hover{color:var(--ink);border-color:var(--accent)}
+.eyebrow{margin:0;color:var(--muted);font-size:13px}
+.logo{margin:0;font:400 clamp(52px,14vw,92px)/1.05 var(--display);color:var(--accent);text-shadow:0 0 22px color-mix(in srgb,var(--accent) 55%,transparent);text-wrap:balance}
+.lede{margin:0;font-size:16px;line-height:1.9;max-width:62ch}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:600 16px/1 var(--body);color:var(--ink);background:transparent;border:1.5px solid var(--line);border-radius:12px;padding:15px 20px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}.btn:focus-visible{outline:2px solid var(--accent2);outline-offset:3px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:800}
+.btn[disabled]{opacity:.38;cursor:not-allowed}
+.note{margin:0;font-size:13.5px;line-height:1.8;color:var(--muted);border-right:3px solid var(--accent);padding-right:10px}
+.how{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.how h2{margin:0 0 10px;font:400 22px/1 var(--display)}
+.how ul{margin:0;padding:0 18px 0 0;display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.75}
+.how li::marker{color:var(--accent)}
+.how .desk{margin:12px 0 0;font-size:13px;color:var(--muted);line-height:1.7}
+#bMenu{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));font:600 14px/1 var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 16px;cursor:pointer}
+#hint{position:fixed;bottom:calc(12px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);max-width:calc(100% - 32px);font-size:13px;color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;text-align:center;direction:rtl;pointer-events:none}`;
+  document.head.appendChild(st);
+  const stage = document.createElement('div'); stage.id = 'stage'; document.body.appendChild(stage);
+  const ov = document.createElement('div'); ov.id = 'ov'; ov.dir = 'rtl';
+  ov.innerHTML = `<main class="card">
+    ${cfg.hub === false ? '' : '<a class="back" href="../index.html">→ همهٔ بازی‌ها</a>'}
+    <p class="eyebrow">${cfg.eyebrow || 'بازی واقعیت مجازی برای Meta Quest 3S'}</p>
+    <h1 class="logo">${cfg.title}</h1>
+    <p class="lede">${cfg.tagline}</p>
+    <div class="actions"><button id="bVR" class="btn primary" disabled>ورود به واقعیت مجازی</button><button id="bDesk" class="btn">${cfg.deskLabel || 'تمرین با موس'}</button></div>
+    <p id="xrNote" class="note">در حال بررسی پشتیبانی WebXR…</p>
+    <section class="how"><h2>طرز بازی</h2><ul>${cfg.rules.map(r => `<li>${r}</li>`).join('')}</ul>${cfg.deskRules ? `<p class="desk">با موس: ${cfg.deskRules}</p>` : ''}</section>
+  </main>`;
+  document.body.appendChild(ov);
+  const bm = document.createElement('button'); bm.id = 'bMenu'; bm.hidden = true; bm.textContent = 'منو'; document.body.appendChild(bm);
+  const hint = document.createElement('div'); hint.id = 'hint'; hint.hidden = true; hint.textContent = cfg.deskRules || ''; document.body.appendChild(hint);
+  return stage;
+}
+
+/* ---------- audio ---------- */
+K.audio = function(){
+  if (!K.ac){
+    const ac = K.ac = new (window.AudioContext || window.webkitAudioContext)();
+    const comp = ac.createDynamicsCompressor(); comp.threshold.value = -12; comp.ratio.value = 4; comp.connect(ac.destination);
+    K.master = ac.createGain(); K.master.gain.value = .9; K.master.connect(comp);
+    K.sfx = ac.createGain(); K.sfx.gain.value = .8; K.sfx.connect(K.master);
+    K.mus = ac.createGain(); K.mus.gain.value = .7; K.mus.connect(K.master);
+    K.noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+    const d = K.noiseBuf.getChannelData(0); for (let i=0;i<d.length;i++) d[i] = Math.random()*2-1;
+    K.cfg.onAudio && K.cfg.onAudio(K);
+  }
+  if (K.ac.state === 'suspended') K.ac.resume();
+  return K.ac;
+};
+K.mtof = m => 440*Math.pow(2,(m-69)/12);
+K.env = function(g,t,peak,dec,att=.004){ g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(Math.max(peak,.0002),t+att); g.gain.exponentialRampToValueAtTime(.0001,t+att+dec); };
+K.tone = function(o){
+  if (!K.ac) return; const ac = K.ac, t = o.t != null ? o.t : ac.currentTime;
+  const osc = ac.createOscillator(), g = ac.createGain(); osc.type = o.type || 'sine';
+  osc.frequency.setValueAtTime(o.f, t); if (o.f2) osc.frequency.exponentialRampToValueAtTime(o.f2, t + (o.slide || o.dec || .1));
+  if (o.detune) osc.detune.value = o.detune;
+  K.env(g, t, o.peak != null ? o.peak : .2, o.dec || .2, o.att);
+  let node = osc;
+  if (o.lp){ const f = ac.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = o.lp; f.Q.value = o.q || 1; node.connect(f); node = f; }
+  node.connect(g); g.connect(o.dest || K.sfx); osc.start(t); osc.stop(t + (o.att||.004) + (o.dec||.2) + .05);
+};
+K.noise = function(o){
+  if (!K.ac) return; const ac = K.ac, t = o.t != null ? o.t : ac.currentTime;
+  const s = ac.createBufferSource(); s.buffer = K.noiseBuf; const f = ac.createBiquadFilter(), g = ac.createGain();
+  f.type = o.ft || 'bandpass'; f.frequency.setValueAtTime(o.freq || 1000, t); if (o.freq2) f.frequency.exponentialRampToValueAtTime(o.freq2, t + (o.dec || .2)); f.Q.value = o.q || 1;
+  K.env(g, t, o.peak != null ? o.peak : .3, o.dec || .2, o.att);
+  s.connect(f); f.connect(g); g.connect(o.dest || K.sfx); s.start(t); s.stop(t + (o.att||.004) + (o.dec||.2) + .05);
+};
+K.click = () => { K.tone({type:'triangle', f:880, f2:1320, dec:.06, peak:.12}); };
+
+/* ---------- init ---------- */
+K.init = function(cfg){
+  K.cfg = cfg;
+  const stage = injectUI(cfg);
+  const renderer = K.renderer = new THREE.WebGLRenderer({antialias:true, powerPreference:'high-performance'});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.xr.enabled = true;
+  renderer.xr.setReferenceSpaceType('local-floor');
+  if (cfg.shadows){ renderer.shadowMap.enabled = true; }
+  stage.appendChild(renderer.domElement);
+  const scene = K.scene = new THREE.Scene();
+  scene.background = new THREE.Color(cfg.bg != null ? cfg.bg : 0x0b0d1c);
+  if (cfg.fog) scene.fog = new THREE.Fog(cfg.bg != null ? cfg.bg : 0x0b0d1c, cfg.fog[0], cfg.fog[1]);
+  const rig = K.rig = new THREE.Group(); scene.add(rig);
+  const camera = K.camera = new THREE.PerspectiveCamera(cfg.fov || 62, innerWidth/innerHeight, .03, 400);
+  rig.add(camera);
+  K.resetCamera = function(){
+    const dc = cfg.deskCam || {pos:[0,1.55,1.2], look:[0,1.3,-2]};
+    camera.position.set(...dc.pos); camera.quaternion.identity(); camera.lookAt(V(...dc.look).add(rig.position));
+    camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix();
+  };
+  K.resetCamera();
+  addEventListener('resize', () => { if (renderer.xr.isPresenting) return; renderer.setSize(innerWidth, innerHeight); K.resetCamera(); });
+  if (cfg.lights !== false){
+    K.hemi = new THREE.HemisphereLight(0xdde4ff, 0x22202e, .85); scene.add(K.hemi);
+    K.sun = new THREE.DirectionalLight(0xffffff, .75); K.sun.position.set(1.5,4,2.5); scene.add(K.sun);
+  }
+  K.head = V(); K.headDir = V(0,0,-1);
+
+  /* hands */
+  K.hands = [0,1].map(h => {
+    const holder = new THREE.Group();
+    const H = {h, holder, ctrl:null, src:null, active:false,
+      tipL: V(...(cfg.tip ? cfg.tip(h) : [0,0,0])), baseL: V(...(cfg.base ? cfg.base(h) : (cfg.tip ? cfg.tip(h) : [0,0,0]))),
+      tip:V(), base:V(), prevTip:V(), prevBase:V(), vel:V(), speed:0, pos:V(), prevPos:V(), pvel:V(), quat:new THREE.Quaternion(), dir:V(0,0,-1),
+      btn:{trigger:false, squeeze:false, a:false, b:false}, down:{}, up:{}, axes:[0,0], init:false,
+      buzz(a,ms){ try { const hp = H.src && H.src.gamepad && H.src.gamepad.hapticActuators && H.src.gamepad.hapticActuators[0]; if (hp && hp.pulse) hp.pulse(a, ms); } catch(e){} }};
+    if (cfg.hand){ const m = cfg.hand(h, K); if (m) holder.add(m); H.model = m; }
+    return H;
+  });
+  K.L = K.hands[0]; K.R = K.hands[1];
+  const rayGeo = new THREE.BufferGeometry().setFromPoints([V(0,0,0), V(0,0,-1)]);
+  const rayMat = new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.55});
+  for (let i=0;i<2;i++){
+    const c = renderer.xr.getController(i); rig.add(c);
+    const line = new THREE.Line(rayGeo, rayMat); line.scale.z = 3; line.visible = false; c.add(line); c.userData.line = line;
+    c.addEventListener('connected', e => {
+      const hd = e.data && e.data.handedness; const h = hd === 'left' ? 0 : hd === 'right' ? 1 : i;
+      const H = K.hands[h]; if (H.ctrl && H.ctrl !== c) H.ctrl.remove(H.holder);
+      c.add(H.holder); H.ctrl = c; H.src = e.data; H.active = true; H.init = false; H.holder.visible = true;
+      cfg.onConnect && cfg.onConnect(H);
+    });
+    c.addEventListener('disconnected', () => { for (const H of K.hands) if (H.ctrl === c){ c.remove(H.holder); H.ctrl = null; H.src = null; H.active = false; } });
+  }
+
+  /* desktop pointer */
+  K.mouse = {ndc:new THREE.Vector2(.1,-.1), down:false, right:false, ray:new THREE.Raycaster(), keys:{}, dragDX:0, dragDY:0};
+  const el = renderer.domElement;
+  let lastX = 0, lastY = 0;
+  el.addEventListener('pointermove', e => { const r = el.getBoundingClientRect(); K.mouse.ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1); if (K.mouse.down || K.mouse.right){ K.mouse.dragDX += e.clientX - lastX; K.mouse.dragDY += e.clientY - lastY; } lastX = e.clientX; lastY = e.clientY; });
+  el.addEventListener('pointerdown', e => { K.audio(); lastX = e.clientX; lastY = e.clientY; if (e.button === 2) K.mouse.right = true; else K.mouse.down = true; try { el.setPointerCapture(e.pointerId); } catch(_){} pointerClick(); });
+  addEventListener('pointerup', e => { if (e.button === 2) K.mouse.right = false; else K.mouse.down = false; });
+  el.addEventListener('contextmenu', e => e.preventDefault());
+  addEventListener('keydown', e => { K.mouse.keys[e.code] = true; if (K.mode === 'desk' && e.key === 'Escape') toOverlay(); cfg.onKey && K.mode === 'desk' && cfg.onKey(e, K); });
+  addEventListener('keyup', e => { K.mouse.keys[e.code] = false; });
+  const plane = new THREE.Plane(V(0,0,1), -(cfg.deskZ != null ? cfg.deskZ : -1)), _P = V(), _d = V(), SH = V(.3,1.05,.5);
+  K.deskPoint = function(z){ K.mouse.ray.setFromCamera(K.mouse.ndc, camera); const pl = z == null ? plane : new THREE.Plane(V(0,0,1), -z); return K.mouse.ray.ray.intersectPlane(pl, _P) ? _P.clone() : null; };
+  function deskPlace(dt){
+    const H = K.R;
+    if (cfg.desk){ cfg.desk(K, dt); return; }
+    const p = K.deskPoint(); if (!p) return;
+    const dir = _d.subVectors(p, SH).normalize();
+    H.holder.position.copy(p).addScaledVector(dir, -(cfg.deskBack || 0));
+    H.holder.lookAt(_c.copy(H.holder.position).sub(dir));
+  }
+
+  /* panels, menu, hud */
+  K.panel = function(w,h,worldW,parent){
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d'); const tex = new THREE.CanvasTexture(c); tex.anisotropy = 4;
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(worldW, worldW*h/w), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, fog:false}));
+    m.renderOrder = 10; (parent || scene).add(m); return {c,x,tex,m};
+  };
+  K.panelBg = function(p, border){ const {x,c} = p; x.clearRect(0,0,c.width,c.height); K.rr(x,6,6,c.width-12,c.height-12,28); x.fillStyle = 'rgba(10,10,24,.74)'; x.fill(); x.lineWidth = 4; x.strokeStyle = border || (cfg.colors && cfg.colors.accent) || '#7c5cff'; x.stroke(); x.direction = 'rtl'; x.textBaseline = 'alphabetic'; };
+  const mp = cfg.menuPos || [0,1.95,-2.3];
+  const titleP = K.panel(1024,300,2.0); titleP.m.position.set(...mp);
+  const resP = K.panel(1024,560,2.0); resP.m.position.set(mp[0], mp[1]+.2, mp[2]);
+  function drawTitle(){
+    const {x,c} = titleP; x.clearRect(0,0,c.width,c.height); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `400 150px ${F_DISP}`; x.shadowColor = (cfg.colors && cfg.colors.accent) || '#7c5cff'; x.shadowBlur = 28; x.fillStyle = (cfg.colors && cfg.colors.accent) || '#fff'; x.fillText(cfg.title, 512, 120); x.shadowBlur = 0;
+    x.font = `600 40px ${F_BODY}`; x.fillStyle = '#ffffff'; x.fillText(cfg.menuHint || 'یک حالت را انتخاب کن: دسته را رویش بگیر و ماشه را بزن', 512, 250);
+    titleP.tex.needsUpdate = true;
+  }
+  K.buttons = [];
+  function makeButton(label, color, action, w=.62){
+    const p = K.panel(320,110,w); const b = {p, label, color, action, hover:false};
+    b.draw = () => { const {x} = p; x.clearRect(0,0,320,110); K.rr(x,6,6,308,98,22); x.fillStyle = b.hover ? color : 'rgba(10,10,24,.85)'; x.fill(); x.lineWidth = 5; x.strokeStyle = color; x.stroke();
+      x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.font = `400 54px ${F_DISP}`; x.fillStyle = b.hover ? '#0b0b16' : '#ffffff'; x.fillText(label, 160, 60); p.tex.needsUpdate = true; };
+    b.draw(); p.m.userData.btn = b; K.buttons.push(b); return b;
+  }
+  const modeBtns = cfg.modes.map(md => makeButton(md.label, md.color || '#7c5cff', () => K.start(md.key)));
+  const exitBtn = makeButton('→ فهرست بازی‌ها', '#8a8aa0', () => { location.href = cfg.hubUrl || '../index.html'; }, .62);
+  const all = modeBtns.length;
+  modeBtns.forEach((b,i) => b.p.m.position.set(mp[0] + ((all-1)/2 - i)*.7, mp[1]-.55, mp[2]+.05));
+  exitBtn.p.m.position.set(mp[0], mp[1]-.95, mp[2]+.05);
+  function showButtons(v){ modeBtns.forEach(b => b.p.m.visible = v); exitBtn.p.m.visible = v && cfg.hub !== false; }
+
+  const hudL = K.panel(512,256,.9); const hp = cfg.hudPos || [-1.25,1.95,-2.1]; hudL.m.position.set(...hp); hudL.m.rotation.y = hp[0] < 0 ? .45 : -.45;
+  const hudR = K.panel(512,256,.9); hudR.m.position.set(-hp[0], hp[1], hp[2]); hudR.m.rotation.y = -hudL.m.rotation.y;
+  let hudKeyL = '', hudKeyR = '';
+  function drawHud(p, label, value, l2, l3, col){
+    K.panelBg(p); const {x} = p;
+    x.textAlign = 'right'; x.fillStyle = '#b8b4d8'; x.font = `600 32px ${F_BODY}`; x.fillText(label || '', 476, 60);
+    x.fillStyle = col || '#ffffff'; x.font = `400 104px ${F_DISP}`; x.fillText(value == null ? '' : value, 476, 168);
+    x.fillStyle = '#d8d4f0'; x.font = `600 30px ${F_BODY}`; if (l2) x.fillText(l2, 476, 214); if (l3){ x.textAlign = 'left'; x.fillText(l3, 36, 60); }
+    p.tex.needsUpdate = true;
+  }
+  K.hud = function(label, value, l2, l3, col){ const k = [label,value,l2,l3,col].join('|'); if (k === hudKeyL) return; hudKeyL = k; drawHud(hudL, label, value, l2, l3, col); };
+  K.hudR = function(label, value, l2, l3, col){ const k = [label,value,l2,l3,col].join('|'); if (k === hudKeyR) return; hudKeyR = k; drawHud(hudR, label, value, l2, l3, col); hudR.m.userData.used = true; };
+  K.hudPanels = [hudL, hudR];
+
+  /* particles */
+  const PN = 600;
+  const pPos = new Float32Array(PN*3), pCol = new Float32Array(PN*3), pBase = new Float32Array(PN*3), pVel = new Float32Array(PN*3), pLife = new Float32Array(PN), pMax = new Float32Array(PN), pGrav = new Float32Array(PN);
+  for (let i=0;i<PN;i++) pPos[i*3+1] = -999;
+  const pGeo = new THREE.BufferGeometry(); pGeo.setAttribute('position', new THREE.BufferAttribute(pPos,3)); pGeo.setAttribute('color', new THREE.BufferAttribute(pCol,3));
+  const pts = new THREE.Points(pGeo, new THREE.PointsMaterial({size:.045, vertexColors:true, transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, fog:false}));
+  pts.frustumCulled = false; scene.add(pts);
+  let pIdx = 0; const _col = new THREE.Color();
+  K.emit = function(pos, hex, n=20, power=2.5, life=.7, grav=1){
+    _col.setHex(hex);
+    for (let k=0;k<n;k++){
+      const i = pIdx++ % PN; pPos[i*3] = pos.x; pPos[i*3+1] = pos.y; pPos[i*3+2] = pos.z;
+      const th = Math.random()*Math.PI*2, ph = Math.random()*Math.PI, sp = power*K.rand(.3,1);
+      pVel[i*3] = Math.cos(th)*Math.sin(ph)*sp; pVel[i*3+1] = Math.cos(ph)*sp + .5*grav; pVel[i*3+2] = Math.sin(th)*Math.sin(ph)*sp;
+      pBase[i*3] = _col.r; pBase[i*3+1] = _col.g; pBase[i*3+2] = _col.b; pLife[i] = pMax[i] = life*K.rand(.6,1.1); pGrav[i] = grav;
+    }
+  };
+  /* popups */
+  const popups = [];
+  for (let i=0;i<10;i++){
+    const c = document.createElement('canvas'); c.width = 320; c.height = 96; const tex = new THREE.CanvasTexture(c);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(.55,.165), new THREE.MeshBasicMaterial({map:tex, transparent:true, depthWrite:false, fog:false}));
+    m.visible = false; m.renderOrder = 12; scene.add(m); popups.push({x:c.getContext('2d'), tex, m, life:0});
+  }
+  let popIdx = 0;
+  K.popup = function(text, color, pos, scale=1){
+    const p = popups[popIdx++ % popups.length], x = p.x;
+    x.clearRect(0,0,320,96); x.direction = 'rtl'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = `400 64px ${F_DISP}`; x.lineWidth = 8; x.strokeStyle = 'rgba(8,8,20,.85)'; x.strokeText(text,160,52); x.fillStyle = color || '#fff'; x.fillText(text,160,52);
+    p.tex.needsUpdate = true; p.m.position.set(pos.x, pos.y+.18, pos.z); p.m.scale.setScalar(scale); p.m.lookAt(K.head); p.m.material.opacity = 1; p.life = .8; p.m.visible = true;
+  };
+  /* flash */
+  const flash = new THREE.Mesh(new THREE.SphereGeometry(.6,12,8), new THREE.MeshBasicMaterial({color:0xffffff, side:THREE.BackSide, transparent:true, opacity:0, depthTest:false, depthWrite:false, fog:false}));
+  flash.renderOrder = 50; flash.visible = false; camera.add(flash); let flashT = 0, flashMax = .4, flashStr = .7;
+  K.flash = function(hex, dur=.4, str=.7){ flash.material.color.setHex(hex); flashT = flashMax = dur; flashStr = str; flash.visible = true; };
+
+  /* states */
+  K.state = 'menu'; K.mode = 'none'; K.modeKey = cfg.modes[0].key; K.t = 0;
+  let readyAt = 0;
+  K.toMenu = function(){ if (K.state === 'play' && cfg.stop) cfg.stop(K); K.state = 'menu'; titleP.m.visible = true; resP.m.visible = false; K.hudPanels.forEach(p => p.m.visible = false); readyAt = K.t; cfg.onMenu && cfg.onMenu(K); };
+  K.start = function(key){
+    K.audio(); K.click(); K.modeKey = key; K.state = 'play'; titleP.m.visible = false; resP.m.visible = false; showButtons(false);
+    hudKeyL = hudKeyR = ''; hudL.m.visible = true; hudR.m.visible = !!cfg.twoHuds;
+    cfg.start(key, K);
+  };
+  K.best = function(key){ try { const v = localStorage.getItem('vrk-' + cfg.id + '-' + (key || K.modeKey)); return v == null ? null : +v; } catch(e){ return null; } };
+  K.over = function(o){
+    if (cfg.stop) cfg.stop(K);
+    K.state = 'over';
+    let best = K.best(), isNew = false;
+    if (o.value != null && o.record !== false){
+      const better = o.lower ? (best == null || o.value < best) : (best == null || o.value > best);
+      if (better){ best = o.value; isNew = true; try { localStorage.setItem('vrk-' + cfg.id + '-' + K.modeKey, String(o.value)); } catch(e){} }
+    }
+    const p = resP, {x} = p; K.panelBg(p);
+    x.textAlign = 'right'; x.fillStyle = o.color || ((cfg.colors && cfg.colors.accent) || '#fff'); x.font = `400 70px ${F_DISP}`; x.fillText(o.title, 960, 108);
+    x.fillStyle = '#b8b4d8'; x.font = `600 32px ${F_BODY}`; const md = cfg.modes.find(m => m.key === K.modeKey); x.fillText('حالت ' + (md ? md.label : ''), 960, 160);
+    const rows = (o.stats || []).slice(0,4); if (best != null && o.record !== false) rows.unshift(['بهترین', o.fmt ? o.fmt(best) : K.fa(best)]);
+    rows.slice(0,4).forEach(([k,v],i) => { const y = 250 + i*70; x.textAlign = 'right'; x.fillStyle = '#b8b4d8'; x.font = `600 36px ${F_BODY}`; x.fillText(k, 960, y); x.fillStyle = '#fff'; x.font = `800 42px ${F_BODY}`; x.fillText(v, 600, y); });
+    x.textAlign = 'center'; x.fillStyle = '#b8b4d8'; x.font = `600 30px ${F_BODY}`; x.fillText(o.label || 'امتیاز', 240, 200);
+    x.font = `400 170px ${F_DISP}`; x.fillStyle = '#fff'; x.shadowColor = (cfg.colors && cfg.colors.accent) || '#7c5cff'; x.shadowBlur = 24; x.fillText(o.valueText || (o.value != null ? K.fa(o.value) : '—'), 240, 370); x.shadowBlur = 0;
+    if (isNew){ K.rr(x,140,410,200,50,25); x.fillStyle = (cfg.colors && cfg.colors.accent2) || '#ff4d6d'; x.fill(); x.fillStyle = '#fff'; x.font = `800 28px ${F_BODY}`; x.fillText('رکورد تازه!', 240, 445); }
+    x.fillStyle = '#ece9ff'; x.font = `600 30px ${F_BODY}`; x.fillText('برای بازی دوباره یک حالت را انتخاب کن', 512, 525);
+    p.tex.needsUpdate = true; resP.m.visible = true; titleP.m.visible = false; K.hudPanels.forEach(q => q.m.visible = false); readyAt = K.t + 1.2;
+  };
+
+  /* menu pointer */
+  const ray = new THREE.Raycaster(), _o = V(), _q = new THREE.Quaternion();
+  let hovered = null;
+  function hoverFrom(origin, dir){
+    ray.set(origin, dir); const ms = K.buttons.filter(b => b.p.m.visible).map(b => b.p.m);
+    const hit = ray.intersectObjects(ms, false)[0]; return hit ? hit.object.userData.btn : null;
+  }
+  function setHover(b){ if (hovered === b) return; if (hovered){ hovered.hover = false; hovered.draw(); hovered.p.m.scale.setScalar(1); } hovered = b; if (b){ b.hover = true; b.draw(); b.p.m.scale.setScalar(1.06); } }
+  function pointerClick(){ if (K.mode !== 'desk' || K.state === 'play') return; K.mouse.ray.setFromCamera(K.mouse.ndc, camera); const b = hoverFrom(K.mouse.ray.ray.origin, K.mouse.ray.ray.direction); if (b) b.action(); }
+  function menuUpdate(){
+    const ready = K.t >= readyAt; showButtons(ready);
+    let b = null, by = null;
+    if (ready){
+      if (K.mode === 'vr'){
+        for (const H of K.hands){ if (!H.ctrl) continue; H.ctrl.getWorldPosition(_o); H.ctrl.getWorldQuaternion(_q); const d = V(0,0,-1).applyQuaternion(_q); const hb = hoverFrom(_o, d); H.ctrl.userData.line.visible = true; if (hb){ b = hb; by = H; } }
+        if (b && by && (by.down.trigger || by.down.a)){ b.action(); }
+      } else if (K.mode === 'desk'){ K.mouse.ray.setFromCamera(K.mouse.ndc, camera); b = hoverFrom(K.mouse.ray.ray.origin, K.mouse.ray.ray.direction); }
+    }
+    setHover(b);
+  }
+
+  /* hand update */
+  const _v = V();
+  function readButtons(H){
+    const prev = Object.assign({}, H.btn);
+    if (K.mode === 'vr'){
+      const gp = H.src && H.src.gamepad;
+      if (gp){ const b = gp.buttons; H.btn.trigger = !!(b[0] && (b[0].pressed || b[0].value > .5)); H.btn.squeeze = !!(b[1] && b[1].pressed); H.btn.a = !!(b[4] && b[4].pressed); H.btn.b = !!(b[5] && b[5].pressed); H.axes[0] = gp.axes[2] || 0; H.axes[1] = gp.axes[3] || 0; }
+    } else if (K.mode === 'desk'){
+      if (H.h === 1){ H.btn.trigger = K.mouse.down; H.btn.squeeze = K.mouse.right || !!K.mouse.keys.ShiftLeft; }
+      else { H.btn.trigger = !!K.mouse.keys.Space; H.btn.squeeze = false; }
+    }
+    for (const k in H.btn){ H.down[k] = H.btn[k] && !prev[k]; H.up[k] = !H.btn[k] && prev[k]; }
+  }
+  function updHand(H, dt){
+    readButtons(H);
+    H.prevTip.copy(H.tip); H.prevBase.copy(H.base); H.prevPos.copy(H.pos);
+    H.holder.updateWorldMatrix(true,false); const mw = H.holder.matrixWorld;
+    H.pos.setFromMatrixPosition(mw); H.holder.getWorldQuaternion(H.quat); H.dir.set(0,0,-1).applyQuaternion(H.quat);
+    H.tip.copy(H.tipL).applyMatrix4(mw); H.base.copy(H.baseL).applyMatrix4(mw);
+    if (!H.init){ H.prevTip.copy(H.tip); H.prevBase.copy(H.base); H.prevPos.copy(H.pos); H.vel.set(0,0,0); H.pvel.set(0,0,0); H.init = true; }
+    const idt = 1/Math.max(dt,1e-3);
+    _v.subVectors(H.tip, H.prevTip).multiplyScalar(idt); H.vel.lerp(_v,.55); H.speed = H.vel.length();
+    _v.subVectors(H.pos, H.prevPos).multiplyScalar(idt); H.pvel.lerp(_v,.5);
+  }
+  K.activeHands = () => K.mode === 'vr' ? K.hands.filter(H => H.active) : K.mode === 'desk' ? (cfg.deskBoth ? K.hands : [K.R]) : [];
+
+  /* loop */
+  const clock = new THREE.Clock();
+  renderer.setAnimationLoop(() => {
+    const dt = Math.min(clock.getDelta(), .05); K.t += dt; K.dt = dt;
+    camera.getWorldPosition(K.head); camera.getWorldDirection(K.headDir);
+    if (K.mode === 'desk') deskPlace(dt);
+    if (K.mode !== 'none') for (const H of K.hands) if (K.mode === 'desk' || H.active) updHand(H, dt);
+    for (const H of K.hands) if (H.ctrl) H.ctrl.userData.line.visible = false;
+    if (K.state === 'play'){
+      cfg.update(dt, K);
+      if (K.mode === 'vr' && K.hands.some(H => H.down.b) && cfg.quitOnB !== false) K.toMenu();
+    } else menuUpdate();
+    cfg.always && cfg.always(dt, K);
+    // fx
+    for (let i=0;i<PN;i++){
+      if (pLife[i] <= 0) continue; pLife[i] -= dt;
+      if (pLife[i] <= 0){ pPos[i*3+1] = -999; pCol[i*3] = pCol[i*3+1] = pCol[i*3+2] = 0; continue; }
+      pVel[i*3+1] -= 6*pGrav[i]*dt; pPos[i*3] += pVel[i*3]*dt; pPos[i*3+1] += pVel[i*3+1]*dt; pPos[i*3+2] += pVel[i*3+2]*dt;
+      const k = Math.min(1, pLife[i]/(pMax[i]*.6)); pCol[i*3] = pBase[i*3]*k; pCol[i*3+1] = pBase[i*3+1]*k; pCol[i*3+2] = pBase[i*3+2]*k;
+    }
+    pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
+    for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
+    if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
+    K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    renderer.render(scene, camera);
+  });
+
+  /* overlay wiring */
+  const ov = document.getElementById('ov'), bVR = document.getElementById('bVR'), bDesk = document.getElementById('bDesk'), bMenu = document.getElementById('bMenu'), hint = document.getElementById('hint'), note = document.getElementById('xrNote');
+  const inFrame = (() => { try { return window.self !== window.top; } catch(e){ return true; } })();
+  function toOverlay(){ if (K.state === 'play' && cfg.stop) cfg.stop(K); K.mode = 'none'; K.R.holder.visible = false; K.L.holder.visible = false; K.state = 'menu'; ov.hidden = false; bMenu.hidden = true; hint.hidden = true; K.toMenu(); }
+  (async () => {
+    let ok = false; try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){}
+    if (ok){ bVR.disabled = false; note.textContent = cfg.vrNote || 'هدست آماده است. دکمهٔ ورود را بزن. در منوی داخل بازی، دسته را روی یک حالت بگیر و ماشه را بزن. دکمهٔ B یا Y وسط بازی تو را به منو برمی‌گرداند.'; }
+    else if (navigator.xr && inFrame) note.textContent = 'این صفحه داخل یک قاب امن نمایش داده می‌شود و ورود به VR از داخل قاب ممکن نیست. صفحه را مستقیم در مرورگر کوئست باز کن.';
+    else note.textContent = 'این مرورگر از WebXR پشتیبانی نمی‌کند. صفحه را در مرورگر هدست کوئست باز کن. با موس هم می‌توانی تمرین کنی.';
+  })();
+  async function enterVR(){
+    if (renderer.xr.isPresenting) return;
+    K.audio();
+    try {
+      const session = await navigator.xr.requestSession('immersive-vr', {optionalFeatures:['local-floor','bounded-floor']});
+      await renderer.xr.setSession(session);
+      if (renderer.xr.setFoveation) renderer.xr.setFoveation(1);
+      K.mode = 'vr'; rig.position.set(0,0,0); rig.rotation.set(0,0,0); ov.hidden = true;
+      K.R.holder.visible = K.L.holder.visible = true; K.toMenu(); cfg.onEnter && cfg.onEnter(K);
+      session.addEventListener('visibilitychange', () => { if (K.ac) session.visibilityState === 'visible' ? K.ac.resume() : K.ac.suspend(); });
+      session.addEventListener('end', () => { rig.position.set(0,0,0); rig.rotation.set(0,0,0); renderer.setSize(innerWidth, innerHeight); K.resetCamera(); toOverlay(); });
+      session.addEventListener('select', () => K.audio());
+    } catch(e){ note.textContent = 'ورود به VR انجام نشد: ' + (e && e.message ? e.message : e); }
+  }
+  bVR.addEventListener('click', enterVR);
+  // arriving from the hub while already in VR: enter immediately
+  if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
+  bDesk.addEventListener('click', () => {
+    K.audio(); K.mode = 'desk'; ov.hidden = true; bMenu.hidden = false; hint.hidden = !cfg.deskRules;
+    scene.add(K.R.holder); K.R.holder.visible = true; K.R.init = false;
+    if (cfg.deskBoth){ scene.add(K.L.holder); K.L.holder.visible = true; K.L.init = false; } else K.L.holder.visible = false;
+    K.toMenu(); cfg.onEnter && cfg.onEnter(K);
+  });
+  bMenu.addEventListener('click', toOverlay);
+  document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
+
+  K.R.holder.visible = K.L.holder.visible = false;
+  cfg.env && cfg.env(K);
+  drawTitle(); K.toMenu(); showButtons(false);
+  const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
+  Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
+};
+})();
+
+</script>
+<script>
+// @title دوز
+// @desc دوز سه‌بعدی در برابر رایانه: سه مهره در یک ردیف.
+(function(){
+const {V, fa} = K;
+let cells = [], board = [], pieces = [], turn = 'X', mode = 'easy', over = false, wins = 0, losses = 0, draws = 0, round = 0, aiT = 0, msgP;
+const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+const ray = new THREE.Raycaster();
+function env(K){
+  const s = K.scene; s.background = new THREE.Color(0x14202a);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(12, 40), K.lambert(0x22323e)); floor.rotation.x = -Math.PI/2; s.add(floor);
+  const table = new THREE.Mesh(new THREE.CylinderGeometry(.75,.8,.08,40), K.lambert(0x8a5a3c)); table.position.set(0,.8,-.7); s.add(table);
+  const leg = new THREE.Mesh(new THREE.CylinderGeometry(.08,.12,.8), K.lambert(0x5a3a28)); leg.position.set(0,.4,-.7); s.add(leg);
+  for (let i=0;i<9;i++){ const x = (i%3 - 1)*.3, z = -.7 + (Math.floor(i/3) - 1)*.3;
+    const c = new THREE.Mesh(new THREE.BoxGeometry(.27,.03,.27), K.std(0xf1e6cf, .05)); c.position.set(x,.855,z); c.userData.i = i; s.add(c); cells.push(c); }
+  msgP = K.panel(1024, 220, 1.4); msgP.m.position.set(0, 1.75, -1.6);
+}
+function xMesh(){ const g = new THREE.Group(); for (const r of [Math.PI/4, -Math.PI/4]){ const b = new THREE.Mesh(new THREE.BoxGeometry(.22,.05,.05), K.std(0x3ab0ff,.4)); b.rotation.y = r; g.add(b); } return g; }
+function oMesh(){ const m = new THREE.Mesh(new THREE.TorusGeometry(.08,.025,10,28), K.std(0xff5a6a,.4)); m.rotation.x = Math.PI/2; return m; }
+function msg(t, c){ const p = msgP; K.panelBg(p, c || '#ffc83c'); p.x.textAlign = 'center'; p.x.fillStyle = c || '#ffc83c'; p.x.font = `400 76px ${K.F_DISP}`; p.x.fillText(t, 512, 100); p.x.fillStyle = '#d8d4f0'; p.x.font = `600 36px ${K.F_BODY}`; p.x.fillText('بردها ' + fa(wins) + '   باخت‌ها ' + fa(losses) + '   مساوی ' + fa(draws), 512, 170); p.tex.needsUpdate = true; }
+function winner(b){ for (const [a,c,d] of LINES) if (b[a] && b[a] === b[c] && b[a] === b[d]) return b[a]; return b.every(Boolean) ? 'draw' : null; }
+function minimax(b, me){ const w = winner(b); if (w === 'O') return [10]; if (w === 'X') return [-10]; if (w === 'draw') return [0];
+  let best = me ? [-99] : [99]; for (let i=0;i<9;i++){ if (b[i]) continue; b[i] = me ? 'O' : 'X'; const [sc] = minimax(b, !me); b[i] = null; if (me ? sc > best[0] : sc < best[0]) best = [sc*.95, i]; } return best; }
+function aiMove(){ const free = board.map((v,i) => v ? -1 : i).filter(i => i >= 0); let i;
+  if (mode === 'easy' && Math.random() < .45) i = K.pick(free); else i = minimax(board.slice(), true)[1]; if (i == null) i = free[0]; place(i, 'O'); }
+function place(i, who){ board[i] = who; const m = who === 'X' ? xMesh() : oMesh(); m.position.copy(cells[i].position).add(V(0, .05, 0)); m.scale.setScalar(.01); K.scene.add(m); pieces.push(m); K.tone({f: who === 'X' ? 660 : 440, dec:.15, peak:.2});
+  const w = winner(board); if (w){ over = true; round++;
+    if (w === 'X'){ wins++; msg('بردی!', '#7dffb0'); K.emit(V(0,1,-.7), 0x7dffb0, 60, 3); } else if (w === 'O'){ losses++; msg('رایانه برد', '#ff8a8a'); } else { draws++; msg('مساوی', '#ffc83c'); }
+    for (const [a,c,d] of LINES) if (board[a] && board[a] === board[c] && board[a] === board[d]) for (const k of [a,c,d]) cells[k].material = K.std(w === 'X' ? 0x7dffb0 : 0xff8a8a, .5);
+    aiT = 2.2; if (round >= 5) setTimeout(() => K.state === 'play' && K.over({title:'پایان پنج دست', value:wins, label:'برد', stats:[['باخت', fa(losses)], ['مساوی', fa(draws)]]}), 2000); return; }
+  turn = who === 'X' ? 'O' : 'X'; if (turn === 'O') aiT = .7; msg(turn === 'X' ? 'نوبت تو (×)' : 'رایانه فکر می‌کند…'); }
+function reset(){ for (const p of pieces) K.scene.remove(p); pieces = []; board = Array(9).fill(null); over = false; for (const c of cells) c.material = K.std(0xf1e6cf, .05); turn = round % 2 ? 'O' : 'X'; if (turn === 'O') aiT = .8; msg(turn === 'X' ? 'نوبت تو (×)' : 'رایانه شروع می‌کند'); }
+function start(key){ mode = key; wins = losses = draws = round = 0; reset(); }
+function stop(){ for (const p of pieces) K.scene.remove(p); pieces = []; }
+function aimed(){ const out = []; if (K.mode === 'vr'){ for (const H of K.activeHands()){ if (H.ctrl) H.ctrl.userData.line.visible = true; ray.set(H.pos, H.dir); const h = ray.intersectObjects(cells)[0]; out.push([H, h]); } } else { K.mouse.ray.setFromCamera(K.mouse.ndc, K.camera); out.push([K.R, K.mouse.ray.intersectObjects(cells)[0]]); } return out; }
+function update(dt){
+  for (const p of pieces) p.scale.setScalar(Math.min(1, p.scale.x + dt*6));
+  if (aiT > 0){ aiT -= dt; if (aiT <= 0){ if (over){ if (round < 5) reset(); } else if (turn === 'O') aiMove(); } }
+  for (const c of cells) if (!over && board[c.userData.i] == null) c.material.emissiveIntensity = .05;
+  if (!over && turn === 'X') for (const [H, h] of aimed()){ if (!h) continue; const i = h.object.userData.i; if (board[i]) continue; h.object.material.emissiveIntensity = .5; if (H.down.trigger){ place(i, 'X'); break; } }
+  K.hud('دست', fa(Math.min(round + 1, 5)) + ' از ۵', 'برد ' + fa(wins) + ' · باخت ' + fa(losses));
+}
+K.init({
+  id:'dooz', title:'دوز', colors:{bg:'#14202a', accent:'#ffc83c', accent2:'#3ab0ff'}, bg:0x14202a,
+  tagline:'بازی قدیمی و همیشگی دوز، روی یک میز چوبی جلوی تو. سه مهره در یک ردیف بچین تا ببری. پنج دست در برابر رایانه.',
+  rules:['دسته را روی یک خانهٔ خالی بگیر و ماشه را بزن.','تو ضربدر (×) هستی و رایانه دایره.','حالت آسان: رایانه گاهی اشتباه می‌کند. حالت سخت: رایانه هیچ‌وقت نمی‌بازد؛ بهترین نتیجه مساوی است!'],
+  deskRules:'روی خانه‌ها کلیک کن.',
+  modes:[{key:'easy', label:'آسان', color:'#7dffb0'}, {key:'hard', label:'سخت', color:'#ff8a8a'}],
+  hand:() => new THREE.Group(), env, start, stop, update, desk:(K) => { K.R.holder.visible = false; },
+  deskCam:{pos:[0,1.55,.2], look:[0,.85,-.7]}, menuPos:[0,2,-2.2], hudPos:[-1.1,1.8,-1.8],
+});
+})();
+
+</script>
+</body>
+</html>
