@@ -140,27 +140,49 @@ const WORLD = [
 const FREE = /(^|\b)(cc0|cc[ -]by(?![- ]?n[cd])|cc[ -]by[- ]sa|public domain|pd[- ]|no restrictions|attribution)/i, NONFREE = /(-nc|-nd| nc| nd|noncommercial|noderiv|fair use)/i;
 const cache = new Map();
 function stripHtml(h){ const d = document.createElement('div'); d.innerHTML = h || ''; return (d.textContent || '').replace(/\s+/g,' ').trim(); }
+let lastStats = null;
+async function apiGet(params){
+  const r = await fetch(API + '?format=json&formatversion=2&origin=*&' + params);
+  if (!r.ok) throw new Error('HTTP ' + r.status);
+  const js = await r.json(); if (js.error) throw new Error('API: ' + (js.error.info || js.error.code));
+  return js;
+}
 async function searchPanos(queries){
   const key = queries.join('|'); if (cache.has(key)) return cache.get(key);
-  const out = [], seen = new Set();
+  const out = [], seen = new Set(), st = {found:0, ratio:0, small:0, license:0};
+  lastStats = st;
   for (const q of queries){
-    const url = API + '?action=query&format=json&origin=*&generator=search&gsrnamespace=6&gsrlimit=30&gsrsearch=' + encodeURIComponent(q + ' filetype:bitmap') +
-      '&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiurlwidth=4096&iiextmetadatafilter=LicenseShortName|Artist|LicenseUrl|ObjectName|Credit';
-    let js; try { const r = await fetch(url); js = await r.json(); } catch(e){ throw new Error('net'); }
-    const pages = js && js.query && js.query.pages ? Object.values(js.query.pages) : [];
-    pages.sort((a,b) => (a.index || 0) - (b.index || 0));
-    for (const p of pages){
-      const ii = p.imageinfo && p.imageinfo[0]; if (!ii || seen.has(p.title)) continue;
-      const ratio = ii.width/ii.height; if (ratio < 1.97 || ratio > 2.03 || ii.width < 3000 || !/jpeg|png/.test(ii.mime || '')) continue;
-      const m = ii.extmetadata || {}, lic = (m.LicenseShortName && m.LicenseShortName.value) || '';
-      if (!FREE.test(lic) || NONFREE.test(lic)) continue;
-      seen.add(p.title);
-      out.push({title:(m.ObjectName && stripHtml(m.ObjectName.value)) || p.title.replace(/^File:/,'').replace(/\.[a-z]+$/i,''), src:ii.thumburl || ii.url, page:ii.descriptionurl, w:ii.width, h:ii.height,
-        artist:stripHtml(m.Artist && m.Artist.value) || 'نامشخص', license:lic, licenseUrl:(m.LicenseUrl && m.LicenseUrl.value) || ''});
+    // step 1: titles from full-text search in the File namespace
+    const sj = await apiGet('action=query&list=search&srnamespace=6&srlimit=40&srsearch=' + encodeURIComponent(q));
+    const titles = ((sj.query && sj.query.search) || []).map(x => x.title).filter(t => !seen.has(t) && /\.(jpe?g|png)$/i.test(t));
+    titles.forEach(t => seen.add(t)); st.found += titles.length;
+    // step 2: image info in batches (with continuation)
+    for (let b = 0; b < titles.length; b += 20){
+      let cont = '', guard = 0;
+      do {
+        const ij = await apiGet('action=query&prop=imageinfo&iiprop=url|size|mime|extmetadata&iiurlwidth=4096&iiextmetadatafilter=LicenseShortName|Artist|LicenseUrl|ObjectName&titles=' + encodeURIComponent(titles.slice(b, b+20).join('|')) + cont);
+        for (const p of ((ij.query && ij.query.pages) || [])){
+          const ii = p.imageinfo && p.imageinfo[0]; if (!ii) continue;
+          const ratio = ii.width/ii.height;
+          if (ratio < 1.96 || ratio > 2.04){ st.ratio++; continue; }
+          if (ii.width < 2400){ st.small++; continue; }
+          const m = ii.extmetadata || {}, lic = (m.LicenseShortName && m.LicenseShortName.value) || '';
+          if (!FREE.test(lic) || NONFREE.test(lic)){ st.license++; continue; }
+          if (out.some(o => o.page === ii.descriptionurl)) continue;
+          out.push({title:(m.ObjectName && stripHtml(m.ObjectName.value)) || p.title.replace(/^File:/,'').replace(/\.[a-z]+$/i,''), src:ii.thumburl || ii.url, page:ii.descriptionurl, w:ii.width, h:ii.height,
+            artist:stripHtml(m.Artist && m.Artist.value) || 'نامشخص', license:lic, licenseUrl:(m.LicenseUrl && m.LicenseUrl.value) || ''});
+        }
+        cont = ij.continue && ij.continue.iicontinue ? '&iicontinue=' + encodeURIComponent(ij.continue.iicontinue) + '&continue=' + encodeURIComponent(ij.continue.continue || '') : '';
+      } while (cont && ++guard < 4);
     }
-    if (out.length >= 3) break;
+    if (out.length >= 4) break;
   }
   cache.set(key, out); return out;
+}
+function statsText(){
+  const s = lastStats; if (!s) return '';
+  if (!s.found) return 'جستجو در ویکی‌مدیا هیچ عکسی برنگرداند.';
+  return fa(s.found) + ' عکس پیدا شد، ولی ' + fa(s.ratio) + ' تا کروی ۳۶۰ درجه نبودند، ' + fa(s.license) + ' تا مجوز آزاد نداشتند و ' + fa(s.small) + ' تا کوچک بودند.';
 }
 
 /* ---------- lobby ---------- */
@@ -194,10 +216,10 @@ async function openPlace(p){
   state = {place:p, list:[], i:0, loadingTok:state.loadingTok + 1}; const tok = state.loadingTok;
   $('#vtitle').textContent = p[0]; $('#vcount').textContent = ''; $('#vattr').textContent = ''; sphereMat.map = null; sphereMat.color.setHex(0x222222); sphereMat.needsUpdate = true;
   msg('در حال جستجوی عکس‌های ۳۶۰ درجهٔ آزاد…'); menuOpen = false;
-  try { const list = await searchPanos(p[2]); if (tok !== state.loadingTok) return; state.list = list;
-    if (!list.length){ msg('برای «' + p[0] + '» عکس ۳۶۰ درجه با مجوز آزاد پیدا نشد. مکان دیگری را امتحان کن.'); menuOpen = true; return; }
+  try { const qs = p[2].concat([p[2][0].replace(/ 360$/,'') + ' spherical', p[2][0].replace(/ 360$/,'') + ' equirectangular', p[2][0].replace(/ 360$/,'')]); const list = await searchPanos([...new Set(qs)]); if (tok !== state.loadingTok) return; state.list = list;
+    if (!list.length){ msg('برای «' + p[0] + '» عکس ۳۶۰ درجه با مجوز آزاد پیدا نشد. ' + statsText()); menuOpen = true; return; }
     show(0);
-  } catch(e){ if (tok === state.loadingTok){ msg('اتصال به ویکی‌مدیا کامنز ممکن نشد. اینترنت را بررسی کن.'); menuOpen = true; } }
+  } catch(e){ if (tok === state.loadingTok){ msg('اتصال به ویکی‌مدیا کامنز ممکن نشد (' + (e && e.message || e) + '). اینترنت را بررسی کن.'); menuOpen = true; } }
 }
 function show(i){
   const L = state.list; if (!L.length) return; state.i = (i + L.length) % L.length; const it = L[state.i], tok = ++state.loadingTok;
