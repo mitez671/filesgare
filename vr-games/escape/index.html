@@ -10,10 +10,11 @@ button.primary{background:#1f7a5a;font-weight:bold}button.off{opacity:.45}button
 </style></head><body>
 <div id="ui">
 <h1>خانهٔ رمزها</h1>
-<p>اتاق فرار واقعیت ترکیبی در خانهٔ خودت. پازل‌ها روی میز و دیوار واقعی می‌نشینند و با راه رفتن بین اتاق‌ها حلشان می‌کنی. هر مرحله فقط یک کار ساده از تو می‌خواهد.</p>
+<p id="about">اتاق فرار واقعیت ترکیبی در خانهٔ خودت. پازل‌ها روی میز و دیوار واقعی می‌نشینند و با راه رفتن بین اتاق‌ها حلشان می‌کنی. داستانی در انتظار توست و معماها واقعاً فکر می‌خواهند.</p>
 <div id="startBtns"><button id="ar" class="primary">ورود به AR (هدست)</button><button id="demo">آزمایش روی صفحه</button></div>
 <h2 id="cardTitle"></h2><p id="cardBody"></p><p id="notice"></p><div id="cardBtns"></div>
-<p class="small">این بازی تصویر دوربین را نمی‌خواند و جایی ذخیره نمی‌کند. در حالت صفحه: با کشیدن موس بچرخ، با کلیدهای جهت یا WASD راه برو، با کلیک دکمه‌ها را بزن.</p>
+<div id="keyhint" style="display:none;position:absolute;bottom:12px;left:12px;background:#14263aee;border:1px solid #4ddac0;border-radius:12px;padding:8px 14px;font-size:14px">M = منو و دفترچه · کلیک موس = انتخاب</div>
+<p class="small" id="foot">این بازی تصویر دوربین را نمی‌خواند و جایی ذخیره نمی‌کند. در حالت صفحه: با کشیدن موس بچرخ، با کلیدهای جهت یا WASD راه برو، با کلیک دکمه‌ها را بزن.</p>
 </div>
 <script src="../_shared/three-r149.js"></script>
 <script>
@@ -34,7 +35,8 @@ const world=new THREE.Group(),hud=new THREE.Group(),markers=new THREE.Group(),de
 
 /* ------------------------------------------------------------------ state */
 let session=null,ref=null,hitSource=null,hitMatrix=null,demo=false,phase='start',paused=false,surfaces=[],planeMap=new Map(),spots=[],chain=[],step=0,hints=0,started=0,elapsed=0,seed='',rng=null,
- seedParam=new URLSearchParams(location.search).get('seed'),scanStart=0,captureUsed=false,gazeInfo=null,gazeLost=0,hudUntil=0,hudWasVisible=false,cardKey='',hudH=.8,lastAct=0,yaw=0,pitch=0,notice={text:'',until:0,kind:'info'};
+ seedParam=new URLSearchParams(location.search).get('seed'),scanStart=0,captureUsed=false,gazeInfo=null,gazeLost=0,hudUntil=0,hudWasVisible=false,menuOpen=false,notebookOpen=false,arrowTxt='',cardKey='',hudH=.8,lastAct=0,yaw=0,pitch=0,notice={text:'',until:0,kind:'info'};
+const storyParam=(()=>{const v=new URLSearchParams(location.search).get('story');return v===null?null:+v;})(),typeParam=new URLSearchParams(location.search).get('type');
 const clickables=[],hovered=new Set(),keys=new Set();
 const ray=new THREE.Raycaster();
 
@@ -59,13 +61,14 @@ function wrapLines(x,text,maxW){const words=String(text).split(/\s+/),lines=[];l
 function drawText(x,text,W,H,o){
  const pad=o.pad??H*.1,maxW=W-2*pad;let px=Math.floor(H*(o.size||.6)),lines=[text];const weight=o.weight||'700';
  x.direction=o.dir||'rtl';x.textAlign='center';x.textBaseline='middle';x.fillStyle=o.fg||C.text;
- for(;px>=14;px-=2){x.font=`${weight} ${px}px ${FONT}`;lines=o.nowrap?[String(text)]:wrapLines(x,text,maxW);if(lines.length*px*1.35<=H-pad*.4&&lines.every(l=>x.measureText(l).width<=maxW+1))break;}
+ for(;px>=14;px-=2){x.font=`${weight} ${px}px ${FONT}`;lines=o.nowrap?[String(text)]:String(text).split('\n').flatMap(par=>wrapLines(x,par,maxW));if(lines.length*px*1.35<=H-pad*.4&&lines.every(l=>x.measureText(l).width<=maxW+1))break;}
  const lh=px*1.35,y0=H/2-(lines.length-1)*lh/2;lines.forEach((l,i)=>x.fillText(l,W/2,y0+i*lh+px*.05));
 }
 function drawShape(x,type,cx,cy,r,col,filled=true){
  x.save();x.fillStyle=col;x.strokeStyle=col;x.lineWidth=r*.18;x.beginPath();
  if(type==='circle')x.arc(cx,cy,r,0,Math.PI*2);
  else if(type==='triangle'){x.moveTo(cx,cy-r);x.lineTo(cx+r*.95,cy+r*.8);x.lineTo(cx-r*.95,cy+r*.8);x.closePath();}
+ else if(type==='tridown'){x.moveTo(cx,cy+r);x.lineTo(cx+r*.95,cy-r*.8);x.lineTo(cx-r*.95,cy-r*.8);x.closePath();}
  else if(type==='square'){x.rect(cx-r*.85,cy-r*.85,r*1.7,r*1.7);}
  else if(type==='diamond'){x.moveTo(cx,cy-r);x.lineTo(cx+r*.8,cy);x.lineTo(cx,cy+r);x.lineTo(cx-r*.8,cy);x.closePath();}
  else if(type==='star'){for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;x[i?'lineTo':'moveTo'](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}x.closePath();}
@@ -81,10 +84,11 @@ function labelMesh(text,w,h,o={}){
  m.userData.draw=(t,oo)=>{const q=Object.assign({},o,oo||{});x.clearRect(0,0,cv.width,cv.height);
   if(q.bg){rrect(x,3,3,cv.width-6,cv.height-6,q.radius??Math.min(cv.height*.2,40));x.fillStyle=q.bg;x.fill();if(q.border){x.lineWidth=Math.max(3,cv.height*.03);x.strokeStyle=q.border;x.stroke();}}
   if(q.shape)drawShape(x,q.shape,cv.width/2,cv.height/2,Math.min(cv.width,cv.height)*.36,q.fg||C.accent);
+  else if(q.pair){const px=Math.floor(cv.height*.72);x.textBaseline='middle';x.textAlign='center';x.font=`800 ${px}px ${FONT}`;x.fillStyle=q.fg||C.text;x.direction='rtl';x.fillText(q.pair[0],cv.width*.72,cv.height/2+px*.04);x.direction='ltr';x.fillStyle=C.accent;x.fillText(q.pair[1]+' =',cv.width*.3,cv.height/2+px*.04);}
   else if(q.dots){const n=q.dots.length,gap=cv.height*.62,x0=cv.width/2-(n-1)*gap/2;q.dots.forEach((on,i)=>{drawShape(x,'circle',x0+i*gap,cv.height/2,cv.height*.2,on?(q.fg||C.ok):'#3d5568',on);});}
   else if(t!=='')drawText(x,t,cv.width,cv.height,q);
   tex.needsUpdate=true;};
- m.userData.draw(text);return m;
+ if(o.order!==undefined)m.renderOrder=o.order;m.userData.draw(text);return m;
 }
 function disposeGroup(g){g.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material){o.material.map?.dispose();o.material.dispose();}});g.clear();}
 function removeButtons(g){for(let i=clickables.length-1;i>=0;i--){const c=clickables[i];if(c===g||g.getObjectById(c.id)){hovered.delete(c.id);clickables.splice(i,1);}}}
@@ -117,108 +121,262 @@ function gazeCast(){
 // where the puzzle panel will float for a given hit point (panel is ~1.2 m tall, centered on the origin)
 function placeAt(hit,s,viewer){
  const vertical=surfaceVertical(s),pos=hit.clone();let yawA=0;
- if(vertical){const n=new THREE.Vector3(s.matrix.elements[4],0,s.matrix.elements[6]);if(n.lengthSq()<1e-6)n.set(0,0,1);n.normalize();if(n.dot(new THREE.Vector3(viewer.x-hit.x,0,viewer.z-hit.z))<0)n.negate();pos.addScaledVector(n,.2);pos.y=Math.min(1.6,Math.max(1.05,hit.y));yawA=Math.atan2(n.x,n.z);}
- else{const toV=new THREE.Vector3(viewer.x-hit.x,0,viewer.z-hit.z),dist=toV.length();dist>1e-4?toV.divideScalar(dist):toV.set(0,0,1);pos.y=Math.min(1.6,Math.max(1.05,hit.y+.75));
+ if(vertical){const n=new THREE.Vector3(s.matrix.elements[4],0,s.matrix.elements[6]);if(n.lengthSq()<1e-6)n.set(0,0,1);n.normalize();if(n.dot(new THREE.Vector3(viewer.x-hit.x,0,viewer.z-hit.z))<0)n.negate();pos.addScaledVector(n,.2);pos.y=Math.min(1.6,Math.max(1.1,hit.y));yawA=Math.atan2(n.x,n.z);}
+ else{const toV=new THREE.Vector3(viewer.x-hit.x,0,viewer.z-hit.z),dist=toV.length();dist>1e-4?toV.divideScalar(dist):toV.set(0,0,1);pos.y=Math.min(1.6,Math.max(1.1,hit.y+.75));
   if(dist<1.1){pos.x=viewer.x-toV.x*1.1;pos.z=viewer.z-toV.z*1.1;}yawA=Math.atan2(toV.x,toV.z);}
  return new THREE.Matrix4().compose(pos,new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yawA),new THREE.Vector3(1,1,1));
 }
 
+/* ------------------------------------------------------------------ story data */
+const STORIES=[
+ {title:'گنجینهٔ حکیم',col:'#e8b84b',safe:'صندوق حکیم',
+  intro:'حکیمی سالخورده سال‌ها پیش گنجینه‌اش را در همین خانه پنهان کرد و برای وارثانش چند معما به جا گذاشت. هر معما یک رقم از قفل صندوق را در خود دارد. شتاب نکن؛ حکیم نوشته بود: «هر که صبر کرد، در را شنید.»',
+  beats:['نامهٔ اول: «هر که عجله کند، چیزی نمی‌بیند.»','نقشه‌ای کهنه که زیر گرد و غبار مانده بود.','یادداشت کنار چراغ: «پاسخ در خود پرسش است.»','برگی از دفتر خاطرات حکیم، نیمه‌سوخته.','لبهٔ صندوق نوشته: «ارقام را همان‌طور که گفتم بچین.»'],
+  items:['نامهٔ حکیم','نقشهٔ کهن','چراغ روغنی','دفتر خاطرات','کلید برنجی'],
+  outro:'در صندوق باز شد. داخلش چراغی کوچک بود و نوشته‌ای: «گنج واقعی، صبر و دقتی است که امروز نشان دادی.»'},
+ {title:'سارقِ شبانه',col:'#6fb7ff',safe:'صندوقچهٔ پنهان',
+  intro:'شب گذشته گردنبند فیروزه‌ای خانوادگی ناپدید شد. بازرس مطمئن است سارق در همین خانه چند ردپا جا گذاشته است. هر سرنخ یک رقم از قفل صندوقچهٔ پنهان را لو می‌دهد. جزئیات را جدی بگیر؛ دزدها همیشه یک جا اشتباه می‌کنند.',
+  beats:['ردپای گل‌آلود کنار میز؛ کسی اینجا مکث کرده.','یادداشت مچاله‌شده: «به ساعت‌ها اعتماد نکن.»','دستکش چرمی جا مانده؛ زیرش کاغذی هست.','قفل خراشیده‌شده؛ دزد عجله داشته است.','صندوقچهٔ آخر؛ بازرس می‌گوید ارقام را درست بچین.'],
+  items:['ردپای گل‌آلود','یادداشت مچاله','دستکش چرمی','قفل خراشیده','قاب عکس'],
+  outro:'صندوقچه باز شد و گردنبند فیروزه‌ای همان‌جا بود. بازرس لبخند زد: «تو از من هم زیرک‌تری.»'},
+ {title:'رصدخانهٔ خیام',col:'#b79cff',safe:'صندوق ستارگان',
+  intro:'اخترشناسی در این خانه رصدخانه‌ای کوچک داشت. پیش از مرگ، آخرین یافته‌اش را در صندوقی بست که فقط با نشانه‌های آسمان باز می‌شود. هر نشانه یک رقم دارد. اول بشمار، بعد نتیجه بگیر.',
+  beats:['صفحهٔ نخست زیج: «ستاره‌ها دروغ نمی‌گویند.»','اسطرلاب شکسته؛ زیرش یادداشتی بود.','جدول ماه و سال که نیمه‌کاره مانده.','حاشیهٔ دفتر رصد: «اول بشمار، بعد بپرس.»','صندوق ستارگان؛ نشانه‌ها را به‌ترتیب بنشان.'],
+  items:['صفحهٔ زیج','اسطرلاب شکسته','جدول ماه و سال','دفتر رصد','نقشهٔ آسمان'],
+  outro:'صندوق باز شد: نقشهٔ آسمانی که اخترشناس برای نسل بعد گذاشته بود. حالا تو نگهبان آنی.'},
+ {title:'کارگاه ساعت‌ساز',col:'#ff9f5a',safe:'ساعتِ بزرگ',
+  intro:'ساعت‌سازی پیر این خانه را با چند قفل پر از چرخ‌دنده نگهبانی می‌کرد. می‌گویند ساعتِ بزرگ در پایان زمان را متوقف می‌کند. هر چرخ‌دنده یک رقم دارد؛ دقیق باش، یک ثانیه هم مهم است.',
+  beats:['چرخ‌دنده‌ای مسی که هنوز گرم است.','فنر ساعت پیچ‌خورده؛ کنارش جدولی نوشته شده.','عقربه‌ای طلایی روی میز افتاده است.','کوکِ زنگ‌دار؛ زیرش کاغذی تا شده.','ساعتِ بزرگ: «زمان را به ترتیب بچین.»'],
+  items:['چرخ‌دندهٔ مسی','فنر ساعت','عقربهٔ طلایی','کوکِ زنگ‌دار','قاب شیشه‌ای'],
+  outro:'ساعتِ بزرگ ایستاد و صندوقش باز شد. ساعت‌ساز نوشته بود: «بهترین ساعت، ساعتی است که برایش وقت گذاشتی.»'}
+];
+let story=STORIES[0];const game={legend:null,rule:'asc'};
+const SHAPE_FA={circle:'دایره',triangle:'مثلث',square:'مربع',diamond:'لوزی',star:'ستاره',heart:'قلب'};
+const shuffle=a=>a.map(v=>[rng(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
+const pick=a=>a[Math.floor(rng()*a.length)];
+const ri=(a,b)=>a+Math.floor(rng()*(b-a+1));
+
 /* ------------------------------------------------------------------ puzzle building blocks */
-const PW=1.0,PH=1.2;
-const active=p=>!paused&&phase==='play'&&p===chain[step];
-function promptLine(g,text,y=.43,h=.13){const m=labelMesh(text,.94,h,{size:.36,fg:C.text});m.position.set(0,y,.015);g.add(m);return m;}
-function bigText(g,text,x,y,w,h,o={}){const m=labelMesh(text,w,h,Object.assign({bg:'#0a141e',border:C.btnB,size:.7,weight:'800'},o));m.position.set(x,y,.015);g.add(m);return m;}
-function dots(g,x,y,total){const m=labelMesh('',.64,.1,{dots:new Array(total).fill(false)});m.position.set(x,y,.015);g.add(m);m.userData.set=(n,col)=>m.userData.draw('',{dots:Array.from({length:total},(_,i)=>i<n),fg:col||C.ok});return m;}
-function keypad(g,p,len,expected,onOk,store){
- let val='';const disp=bigText(g,'',0,.165,.86,.11,{dir:'ltr',nowrap:true});
+const PW=1.1,PH=1.5;
+const act=(p,st='puzzle')=>!paused&&phase==='play'&&p===chain[step]&&p.state===st;
+const active=p=>act(p);
+function put(g,m,x,y,z=.015){m.position.set(x,y,z);g.add(m);return m;}
+function fb(p,text,kind='bad',ms=4200){if(!p.fbMesh)return;p.fbMesh.userData.draw(text,{fg:kind==='ok'?C.ok:kind==='bad'?C.bad:C.accent});p.fbUntil=performance.now()+ms;}
+function line(g,text,y,h=.08,o={}){return put(g,labelMesh(text,1.0,h,Object.assign({size:.55,fg:C.text},o)),0,y);}
+function bigText(g,text,x,y,w,h,o={}){return put(g,labelMesh(text,w,h,Object.assign({bg:'#0a141e',border:C.btnB,size:.7,weight:'800'},o)),x,y);}
+function dots(g,x,y,total){const m=put(g,labelMesh('',.64,.1,{dots:new Array(total).fill(false)}),x,y);m.userData.set=(n,col)=>m.userData.draw('',{dots:Array.from({length:total},(_,i)=>i<n),fg:col||C.ok});return m;}
+function keypad(g,p,len,onEnter,top=-.02,st='puzzle'){
+ let val='';const disp=bigText(g,'',0,top,.8,.1,{dir:'ltr',nowrap:true,size:.68});
  const draw=col=>disp.userData.draw(spaced(val.padEnd(len,'_')),{fg:col||C.text});draw();
- const press=ch=>{if(!active(p)&&!(store==='gate'&&!paused&&p===chain[step]))return;if(ch==='del'){val=val.slice(0,-1);draw();return;}if(val.length>=len)return;val+=ch;draw();
-  if(val.length===len){if(val===expected()){draw(C.ok);onOk();}else{sfx('bad');draw(C.bad);const was=val;setTimeout(()=>{if(val===was){val='';draw();}},650);}}};
- const map={};const rows=[['1','2','3'],['4','5','6'],['7','8','9'],['del','0','']];
- rows.forEach((r,ri)=>r.forEach((k,ci)=>{if(!k)return;const m=button(g,k==='del'?'پاک':k,(ci-1)*.29,.03-ri*.15,.27,.13,()=>press(k),{style:Object.assign({size:k==='del'?.46:.8,weight:'800'},k==='del'?{bg:'#6b2f35',border:'#ef8a8a'}:{dir:'ltr'})});map[k]=m;}));
- return map;
+ const press=ch=>{if(!act(p,st))return;if(ch==='del'){val=val.slice(0,-1);draw();return;}if(val.length>=len)return;val+=ch;draw();
+  if(val.length===len){const err=onEnter(val);if(!err)draw(C.ok);else{sfx('bad');draw(C.bad);fb(p,err,'bad');const was=val;setTimeout(()=>{if(val===was){val='';draw();}},800);}}};
+ const map={};
+ [['1','2','3'],['4','5','6'],['7','8','9'],['del','0','']].forEach((r,rr)=>r.forEach((k,ci)=>{if(!k)return;
+  map[k]=button(g,k==='del'?'پاک':k,(ci-1)*.27,top-.11-rr*.12,.25,.108,()=>press(k),{style:Object.assign({size:k==='del'?.5:.8,weight:'800'},k==='del'?{bg:'#6b2f35',border:'#ef8a8a'}:{dir:'ltr'})});}));
+ map.press=press;return map;
 }
-function resetKeypadFlash(){}
-function sequenceInput(p,answer,prog,onDone,extra){return v=>{if(!active(p))return;p.seq=p.seq||[];p.seq.push(v);const i=p.seq.length-1;
- if(v!==answer[i]){sfx('bad');p.seq=[];prog.userData.set(0);extra&&extra.wrong&&extra.wrong();notify('ترتیب درست نبود؛ از اول بزن.','bad',3500);return;}
- prog.userData.set(p.seq.length);extra&&extra.right&&extra.right(v);if(p.seq.length===answer.length)onDone();};}
+function legendTiles(g,legend,y0){SHAPES.forEach((s,i)=>{const x=((i%3)-1)*.34,y=y0-Math.floor(i/3)*.13;
+ put(g,labelMesh('',.32,.115,{bg:'#0a141e',border:C.btnB,radius:14,ppm:300,order:-4}),x,y,.012);
+ put(g,labelMesh('',.11,.11,{shape:s,fg:C.accent,ppm:300}),x+.08,y,.02);
+ put(g,labelMesh(legend[s]+' =',.15,.09,{dir:'ltr',size:.7,weight:'800',nowrap:true,ppm:300}),x-.07,y,.02);});}
 
 /* ------------------------------------------------------------------ puzzle modules */
-const POEMS=[['بنی‌آدم اعضای یکدیگرند','سعدی'],['توانا بود هر که دانا بود','فردوسی'],['بشنو از نی چون حکایت می‌کند','مولوی'],['دوش دیدم که ملایک در میخانه زدند','حافظ'],['چو ایران نباشد تن من مباد','فردوسی'],['ابر و باد و مه و خورشید و فلک در کارند','سعدی'],['اگر آن ترک شیرازی به دست آرد دل ما را','حافظ']];
-const POETS=['سعدی','فردوسی','مولوی','حافظ'];
-const Modules={
- lock:{name:'قفل رمزدار',build(p,g){p.answer=String(100+Math.floor(rng()*900));promptLine(g,'کد روی پلاک را بخوان و با دکمه‌ها بزن');bigText(g,spaced(p.answer),0,.30,.56,.13,{bg:'#3a2a10',border:C.accent,fg:C.accent,dir:'ltr',nowrap:true,size:.78});p.keys=keypad(g,p,3,()=>p.answer,()=>finish(p));},
-  hints:p=>['کد سه‌رقمی روی پلاک زرد بالای دکمه‌هاست.','هر رقم را یکی‌یکی بزن؛ بعد از رقم سوم خودش بررسی می‌کند.','کد: '+p.answer]},
- colors:{name:'ترتیب رنگ‌ها',build(p,g){p.answer=Array.from({length:3},()=>Math.floor(rng()*4));promptLine(g,'رنگ‌ها را به همین ترتیب (۱، ۲، ۳) بزن');
-  p.answer.forEach((ci,i)=>{const chip=labelMesh(colorNames[ci],.27,.12,{bg:'#'+palette[ci].toString(16).padStart(6,'0'),fg:'#101010',size:.52});chip.position.set((i-1)*.31,.29,.015);g.add(chip);const n=labelMesh(String(i+1),.08,.08,{dir:'ltr',size:.8,fg:C.accent});n.position.set((i-1)*.31-.115,.375,.02);g.add(n);});
-  const prog=dots(g,0,-.27,3);p.btns=[];const press=sequenceInput(p,p.answer,prog,()=>finish(p));
-  palette.forEach((c,i)=>{const b=button(g,colorNames[i],(i-1.5)*.225,-.04,.205,.3,()=>press(i),{style:{bg:'#'+c.toString(16).padStart(6,'0'),border:'#ffffff',fg:'#101010',size:.2}});p.btns.push(b);});},
-  hints:p=>['رنگ‌ها را از چپ به راست بخوان (شمارهٔ ۱ سمت چپ است).','سه رنگ را یکی‌یکی بزن.',p.answer.map(i=>colorNames[i]).join('، ')]},
- symbol:{name:'پیدا کردن نماد',build(p,g){p.answer=Math.floor(rng()*6);const order=SHAPES.map((s,i)=>[rng(),s]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);p.target=order[p.answer];promptLine(g,'کدام کاشی همین نماد را دارد؟ آن را بزن');
-  const t=labelMesh('',.2,.2,{bg:'#0a141e',border:C.accent,shape:p.target,fg:C.accent});t.position.set(0,.28,.015);g.add(t);p.btns=[];
-  order.forEach((s,i)=>{const b=button(g,'',((i%3)-1)*.3,-.03-Math.floor(i/3)*.3,.27,.27,()=>{if(!active(p))return;if(i===p.answer)finish(p);else{sfx('bad');notify('این نماد نیست؛ دوباره نگاه کن.','bad',3000);}},{style:{shape:s,fg:'#ffffff'}});p.btns.push(b);});},
-  hints:p=>['نماد بالای کاشی‌ها را با دقت ببین.','شکل نماد: '+({circle:'دایره',triangle:'مثلث',square:'مربع',diamond:'لوزی',star:'ستاره',heart:'قلب'})[p.target],'کاشی شمارهٔ '+(p.answer+1)+' (از چپ، ردیف '+(p.answer<3?'بالا':'پایین')+')']},
- poet:{name:'بیت و شاعر',build(p,g){const pick=POEMS[Math.floor(rng()*POEMS.length)];p.verse=pick[0];p.answer=pick[1];promptLine(g,'این بیت از کدام شاعر است؟');
-  const v=labelMesh(p.verse,.9,.24,{bg:'#0a141e',border:C.accent,fg:C.accent,size:.3});v.position.set(0,.26,.015);g.add(v);p.btns=[];
-  POETS.forEach((n,i)=>{const b=button(g,n,0,.02-i*.15,.8,.13,()=>{if(!active(p))return;if(n===p.answer)finish(p);else{sfx('bad');notify('نه، دوباره فکر کن.','bad',3000);}},{style:{size:.62}});p.btns.push(b);});},
-  hints:p=>['این بیت از شاعران کلاسیک فارسی است.','دو شاعر را می‌توانی کنار بگذاری.','پاسخ: '+p.answer]},
- number:{name:'معمای عددی',build(p,g){p.a=2+Math.floor(rng()*8);p.b=2+Math.floor(rng()*8);p.answer=p.a*p.b;promptLine(g,'حاصل را پیدا کن و جواب درست را بزن');
-  bigText(g,`${p.a} × ${p.b} = ?`,0,.22,.8,.2,{dir:'ltr',nowrap:true,size:.7});
-  const set=new Set([p.answer]);while(set.size<3){const d=[-3,-2,-1,1,2,3][Math.floor(rng()*6)];const v=p.answer+d;if(v>0)set.add(v);}
-  const ch=[...set].map(v=>[rng(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);p.btns=[];
-  ch.forEach((v,i)=>{const b=button(g,String(v),(i-1)*.31,-.2,.29,.28,()=>{if(!active(p))return;if(v===p.answer)finish(p);else{sfx('bad');notify('نه، دوباره حساب کن.','bad',3000);}},{style:{dir:'ltr',size:.7,weight:'800'}});b.userData.value=v;p.btns.push(b);});},
-  hints:p=>['علامت × یعنی ضرب.',p.a+' را '+p.b+' بار با خودش جمع کن.','پاسخ: '+p.answer]},
- melody:{name:'ملودی کوتاه',build(p,g){p.answer=Array.from({length:3},()=>Math.floor(rng()*4));promptLine(g,'«پخش» را بزن، به ۳ صدا گوش بده و همان را تکرار کن');
-  const prog=dots(g,0,-.27,3);p.btns=[];const press=sequenceInput(p,p.answer,prog,()=>finish(p));const cols=['#ef6351','#4d96ff','#ffd166','#55c991'];
-  const flash=(i,on)=>p.btns[i].userData.draw(String(i+1),{bg:on?'#ffffff':cols[i],fg:'#101010'});
-  button(g,'پخش صدا',0,.28,.6,.15,()=>{if(!active(p))return;p.seq=[];prog.userData.set(0);p.answer.forEach((x,i)=>{setTimeout(()=>{if(!active(p))return;tone(x);flash(x,true);setTimeout(()=>flash(x,false),260);},i*600);});},{kind:'primary'});
-  for(let i=0;i<4;i++){const b=button(g,String(i+1),(i-1.5)*.225,-.04,.205,.3,()=>{if(!active(p))return;tone(i);flash(i,true);setTimeout(()=>flash(i,false),200);press(i);},{style:{bg:cols[i],border:'#ffffff',fg:'#101010',dir:'ltr',size:.7,weight:'800'}});p.btns.push(b);}},
-  hints:p=>['دکمه‌ها هنگام پخش صدا چشمک می‌زنند؛ همان ترتیب را دنبال کن.','سه نت اول را از روی چشمک‌ها بخوان.','شمارهٔ دکمه‌ها: '+p.answer.map(x=>x+1).join('، ')]},
- torches:{name:'روشن‌کردن مشعل‌ها',build(p,g){p.answer=[0,1,2].map(v=>[rng(),v]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);promptLine(g,'مشعل‌ها را به این ترتیب روشن کن');
-  bigText(g,p.answer.map(x=>x+1).join('  →  '),0,.28,.7,.15,{dir:'ltr',nowrap:true,size:.7,fg:C.accent,border:C.accent});
-  const prog=dots(g,0,-.27,3);p.btns=[];const dim='#3b2a1a',lit='#ff9a3c';
-  const press=sequenceInput(p,p.answer,prog,()=>finish(p),{wrong:()=>p.btns.forEach((b,i)=>b.userData.draw(String(i+1),{bg:dim})),right:v=>p.btns[v].userData.draw(String(v+1),{bg:lit,fg:'#101010'})});
-  for(let i=0;i<3;i++){const b=button(g,String(i+1),(i-1)*.31,-.03,.28,.34,()=>press(i),{style:{bg:dim,border:'#ffb066',dir:'ltr',size:.62,weight:'800'}});p.btns.push(b);}},
-  hints:p=>['هر مشعل یک شمارهٔ بزرگ دارد.','ترتیب بالا را از چپ به راست اجرا کن.',p.answer.map(x=>x+1).join('، ')]},
- jigsaw:{name:'جورچین',build(p,g){p.tiles=[1,2,3,0];for(let k=0;k<15;k++){const bl=p.tiles.indexOf(0),near=[0,1,2,3].filter(i=>Math.abs(i%2-bl%2)+Math.abs(Math.floor(i/2)-Math.floor(bl/2))===1),i=near[Math.floor(rng()*near.length)];[p.tiles[i],p.tiles[bl]]=[p.tiles[bl],p.tiles[i]];}
-  if(p.tiles.join()==='1,2,3,0')p.tiles=[1,2,0,3];promptLine(g,'قطعهٔ کنار جای خالی را بزن تا مثل هدف شود');
-  const tg=labelMesh('هدف',.16,.07,{size:.6,fg:C.muted});tg.position.set(-.25,.28,.02);g.add(tg);[1,2,3,0].forEach((v,i)=>{const t=labelMesh(v?String(v):'',.09,.09,{bg:v?'#2d5d78':'#0a141e',border:C.btnB,dir:'ltr',size:.7,weight:'800'});t.position.set(-.05+(i%2)*.1+.0,.31-Math.floor(i/2)*.1,.02);g.add(t);});
-  p.btns=[];const draw=()=>p.btns.forEach((b,i)=>b.userData.draw(p.tiles[i]?String(p.tiles[i]):'',{bg:p.tiles[i]?'#2d5d78':'#0a141e',border:p.tiles[i]?C.btnB:'#2b3d4c'}));
-  for(let i=0;i<4;i++){const b=button(g,'',(i%2-.5)*.31,-.04-Math.floor(i/2)*.3,.29,.28,()=>{if(!active(p))return;const bl=p.tiles.indexOf(0);if(Math.abs(i%2-bl%2)+Math.abs(Math.floor(i/2)-Math.floor(bl/2))!==1){sfx('bad');return;}[p.tiles[i],p.tiles[bl]]=[p.tiles[bl],p.tiles[i]];draw();if(p.tiles.join()==='1,2,3,0')finish(p);},{style:{dir:'ltr',size:.7,weight:'800'}});p.btns.push(b);}draw();},
-  hints:p=>['فقط قطعه‌های کنار جای خالی حرکت می‌کنند.','هدف: ردیف بالا ۱ و ۲، ردیف پایین ۳ و خالی.','حرکت پیشنهادی: قطعهٔ '+jigsawNext(p.tiles)]}
-};
-function jigsawNext(start){const queue=[[start,[]]],seen=new Set();while(queue.length){const [s,path]=queue.shift(),key=s.join();if(key==='1,2,3,0')return path[0]||'پایان';if(seen.has(key))continue;seen.add(key);const b=s.indexOf(0);for(let i=0;i<4;i++)if(Math.abs(i%2-b%2)+Math.abs(Math.floor(i/2)-Math.floor(b/2))===1){const n=s.slice(),v=n[i];[n[i],n[b]]=[n[b],n[i]];queue.push([n,path.concat(v)]);}}return'؟';}
-
-/* ------------------------------------------------------------------ one puzzle panel = background + header + body/gate/done groups + hint strip */
-function buildPuzzle(p){
- const g=p.group;const bg=labelMesh('',PW,PH,{bg:C.panel,border:C.border,radius:26,ppm:420});g.add(bg);
- const head=labelMesh(`مرحله ${p.index+1} از ${chain.length}  ·  ${Modules[p.type].name}`,.92,.09,{size:.58,fg:C.border});head.position.set(0,.545,.012);g.add(head);
- p.body=new THREE.Group();p.gate=new THREE.Group();p.done=new THREE.Group();g.add(p.body,p.gate,p.done);
- Modules[p.type].build(p,p.body);
- p.unlocked=p.index===0;
- if(p.index){promptLine(p.gate,'قفل است. کد ۳ رقمی را که روی پازل قبلی (علامت ✓) دیدی بزن',.42,.16);p.gateKeys=keypad(p.gate,p,3,()=>p.input,()=>{p.unlocked=true;sfx('ok');notify('قفل باز شد! حالا پازل را حل کن.','ok',4000);},'gate');}
- const last=p.index===chain.length-1;
- const ok=labelMesh('✓ حل شد',.8,.16,{size:.7,fg:C.ok,weight:'800'});ok.position.set(0,.3,.015);p.done.add(ok);
- if(!last){const cap=labelMesh('کد پازل بعدی (حفظش کن)',.9,.1,{size:.6,fg:C.muted});cap.position.set(0,.12,.015);p.done.add(cap);const cd=bigText(p.done,spaced(p.output),0,-.05,.7,.22,{dir:'ltr',nowrap:true,fg:C.accent,border:C.accent,size:.8});}
- else{const fin=labelMesh('همهٔ پازل‌ها را حل کردی!',.9,.14,{size:.5,fg:C.text});fin.position.set(0,.05,.015);p.done.add(fin);}
- p.hintText=labelMesh('',.62,.1,{size:.36,fg:C.accent});p.hintText.position.set(-.17,-.545,.015);g.add(p.hintText);
- p.hintBtn=button(g,'راهنمایی',.33,-.545,.3,.09,()=>hint(),{style:{size:.5,bg:'#3a3a55',border:'#9a9ad0'}});
+const PEOPLE=['آرش','بهار','کیان','سیما'],THINGS=['کلید','نامه','چراغ','سکه'];
+const PERMS=(()=>{const r=[];const rec=a=>{if(a.length===4){r.push(a);return;}for(let i=0;i<4;i++)if(!a.includes(i))rec([...a,i]);};rec([]);return r;})();
+const norm=s=>s.replace(/ي/g,'ی').replace(/ك/g,'ک');
+const ABJAD={'ا':1,'ب':2,'ج':3,'د':4,'ه':5,'و':6,'ز':7,'ح':8,'ط':9,'ی':10,'ک':20,'ل':30,'م':40,'ن':50,'س':60,'ع':70,'ف':80,'ص':90,'ق':100,'ر':200,'ش':300,'ت':400};
+const ABJ_WORDS=['نور','مهر','عشق','ماه','راز','سحر','کلید','نقش','رمز','دانا','سال','روز','عمر','کتاب','قلم','شمع','کوه','سفر'].map(norm);
+const NB=i=>{const r=Math.floor(i/3),c=i%3,l=[i];if(r>0)l.push(i-3);if(r<2)l.push(i+3);if(c>0)l.push(i-1);if(c<2)l.push(i+1);return l;};
+const lightsApply=(st,i)=>{const n=st.slice();NB(i).forEach(j=>n[j]=!n[j]);return n;};
+function lightsSolve(st){let best=null;for(let m=0;m<512;m++){let s=new Array(9).fill(false);const pr=[];for(let i=0;i<9;i++)if(m>>i&1){s=lightsApply(s,i);pr.push(i);}if(s.every((v,i)=>v===st[i])&&(!best||pr.length<best.length))best=pr;}return best;}
+function makeSeq(){
+ for(let tr=0;tr<80;tr++){const t=ri(0,5);let xs=[],rule='',shown=6,kind='';
+  if(t===0){const a=ri(1,9),d=ri(2,4),e=ri(1,3);xs=[a];let s=d;for(let i=1;i<8;i++){xs.push(xs[i-1]+s);s+=e;}rule='اختلاف عددهای کناری هر بار '+e+' تا بیشتر می‌شود ('+d+'، '+(d+e)+'، '+(d+2*e)+' و ...).';kind='اختلاف‌ها را بنویس.';}
+  else if(t===1){const a=ri(1,4),b=ri(2,6);xs=[a,b];for(let i=2;i<8;i++)xs.push(xs[i-1]+xs[i-2]);rule='هر عدد جمع دو عدد قبل از خودش است.';kind='هر عدد به دو عدد قبلی ربط دارد.';}
+  else if(t===2){const m=ri(2,3),c=pick([-1,1,2]),a=ri(1,3);xs=[a];for(let i=1;i<8;i++)xs.push(xs[i-1]*m+c);rule='هر عدد = عدد قبلی × '+m+(c<0?' منهای '+(-c):' به‌علاوهٔ '+c)+'.';kind='دو عمل پشت سر هم روی عدد قبلی انجام شده.';}
+  else if(t===3){const a=ri(2,6),add=ri(2,5);xs=[a];for(let i=1;i<8;i++)xs.push(i%2?xs[i-1]+add:xs[i-1]*2);rule='به‌نوبت: یک بار '+add+' تا اضافه، یک بار دو برابر.';kind='عمل‌ها به‌نوبت عوض می‌شوند.';}
+  else if(t===4){const k=ri(-3,5),n=ri(1,3);for(let i=0;i<8;i++)xs.push((n+i)*(n+i)+k);rule='مربع عددهای متوالی'+(k>0?' به‌علاوهٔ '+k:k<0?' منهای '+(-k):'')+'.';kind='به مربع عددها فکر کن.';}
+  else{const a=ri(1,5),d=ri(2,5),b=ri(1,3);for(let i=0;i<8;i++)xs.push(i%2===0?a+d*(i/2):b*Math.pow(2,(i-1)/2));shown=7;rule='دو رشتهٔ درهم‌ریخته: عددهای جایگاه‌های فرد +'+d+' می‌شوند و جایگاه‌های زوج دو برابر.';kind='شاید دو رشته در هم رفته‌اند.';}
+  const ans=xs[shown];if(xs.every(v=>v>0&&v<1000))return{xs:xs.slice(0,shown),answer:ans,rule,kind};}
+ return{xs:[2,4,8,16,32,64],answer:128,rule:'هر عدد دو برابر قبلی است.',kind:'ضرب'};
 }
-function finish(p){if(p!==chain[step]||paused)return;p.done_=true;step++;sfx('ok');
- if(step===chain.length){elapsed+=performance.now()-started;phase='end';notify('همهٔ پازل‌ها حل شد!','ok',9000);}
- else notify('حل شد! کد پازل بعدی: '+spaced(p.output)+' — حفظش کن و به پازل بعدی برو.','ok',14000);}
-function hint(){const p=chain[step];if(!p||paused)return;if(p.index&&!p.unlocked){notify('کد قفل روی پازل قبلی (علامت ✓) نوشته شده؛ به آن نگاه کن.','info',6000);p.hintText.userData.draw('کد را روی پازل قبلی ببین');return;}
- const lvl=Math.min(p.level||0,2);p.level=lvl+1;hints++;const t=Modules[p.type].hints(p)[lvl];p.hintText.userData.draw(t,{});notify('راهنمایی: '+t,'info',9000);}
+const Modules={
+ codelock:{name:'قفل سه‌حلقه',build(p,g){
+  const O=['اول','دوم','سوم'],all=[];for(let a=1;a<=9;a++)for(let b=1;b<=9;b++)for(let c=1;c<=9;c++)all.push([a,b,c]);
+  let T,clues=null,best=null,bestT=null;
+  for(let tr=0;tr<500&&!clues;tr++){
+   T=[ri(1,9),ri(1,9),ri(1,9)];const L=[],S=T[0]+T[1]+T[2];
+   L.push({s:'مجموع سه رقم برابر '+S+' است.',f:c=>c[0]+c[1]+c[2]===S});
+   for(let i=0;i<3;i++){const v=T[i];
+    L.push({s:'رقم '+O[i]+(v%2?' فرد':' زوج')+' است.',f:c=>c[i]%2===v%2});
+    if(v%3===0)L.push({s:'رقم '+O[i]+' مضرب 3 است.',f:c=>c[i]%3===0});
+    const k=ri(1,8);if(v>k)L.push({s:'رقم '+O[i]+' از '+k+' بزرگ‌تر است.',f:c=>c[i]>k});else if(v<k)L.push({s:'رقم '+O[i]+' از '+k+' کوچک‌تر است.',f:c=>c[i]<k});
+    for(let j=i+1;j<3;j++){const w=T[j];
+     if(v>w)L.push({s:'رقم '+O[i]+' از رقم '+O[j]+' بزرگ‌تر است.',f:c=>c[i]>c[j]});else if(v<w)L.push({s:'رقم '+O[i]+' از رقم '+O[j]+' کوچک‌تر است.',f:c=>c[i]<c[j]});else L.push({s:'رقم '+O[i]+' و رقم '+O[j]+' برابرند.',f:c=>c[i]===c[j]});
+     const df=Math.abs(v-w);L.push({s:'اختلاف رقم '+O[i]+' و رقم '+O[j]+' برابر '+df+' است.',f:c=>Math.abs(c[i]-c[j])===df});
+     if(v===2*w)L.push({s:'رقم '+O[i]+' دو برابر رقم '+O[j]+' است.',f:c=>c[i]===2*c[j]});else if(w===2*v)L.push({s:'رقم '+O[j]+' دو برابر رقم '+O[i]+' است.',f:c=>c[j]===2*c[i]});
+     const sm=v+w;L.push({s:'مجموع رقم '+O[i]+' و رقم '+O[j]+' برابر '+sm+' است.',f:c=>c[i]+c[j]===sm});}}
+   const mx=Math.max(...T);if(T.filter(x=>x===mx).length===1){const pi=T.indexOf(mx);L.push({s:'بزرگ‌ترین رقم، رقم '+O[pi]+' است.',f:c=>{const m=Math.max(...c);return c.filter(x=>x===m).length===1&&c.indexOf(m)===pi;}});}
+   if(new Set(T).size===3)L.push({s:'هیچ دو رقمی یکسان نیست.',f:c=>new Set(c).size===3});
+   let cand=all,ch=[];for(const c of shuffle(L)){const nx=cand.filter(c.f);if(nx.length<cand.length){ch.push(c);cand=nx;if(cand.length===1)break;}}
+   if(cand.length===1){best=ch;bestT=T.slice();if(ch.length>=4&&ch.length<=5)clues=ch;}}
+  if(!clues){clues=best;T=bestT;}
+  p.T=T;p.clues=clues;p.dial=[1,1,1];
+  clues.forEach((c,i)=>line(g,(i+1)+' – '+c.s,.5-i*.09,.085,{size:.55}));
+  const dig=[],spin=(i,d)=>{if(!active(p))return;p.dial[i]=((p.dial[i]-1+d+9)%9)+1;dig[i].userData.draw(String(p.dial[i]));};
+  for(let i=0;i<3;i++){const x=(i-1)*.32;
+   put(g,labelMesh(O[i],.26,.06,{size:.7,fg:C.muted}),x,.02);
+   p['up'+i]=button(g,'',x,-.07,.26,.1,()=>spin(i,1),{style:{shape:'triangle',fg:'#ffffff'}});
+   dig.push(bigText(g,'1',x,-.2,.26,.14,{dir:'ltr',size:.9,nowrap:true,fg:C.accent,border:C.accent}));
+   button(g,'',x,-.33,.26,.1,()=>spin(i,-1),{style:{shape:'tridown',fg:'#ffffff'}});}
+  p.checkBtn=button(g,'بررسی کد',0,-.47,.8,.11,()=>{if(!active(p))return;if(p.dial.join('')===T.join('')){solved(p);return;}sfx('bad');const bad=clues.findIndex(c=>!c.f(p.dial));fb(p,bad>=0?'سرنخ '+(bad+1)+' با این کد نمی‌خواند.':'کد درست نیست.');},{kind:'primary'});
+  p.plan=()=>{const l=[];for(let i=0;i<3;i++){const n=(T[i]-p.dial[i]+9)%9;for(let k=0;k<n;k++)l.push(p['up'+i]);}l.push(p.checkBtn);return l;};},
+  hints:p=>['سرنخی را پیدا کن که فقط یک رقم را محدود می‌کند؛ بعد بقیه را با آن بسنج.','رقم دوم برابر '+p.T[1]+' است.','کد: '+p.T.join('')]},
+ cipher:{name:'رمز نمادها',build(p,g){
+  const legend=game.legend,row=[0,1,2,3].map(()=>pick(SHAPES)),vals=row.map(s=>legend[s]);
+  const rules=[
+   {t:'نمادها را از راست به چپ بخوان و مقدارشان را پشت هم بنویس.',v:vals.slice().reverse().join('')},
+   {t:'مقدار نمادها را بنویس، اما رقم‌ها را از کوچک به بزرگ مرتب کن.',v:vals.slice().sort((a,b)=>a-b).join('')},
+   {t:'مقدار نمادها را با هم جمع کن و حاصل را بنویس.',v:String(vals.reduce((a,b)=>a+b,0))},
+   {t:'مقدار بزرگ‌ترین نماد را منهای مقدار کوچک‌ترینشان کن و حاصل را بنویس.',v:String(Math.max(...vals)-Math.min(...vals))}];
+  const r=pick(rules);p.answer=r.v;p.vals=vals;p.rule=r.t;
+  line(g,'برگهٔ رمزگشا را از مرحلهٔ قبل پیدا کن (یا در دفترچه با دکمهٔ B ببین).',.47,.09,{size:.45,fg:C.accent});
+  row.forEach((s,i)=>put(g,labelMesh('',.22,.2,{bg:'#0a141e',border:C.accent,shape:s,fg:C.accent,ppm:300}),(i-1.5)*.25,.31));
+  line(g,r.t,.12,.13,{size:.42});
+  p.keys=keypad(g,p,p.answer.length,v=>{if(v===p.answer){solved(p);return null;}return 'درست نیست؛ برگه و دستور را دوباره بخوان.';});
+  p.plan=()=>[...p.answer].map(c=>p.keys[c]);},
+  hints:p=>['هر نماد در برگهٔ رمزگشا یک عدد دارد؛ اول مقدارها را پیدا کن.','مقدار نمادها (از چپ): '+p.vals.join('، '),'پاسخ: '+p.answer]},
+ deduction:{name:'گره‌گشایی',build(p,g){
+  let S,clues=null,fallback=null;
+  for(let tr=0;tr<400&&!clues;tr++){
+   S=shuffle([0,1,2,3]);const pool=[];
+   for(let pi=0;pi<4;pi++)for(let it=0;it<4;it++)if(S[pi]!==it)pool.push({w:1,s:PEOPLE[pi]+' «'+THINGS[it]+'» را برنداشته است.',f:a=>a[pi]!==it});
+   for(let pi=0;pi<4;pi++)for(let j=0;j<4;j++)if(j!==S[pi])pool.push({w:3,s:PEOPLE[pi]+' «'+THINGS[S[pi]]+'» یا «'+THINGS[j]+'» را برداشته است.',f:a=>a[pi]===S[pi]||a[pi]===j});
+   for(let pi=0;pi<4;pi++)for(let qi=0;qi<4;qi++)if(pi!==qi)for(let it=0;it<4;it++)for(let jt=0;jt<4;jt++)if(it!==jt&&((S[pi]===it)!==(S[qi]===jt)))pool.push({w:2,s:'یا '+PEOPLE[pi]+' «'+THINGS[it]+'» را برداشته، یا '+PEOPLE[qi]+' «'+THINGS[jt]+'» را؛ نه هر دو.',f:a=>(a[pi]===it)!==(a[qi]===jt)});
+   const ord=pool.map(c=>[rng()*c.w,c]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
+   let cand=PERMS,ch=[];for(const c of ord){const nx=cand.filter(c.f);if(nx.length<cand.length){ch.push(c);cand=nx;if(cand.length===1)break;}}
+   if(cand.length===1){fallback={S:S.slice(),ch};if(ch.length>=4&&ch.length<=6)clues=ch;}}
+  if(!clues){clues=fallback.ch;S=fallback.S;}
+  p.S=S;p.clues=clues;p.pickv=[-1,-1,-1,-1];
+  line(g,'هر نفر دقیقاً یک چیز برداشته و هیچ دو نفری یک چیز را برنداشته‌اند.',.5,.06,{size:.55,fg:C.accent});
+  const sp=Math.min(.098,.46/clues.length);clues.forEach((c,i)=>line(g,(i+1)+' – '+c.s,.43-i*sp,sp-.006,{size:.6}));
+  const cols=['#4d6b8a','#8a5a4d','#6a8a4d','#7a4d8a'];p.rows=[];
+  for(let pi=0;pi<4;pi++){const y=-.08-pi*.11;
+   put(g,labelMesh(PEOPLE[pi],.3,.095,{size:.62,fg:C.accent,bg:'#0a141e',border:C.btnB}),.34,y);
+   p.rows.push(button(g,'؟',-.12,y,.6,.095,()=>{if(!active(p))return;p.pickv[pi]=(p.pickv[pi]+1)%4;const v=p.pickv[pi];p.rows[pi].userData.draw(THINGS[v],{bg:cols[v]});},{style:{size:.6}}));}
+  p.checkBtn=button(g,'بررسی پاسخ',0,-.52,.7,.1,()=>{if(!active(p))return;if(p.pickv.some(v=>v<0)){fb(p,'برای هر نفر یک چیز انتخاب کن.','info');return;}
+   const bad=clues.findIndex(c=>!c.f(p.pickv));if(bad<0&&p.pickv.join()===S.join()){solved(p);return;}sfx('bad');fb(p,bad>=0?'سرنخ '+(bad+1)+' با پاسخ تو نمی‌خواند.':'پاسخ درست نیست.');},{kind:'primary'});
+  p.plan=()=>{const l=[];for(let pi=0;pi<4;pi++){const c=p.pickv[pi],n=c<0?S[pi]+1:(S[pi]-c+4)%4;for(let k=0;k<n;k++)l.push(p.rows[pi]);}l.push(p.checkBtn);return l;};},
+  hints:p=>['اول با سرنخ‌های «برنداشته» گزینه‌ها را حذف کن؛ بعد سراغ «یا» و «نه هر دو» برو.',PEOPLE[0]+' «'+THINGS[p.S[0]]+'» را برداشته است.',PEOPLE.map((n,i)=>n+': '+THINGS[p.S[i]]).join(' ، ')]},
+ sequence:{name:'رشتهٔ عددی',build(p,g){
+  const q=makeSeq();p.q=q;p.answer=String(q.answer);
+  line(g,'عدد بعدی رشته را پیدا کن',.46,.09,{size:.6,fg:C.accent});
+  bigText(g,q.xs.join('    ')+'    ?',0,.3,.98,.17,{dir:'ltr',nowrap:true,size:.6,fg:C.text});
+  line(g,'قاعده‌ای ساده و ثابت پشت این عددهاست؛ هیچ حدسی لازم نیست.',.15,.08,{size:.45,fg:C.muted});
+  p.keys=keypad(g,p,p.answer.length,v=>{if(v===p.answer){solved(p);return null;}return 'نه؛ قاعده را دوباره بررسی کن.';});
+  p.plan=()=>[...p.answer].map(c=>p.keys[c]);},
+  hints:p=>[p.q.kind,'قاعده: '+p.q.rule,'قاعده: '+p.q.rule+' پاسخ: '+p.answer]},
+ timeline:{name:'ساعت و زمان',build(p,g){
+  const hm=m=>Math.floor(m/60)+':'+String(m%60).padStart(2,'0'),dur=m=>m>=60?Math.floor(m/60)+' ساعت'+(m%60?' و '+(m%60)+' دقیقه':''):m+' دقیقه';
+  const t0=5*ri(108,180),off=5*ri(4,12),ahead=rng()<.4,wait=5*ri(10,30),gap=5*ri(6,24),real=ahead?t0-off:t0+off,t2=real+wait+gap;
+  p.answer=String(Math.floor(t2/60)).padStart(2,'0')+String(t2%60).padStart(2,'0');p.real=real;
+  line(g,'ساعت دیواری هنگام ورود سارق ایستاد و '+hm(t0)+' را نشان می‌دهد.',.455,.13,{size:.45});
+  line(g,'این ساعت '+dur(off)+(ahead?' جلو':' عقب')+' است.',.35,.08,{size:.6});
+  line(g,'سارق '+dur(wait)+' در خانه ماند و '+dur(gap)+' بعد از رفتنش، زنگ در به صدا درآمد.',.245,.13,{size:.45});
+  line(g,'زنگ در به وقت واقعی چه ساعتی به صدا درآمد؟ (چهار رقم، مثل 0905)',.115,.12,{size:.4,fg:C.accent});
+  p.keys=keypad(g,p,4,v=>{if(v===p.answer){solved(p);return null;}return 'نه؛ ساعت واقعی را از اول حساب کن.';},-.06);
+  p.plan=()=>[...p.answer].map(c=>p.keys[c]);},
+  hints:p=>['اول ساعت واقعی را از روی ساعت دیواری پیدا کن.','ساعت واقعی ورود: '+Math.floor(p.real/60)+':'+String(p.real%60).padStart(2,'0'),'پاسخ: '+p.answer]},
+ abjad:{name:'حساب ابجد',build(p,g){
+  const word=pick(ABJ_WORDS),letters=[...new Set(word)],sum=[...word].reduce((a,c)=>a+ABJAD[c],0);p.answer=String(sum);p.word=word;
+  const extra=shuffle(Object.keys(ABJAD).filter(c=>!letters.includes(c))).slice(0,8-letters.length),tiles=shuffle(letters.concat(extra));
+  line(g,'ارزش ابجدی این واژه را حساب کن',.5,.07,{size:.6,fg:C.accent});
+  put(g,labelMesh(word,.6,.14,{bg:'#0a141e',border:C.accent,fg:C.accent,size:.78,weight:'800'}),0,.39);
+  line(g,'ارزش حرف‌ها در جدول است؛ حرف تکراری دو بار شمرده می‌شود.',.29,.065,{size:.5,fg:C.muted});
+  tiles.forEach((c,i)=>put(g,labelMesh('',.25,.095,{bg:'#0a141e',border:C.btnB,radius:14,pair:[c,ABJAD[c]],ppm:300}),((i%4)-1.5)*.26,.2-Math.floor(i/4)*.1,.012));
+  p.keys=keypad(g,p,p.answer.length,v=>{if(v===p.answer){solved(p);return null;}return 'نه؛ دوباره جمع بزن.';});
+  p.plan=()=>[...p.answer].map(c=>p.keys[c]);},
+  hints:p=>['حرف‌های واژه را یکی‌یکی در جدول پیدا کن.','ارزش حرف‌ها: '+[...p.word].map(c=>ABJAD[c]).join(' + '),'پاسخ: '+p.answer]},
+ lights:{name:'چراغ‌های خاموش‌شو',build(p,g){
+  let st,sol;for(let tr=0;tr<50;tr++){st=new Array(9).fill(false);const n=ri(4,6);shuffle([0,1,2,3,4,5,6,7,8]).slice(0,n).forEach(i=>st=lightsApply(st,i));sol=lightsSolve(st);if(sol&&sol.length>=3)break;}
+  p.init=st.slice();p.st=st.slice();p.min=sol.length;
+  line(g,'همهٔ چراغ‌ها را خاموش کن',.5,.07,{size:.6,fg:C.accent});
+  line(g,'هر ضربه، همان خانه و چهار همسایه‌اش (بالا، پایین، چپ، راست) را برعکس می‌کند.',.375,.1,{size:.42});
+  const draw=()=>p.cells.forEach((b,i)=>b.userData.draw('',{bg:p.st[i]?'#ffd166':'#1a2a38',border:p.st[i]?'#fff3c4':'#41596b'}));
+  p.cells=[];for(let i=0;i<9;i++)p.cells.push(button(g,'',((i%3)-1)*.27,.17-Math.floor(i/3)*.27,.25,.25,()=>{if(!active(p))return;p.st=lightsApply(p.st,i);draw();p.moves++;if(p.st.every(v=>!v))solved(p);},{style:{radius:22}}));
+  p.moves=0;draw();
+  p.resetBtn=button(g,'از اول',0,-.52,.5,.09,()=>{if(!active(p))return;p.st=p.init.slice();p.moves=0;draw();fb(p,'از اول شروع شد.','info',1800);},{style:{size:.55}});
+  p.plan=()=>{const s=lightsSolve(p.st)||[];return s.map(i=>p.cells[i]);};},
+  hints:p=>['هر خانه را حداکثر یک بار باید زد؛ دو بار زدن همدیگر را خنثی می‌کند.','کمترین تعداد ضربه: '+p.min,'خانه‌های لازم: '+(lightsSolve(p.st)||[]).map(i=>'ردیف '+(Math.floor(i/3)+1)+' ستون '+(i%3+1)).join(' ، ')]},
+ simon:{name:'حافظهٔ نور و صدا',build(p,g){
+  p.answer=Array.from({length:5},()=>ri(0,3));p.round=1;p.inp=[];p.playing=false;
+  line(g,'«پخش» را بزن، توالی را گوش بده و همان را بزن. هر دور یک نت بیشتر می‌شود.',.46,.12,{size:.4});
+  p.prog=dots(g,0,.31,5);p.pads=[];const cols=['#ef6351','#4d96ff','#ffd166','#55c991'];
+  const flash=(i,on)=>p.pads[i].userData.draw(String(i+1),{bg:on?'#ffffff':cols[i],fg:'#101010'});
+  const play=()=>{if(!active(p)||p.playing)return;p.inp=[];p.playing=true;const n=p.round;
+   p.answer.slice(0,n).forEach((x,i)=>setTimeout(()=>{if(!paused){tone(x);flash(x,true);setTimeout(()=>flash(x,false),300);}if(i===n-1)setTimeout(()=>{p.playing=false;},350);},500+i*650));};
+  button(g,'پخش',0,.18,.5,.11,play,{kind:'primary'});
+  for(let i=0;i<4;i++)p.pads.push(button(g,String(i+1),i%2?.25:-.25,i<2?-.07:-.36,.46,.27,()=>{
+   if(!active(p)||p.playing)return;tone(i);flash(i,true);setTimeout(()=>flash(i,false),200);p.inp.push(i);
+   if(i!==p.answer[p.inp.length-1]){sfx('bad');fb(p,'اشتباه شد؛ دوباره گوش بده.');p.inp=[];setTimeout(play,1100);return;}
+   if(p.inp.length===p.round){p.prog.userData.set(p.round);if(p.round===5){solved(p);return;}p.round++;p.inp=[];fb(p,'درست! یک نت بیشتر.','ok',2200);setTimeout(play,1100);}
+  },{style:{bg:cols[i],border:'#ffffff',fg:'#101010',dir:'ltr',size:.7,weight:'800'}}));
+  p.plan=()=>p.playing?[]:p.answer.slice(0,p.round).map(x=>p.pads[x]);},
+  hints:p=>['رنگ و صدا را با هم به خاطر بسپار؛ هر وقت خواستی «پخش» را دوباره بزن.','سعی کن توالی را در ذهنت شمارهٔ دکمه‌ها کنی.','توالی کامل: '+p.answer.map(x=>x+1).join('، ')]}
+};
+const TYPE_KEYS=Object.keys(Modules);
+
+/* ------------------------------------------------------------------ one station panel */
+function buildPuzzle(p){
+ const g=p.group,th=story.col;
+ g.add(labelMesh('',PW,PH,{bg:C.panel,border:th,radius:26,ppm:420,order:-5}));
+ put(g,labelMesh('مرحله '+(p.index+1)+' از '+chain.length+'  ·  '+Modules[p.type].name,.98,.08,{size:.6,fg:th}),0,.705,.012);
+ put(g,labelMesh(p.beat,.98,.12,{size:.4,fg:C.muted,weight:'600'}),0,.6,.012);
+ p.body=new THREE.Group();p.safe=new THREE.Group();p.done=new THREE.Group();g.add(p.body,p.safe,p.done);
+ Modules[p.type].build(p,p.body);
+ const last=p.index===chain.length-1,d=p.done;
+ put(d,labelMesh('✓ حل شد',.8,.12,{size:.7,fg:C.ok,weight:'800'}),0,.5);
+ if(!last){
+  put(d,labelMesh('یافتی: '+p.item,.96,.1,{size:.6,fg:th}),0,.37);
+  put(d,labelMesh('رقم این مرحله (در دفترچه هم ثبت شد)',.96,.07,{size:.6,fg:C.muted}),0,.25);
+  bigText(d,String(p.digit),0,.09,.3,.22,{dir:'ltr',nowrap:true,fg:C.accent,border:C.accent,size:.9});
+  if(p.gives){put(d,labelMesh('برگهٔ رمزگشا — برای یکی از مرحله‌های بعد لازم می‌شود',.96,.07,{size:.5,fg:C.accent}),0,-.1);legendTiles(d,game.legend,-.2);}
+  put(d,labelMesh('فلش جلوی چشمت تو را به مرحلهٔ بعد می‌برد.',.96,.07,{size:.55,fg:C.muted}),0,-.52);
+ }else{
+  put(d,labelMesh(story.safe+' باز شد!',.9,.12,{size:.6,fg:th,weight:'800'}),0,.36);
+  put(d,labelMesh(story.outro,.94,.5,{size:.085,fg:C.text,weight:'600'}),0,.0);
+ }
+ if(last){ // final lock: needs every digit
+  line(p.safe,'پازل آخر حل شد! حالا '+story.safe+'.',.5,.09,{size:.6,fg:th});
+  p.ruleLine=line(p.safe,'',.35,.16,{size:.4});
+  line(p.safe,'ارقام هر مرحله روی پانل آن مرحله و در دفترچه (دکمهٔ B) است.',.2,.08,{size:.48,fg:C.muted});
+  p.safeKeys=keypad(p.safe,p,chain.length,v=>{const code=safeCode();if(v===code){p.fbMesh.userData.draw('');p.fbUntil=0;p.state='done';step++;elapsed+=performance.now()-started;phase='end';sfx('ok');return null;}
+   const ex=[...v].filter((c,i)=>c===code[i]).length;return ex+' رقم در جای درست است.';},-.02,'safe');
+  p.plan2=()=>[...safeCode()].map(c=>p.safeKeys[c]);
+ }
+ p.fbMesh=put(g,labelMesh('',1.0,.07,{size:.6}),0,-.6);
+ p.hintText=put(g,labelMesh('',.74,.12,{size:.34,fg:C.accent}),-.15,-.685);
+ p.hintBtn=button(g,'راهنمایی',.4,-.685,.28,.09,()=>hint(),{style:{size:.5,bg:'#3a3a55',border:'#9a9ad0'}});
+}
+function safeCode(){const ds=chain.map(c=>c.digit);return(game.rule==='asc'?ds.slice().sort((a,b)=>a-b):game.rule==='desc'?ds.slice().sort((a,b)=>b-a):ds).join('');}
+const SAFE_RULE={asc:'ارقام همهٔ مرحله‌ها را از کوچک به بزرگ وارد کن.',desc:'ارقام همهٔ مرحله‌ها را از بزرگ به کوچک وارد کن.',found:'ارقام را به ترتیب مرحله‌ها (مرحلهٔ 1 تا آخر) وارد کن.'};
+function solved(p){if(p!==chain[step]||paused||p.state!=='puzzle')return;sfx('ok');
+ if(p.index===chain.length-1){p.state='safe';p.ruleLine.userData.draw(SAFE_RULE[game.rule]);p.hintText.userData.draw('');p.level=0;fb(p,'عالی! فقط قفل نهایی مانده.','ok',5000);}
+ else{p.state='done';step++;}
+}
+function hint(){const p=chain[step];if(!p||paused)return;
+ const arr=p.state==='safe'?['ارقام هر مرحله روی پانل همان مرحله و در دفترچه (دکمهٔ B) نوشته شده.',SAFE_RULE[game.rule],'کد: '+safeCode()]:Modules[p.type].hints(p);
+ const lvl=Math.min(p.level||0,2);p.level=lvl+1;hints++;p.hintText.userData.draw(arr[lvl]);}
 
 /* ------------------------------------------------------------------ spots → scenario */
 function addSpot(){
  if(!gazeInfo){notify('هنوز سطحی را نگاه نمی‌کنی. به یک میز، مبل، دیوار یا کف نگاه کن تا خط سبز دورش بیاید.','bad',5000);return;}
  if(spots.length>=MAXS){notify('حداکثر '+MAXS+' محل. «ساخت بازی» را بزن.','bad',4000);return;}
  const {o}=headPose(),m=placeAt(gazeInfo.hit,gazeInfo.s,o),pos=new THREE.Vector3().setFromMatrixPosition(m);
- if(spots.some(sp=>Math.hypot(sp.pos.x-pos.x,sp.pos.z-pos.z)<.9)){notify('این محل به محل قبلی خیلی نزدیک است؛ جای دیگری را انتخاب کن.','bad',4500);return;}
+ if(spots.some(sp=>Math.hypot(sp.pos.x-pos.x,sp.pos.z-pos.z)<1.4)){notify('این محل به محل قبلی خیلی نزدیک است؛ جای دیگری را انتخاب کن.','bad',4500);return;}
  const sp={s:gazeInfo.s,matrix:m,pos,anchor:null,tried:false,marker:null};
  const mk=new THREE.Group();mk.matrixAutoUpdate=false;mk.add(labelMesh(String(spots.length+1),.2,.2,{bg:'rgba(31,122,90,.92)',border:C.primB,radius:100,size:.7,dir:'ltr',ppm:400}));
- const base=labelMesh('',PW,PH,{bg:'rgba(77,218,192,.08)',border:'rgba(77,218,192,.55)',radius:16,ppm:160});base.position.z=-.01;mk.add(base);mk.matrix.copy(m);markers.add(mk);sp.marker=mk;spots.push(sp);sfx('ok');
+ const base=labelMesh('',PW,PH,{bg:'rgba(77,218,192,.08)',border:'rgba(77,218,192,.55)',radius:16,ppm:160,order:-5});base.position.z=-.01;mk.add(base);mk.matrix.copy(m);markers.add(mk);sp.marker=mk;spots.push(sp);sfx('ok');
  notify(spots.length>=NEED?'ثبت شد ✓ می‌توانی «ساخت بازی» را بزنی یا محل دیگری هم اضافه کنی.':'ثبت شد ✓ حالا به جای دیگری (ترجیحاً اتاق دیگر) برو و محل بعدی را انتخاب کن.','ok',6000);
 }
 function addSpotHere(){ // fallback when no plane is detected: put it where I'm looking, 1.3 m away
@@ -226,24 +384,41 @@ function addSpotHere(){ // fallback when no plane is detected: put it where I'm 
  const s=addSurface(new THREE.Matrix4().makeTranslation(hit.x,hit.y,hit.z),'محل دستی',[{x:-.3,z:-.3},{x:.3,z:-.3},{x:.3,z:.3},{x:-.3,z:.3}]);gazeInfo={s,t:1,hit};addSpot();
 }
 function removeSpot(){const sp=spots.pop();if(!sp)return;markers.remove(sp.marker);disposeGroup(sp.marker);sp.anchor?.delete?.();notify('آخرین محل پاک شد.','info',3000);}
+function clearChain(){chain.forEach(p=>{removeButtons(p.group);world.remove(p.group);disposeGroup(p.group);});chain=[];}
 function startGame(fresh){
  if(spots.length<NEED){notify('حداقل '+NEED+' محل لازم است.','bad',4000);return;}
  seed=(!fresh&&seedParam)?seedParam:randomSeed();seedParam=null;rng=seeded(seed);
- chain.forEach(p=>{removeButtons(p.group);world.remove(p.group);disposeGroup(p.group);});chain=[];step=0;hints=0;elapsed=0;started=performance.now();paused=false;
+ clearChain();step=0;hints=0;elapsed=0;paused=false;menuOpen=false;notebookOpen=false;notice.until=0;
+ story=STORIES[storyParam!==null&&STORIES[storyParam]?storyParam:Math.floor(rng()*STORIES.length)];
  const {o}=headPose();const bySpot=spots.slice().sort((a,b)=>a.pos.distanceTo(o)-b.pos.distanceTo(o));const first=bySpot.shift();
- const rest=bySpot.map(s=>[rng(),s]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);const count=Math.min(spots.length,3+Math.floor(rng()*3));const use=[first,...rest].slice(0,count);
- const types=Object.keys(Modules).map(t=>[rng(),t]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);const token=()=>String(100+Math.floor(rng()*900));
- let input='';use.forEach((sp,i)=>{const p={index:i,type:types[i],input,output:token(),spot:sp,group:new THREE.Group(),level:0};p.group.matrixAutoUpdate=false;p.group.matrix.copy(sp.matrix);chain.push(p);input=p.output;});
+ const rest=shuffle(bySpot);const n=Math.min(spots.length,3+Math.floor(rng()*3));const use=[first,...rest].slice(0,n);
+ const types=shuffle(TYPE_KEYS).slice(0,n);
+ if(typeParam&&TYPE_KEYS.includes(typeParam)){const k=types.indexOf(typeParam);if(k>=0)types.splice(k,1);types.splice(typeParam==='cipher'?1:0,0,typeParam);types.length=n;}
+ if(types[0]==='cipher'){const j=types.findIndex(t=>t!=='cipher');[types[0],types[j]]=[types[j],types[0]];}
+ game.legend={};shuffle([1,2,3,4,5,6,7,8,9]).slice(0,6).forEach((v,i)=>game.legend[SHAPES[i]]=v);
+ game.rule=pick(['asc','desc','found']);const digs=shuffle([1,2,3,4,5,6,7,8,9]).slice(0,n);
+ use.forEach((sp,i)=>{const p={index:i,type:types[i],digit:digs[i],item:story.items[i],beat:story.beats[i],spot:sp,group:new THREE.Group(),level:0,state:'puzzle'};p.group.matrixAutoUpdate=false;p.group.matrix.copy(sp.matrix);chain.push(p);});
+ chain.forEach((p,i)=>{if(p.type==='cipher')chain[i-1].gives=true;});
  chain.forEach(buildPuzzle);chain.forEach(p=>world.add(p.group));
- markers.visible=false;phase='play';notify('بازی ساخته شد. اول به پازل ۱ برو.','ok',9000);
+ markers.visible=false;phase='intro';
 }
-function newPlaces(){chain.forEach(p=>{removeButtons(p.group);world.remove(p.group);disposeGroup(p.group);});chain=[];while(spots.length)removeSpot();markers.visible=true;paused=false;phase='spots';}
+function beginPlay(){phase='play';started=performance.now();menuOpen=false;notebookOpen=false;sfx('ok');}
+function newPlaces(){clearChain();while(spots.length)removeSpot();markers.visible=true;paused=false;menuOpen=false;phase='spots';}
+function toggleMenu(){if(phase!=='play'||paused)return;menuOpen=!menuOpen;notebookOpen=false;cardKey='';cardTick=0;sfx('tick');}
 
 /* ------------------------------------------------------------------ the wizard card (3D HUD in AR, DOM on screen) */
 function dirWord(local){const a=Math.atan2(local.x,-local.z)*180/Math.PI;return Math.abs(a)<35?'جلوی توست':Math.abs(a)>125?'پشت سرت':a>0?'سمت راست':'سمت چپ';}
+function notebookText(){
+ const L=['هدف فعلی: مرحلهٔ '+Math.min(step+1,chain.length)+' از '+chain.length],solvedP=chain.filter(p=>p.state==='done'||p.state==='safe');
+ if(!solvedP.length)L.push('هنوز چیزی پیدا نکرده‌ای.');
+ solvedP.forEach(p=>L.push('مرحله '+(p.index+1)+' · '+p.item+' · رقم '+p.digit));
+ if(chain.some(p=>p.gives&&p.state==='done')){const s=SHAPES.map(k=>SHAPE_FA[k]+' = '+game.legend[k]);L.push('برگهٔ رمزگشا:');L.push(s.slice(0,3).join('  ،  '));L.push(s.slice(3).join('  ،  '));}
+ const last=chain[chain.length-1];if(last&&(last.state==='safe'||last.state==='done'))L.push('دستور قفل نهایی: '+SAFE_RULE[game.rule]);
+ return L.join('\n');
+}
 function cardFor(){
  if(phase==='start')return null;
- if(phase==='safety')return{title:'قبل از شروع',body:'این بازی در خانهٔ واقعی تو اجرا می‌شود. آهسته راه برو و مراقب مبل، پله و دیوار باش. هر وقت خواستی بایستی، به پایین نگاه کن تا منو بیاید.',buttons:[{label:'فهمیدم، شروع کنیم',kind:'primary',fn:()=>{phase='spots';scanStart=performance.now();}},{label:'خروج',fn:quit}]};
+ if(phase==='safety')return{title:'قبل از شروع',body:'این بازی در خانهٔ واقعی تو اجرا می‌شود. آهسته راه برو و مراقب مبل، پله و دیوار باش. در طول بازی منو نمی‌آید؛ هر وقت لازم شد دکمهٔ B (یا Y) دسته را بزن. اگر دسته نداری، برای منو به پایین نگاه کن.',buttons:[{label:'فهمیدم، شروع کنیم',kind:'primary',fn:()=>{phase='spots';scanStart=performance.now();}},{label:'خروج',fn:quit}]};
  if(phase==='spots'){const n=spots.length,live=surfaces.filter(s=>s.live&&s.type!=='سقف').length,waited=performance.now()-scanStart>5000;
   let body;if(!live)body='هنوز سطحی پیدا نشد. اطراف را نگاه کن و چند ثانیه صبر کن. اگر پیدا نشد، «راه‌اندازی اتاق» یا «ثبت همین‌جا» را بزن.';
   else if(gazeInfo)body='به یک '+gazeInfo.s.type+' نگاه می‌کنی (خط سبز دور آن است و مستطیل آبی جای پازل است). اگر پازل را اینجا می‌خواهی «اینجا بگذار» را بزن.';
@@ -252,23 +427,26 @@ function cardFor(){
   if(n)b.push({label:'پاک‌کردن آخرین محل',fn:removeSpot});if(!live&&waited||!gazeInfo&&live&&waited&&performance.now()-gazeLost>5000)b.push({label:'ثبت همین‌جا',fn:addSpotHere});
   if(session?.initiateRoomCapture&&!captureUsed&&!live&&waited)b.push({label:'راه‌اندازی اتاق',fn:capture});b.push({label:'خروج',fn:quit});
   return{title:`محل پازل‌ها · ${n} از ${NEED}`,body,buttons:b};}
+ if(phase==='intro')return{title:story.title,tall:true,body:story.intro+'\n\nراه‌های زیادی برای حل هر معما هست، اما همیشه فقط یک جواب درست. در طول بازی با دکمهٔ B دسته، منو و دفترچه را باز کن.',buttons:[{label:'شروع ماجرا ▶',kind:'primary',fn:beginPlay}]};
  if(phase==='play'&&paused)return{title:'بازی متوقف است',body:'پازل‌ها پنهان شدند. هر وقت آماده بودی ادامه بده.',buttons:[{label:'ادامه',kind:'primary',fn:pause},{label:'انتخاب دوبارهٔ محل‌ها',fn:newPlaces},{label:'خروج',fn:quit}]};
+ if(phase==='play'&&!menuOpen)return null;
+ if(phase==='play'&&notebookOpen)return{title:'دفترچهٔ یادداشت',tall:true,body:notebookText(),buttons:[{label:'بازگشت به بازی',kind:'primary',fn:()=>{menuOpen=false;notebookOpen=false;cardKey='';}},{label:'منو',fn:()=>{notebookOpen=false;cardKey='';}}]};
  if(phase==='play'){const p=chain[step],{o,q}=headPose(),tp=new THREE.Vector3().setFromMatrixPosition(p.group.matrix),dist=Math.hypot(tp.x-o.x,tp.z-o.z),local=tp.clone().sub(o).applyQuaternion(q.clone().invert());
-  let body=p.missing?'محل پازل را گم کردم؛ به همان جا نگاه کن، یا «انتخاب دوبارهٔ محل‌ها» را بزن.':dist>1.8?`برو به پازل ${step+1}: ${dist.toFixed(1)} متر، ${dirWord(local)}.`:`پازل ${step+1} همین‌جاست؛ روبه‌رویش بایست و حلش کن.`;
-  if(p.index&&!p.unlocked&&!p.missing)body+=' برای باز کردن قفل، کد پازل قبلی (علامت ✓) را بزن.';
-  return{title:`مرحله ${step+1} از ${chain.length}`,body,buttons:[{label:'راهنمایی (−۵۰ امتیاز)',fn:hint},{label:'توقف',fn:pause},{label:'انتخاب دوبارهٔ محل‌ها',fn:newPlaces},{label:'خروج',fn:quit}]};}
- if(phase==='end'){const sec=Math.floor(elapsed/1000);return{title:'تبریک! همه را حل کردی',body:`زمان: ${sec} ثانیه · راهنمایی: ${hints} · امتیاز: ${Math.max(0,1000-sec-hints*50)} · بذر: ${seed}`,buttons:[{label:'سناریوی تازه (همین محل‌ها)',kind:'primary',fn:()=>startGame(true)},{label:'انتخاب محل‌های جدید',fn:newPlaces},{label:'خروج',fn:quit}]};}
+  const body=p.missing?'محل پازل را گم کردم؛ به همان جا نگاه کن، یا «انتخاب دوبارهٔ محل‌ها» را بزن.':dist>1.8?`مرحله ${step+1}: ${dist.toFixed(1)} متر، ${dirWord(local)}.`:`مرحله ${step+1} همین‌جاست؛ روبه‌رویش بایست و حلش کن.`;
+  return{title:story.title+' · مرحله '+(step+1)+' از '+chain.length,body:body+'\nدکمهٔ B دوباره منو را می‌بندد.',buttons:[{label:'ادامهٔ بازی',kind:'primary',fn:()=>{menuOpen=false;cardKey='';}},{label:'دفترچه',kind:'primary',fn:()=>{notebookOpen=true;cardKey='';}},{label:'توقف',fn:pause},{label:'انتخاب دوبارهٔ محل‌ها',fn:newPlaces},{label:'خروج',fn:quit}]};}
+ if(phase==='end'){const sec=Math.floor(elapsed/1000);return{title:'تبریک! ماجرا تمام شد',tall:true,body:story.outro+`\n\nزمان: ${sec} ثانیه · راهنمایی: ${hints} · امتیاز: ${Math.max(0,2000-sec-hints*50)}\nبذر: ${seed}`,buttons:[{label:'سناریوی تازه (همین محل‌ها)',kind:'primary',fn:()=>startGame(true)},{label:'انتخاب محل‌های جدید',fn:newPlaces},{label:'خروج',fn:quit}]};}
  return null;
 }
 function cardJSON(cd){return cd?JSON.stringify([cd.title,cd.body,performance.now()<notice.until?notice.text:'',cd.buttons.map(b=>[b.label,b.kind||'',!!b.disabled])]):'';}
-function renderDOM(cd){const bx=$('cardBtns');bx.innerHTML='';$('startBtns').style.display=phase==='start'?'':'none';
+function renderDOM(cd){const bx=$('cardBtns');bx.innerHTML='';$('startBtns').style.display=phase==='start'?'':'none';$('about').style.display=phase==='start'?'':'none';$('foot').style.display=phase==='start'?'':'none';
+ $('ui').style.display=(phase==='start'||cd)?'':'none';$('keyhint').style.display=(demo&&phase==='play'&&!cd)?'':'none';
  $('cardTitle').textContent=cd?cd.title:'';$('cardBody').textContent=cd?cd.body:'';$('notice').textContent=cd&&performance.now()<notice.until?notice.text:'';
  if(cd)cd.buttons.forEach(b=>{const e=document.createElement('button');e.textContent=b.label;if(b.kind==='primary')e.className='primary';if(b.disabled)e.classList.add('off');e.onclick=()=>{ac();b.fn();};bx.appendChild(e);});}
 function buildHUD(cd){
  removeButtons(hud);disposeGroup(hud);if(!cd){hudH=.3;return;}
- const W=1.3,pad=.05,titleH=.11,bodyH=.34,noteOn=performance.now()<notice.until,noteH=noteOn?.13:0,bs=cd.buttons,prim=bs.filter(b=>b.kind==='primary'),sec=bs.filter(b=>b.kind!=='primary');
+ const W=1.3,pad=.05,titleH=.11,bodyH=cd.tall?.66:.34,noteOn=performance.now()<notice.until,noteH=noteOn?.13:0,bs=cd.buttons,prim=bs.filter(b=>b.kind==='primary'),sec=bs.filter(b=>b.kind!=='primary');
  const primRows=Math.ceil(prim.length/2),secRows=Math.ceil(sec.length/3),H=pad*2+titleH+.02+bodyH+noteH+primRows*.2+secRows*.16;hudH=H;
- const bg=labelMesh('',W,H,{bg:C.panel,border:C.border,radius:28,ppm:450});hud.add(bg);let y=H/2-pad-titleH/2;
+ const bg=labelMesh('',W,H,{bg:C.panel,border:C.border,radius:28,ppm:450,order:-5});hud.add(bg);let y=H/2-pad-titleH/2;
  const t=labelMesh(cd.title,W-.1,titleH,{fg:C.border,size:.66});t.position.set(0,y,.01);hud.add(t);y-=titleH/2+.02+bodyH/2;
  const b=labelMesh(cd.body,W-.12,bodyH,{size:.2,weight:'600'});b.position.set(0,y,.01);hud.add(b);y-=bodyH/2;
  if(noteOn){y-=noteH/2;const n=labelMesh(notice.text,W-.12,noteH,{size:.3,fg:notice.kind==='bad'?C.bad:notice.kind==='ok'?C.ok:C.accent,bg:'rgba(255,255,255,.06)'});n.position.set(0,y,.01);hud.add(n);y-=noteH/2;}
@@ -277,7 +455,7 @@ function buildHUD(cd){
  sec.forEach((bt,i)=>{const row=Math.floor(i/3),inRow=Math.min(3,sec.length-row*3),col=i%3,x=(((inRow-1)/2)-col)*.42;button(hud,bt.label,x,y-.08-row*.16,.4,.13,bt.fn,{disabled:bt.disabled,z:.03,style:{size:.46}});});
 }
 function capture(){if(!session?.initiateRoomCapture||captureUsed)return;captureUsed=true;session.initiateRoomCapture().then(()=>notify('پس از پایان تنظیم اتاق، دوباره اطراف را نگاه کن.','info',6000)).catch(()=>notify('تنظیم اتاق ممکن نشد. «ثبت همین‌جا» را امتحان کن.','bad',6000));}
-function pause(){if(phase!=='play')return;if(!paused)elapsed+=performance.now()-started;else started=performance.now();paused=!paused;}
+function pause(){if(phase!=='play')return;if(!paused)elapsed+=performance.now()-started;else started=performance.now();paused=!paused;menuOpen=false;notebookOpen=false;cardKey='';cardTick=0;}
 function quit(){if(session)session.end();else location.href=location.pathname;}
 
 /* ------------------------------------------------------------------ session (AR) and demo */
@@ -324,22 +502,28 @@ cv.addEventListener('pointermove',e=>{if(!demo)return;if(drag){if(Math.hypot(e.c
  mouse.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);mouseOn=true;});
 cv.addEventListener('pointerup',e=>{if(!demo||!drag)return;const click=!drag.moved;drag=null;if(click){ac();mouse.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);ray.setFromCamera(mouse,camera);activate(ray.ray.origin.clone(),ray.ray.direction.clone());}});
 const mouse=new THREE.Vector2();let mouseOn=false;
-window.addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='Escape')pause();});window.addEventListener('keyup',e=>keys.delete(e.code));
+window.addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='Escape'||e.code==='KeyM'||e.code==='Tab'){e.preventDefault();toggleMenu();}});window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
 /* ------------------------------------------------------------------ gaze helpers (outline, reticle, ghost) */
 const outline=new THREE.LineLoop(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x55ffaa}));outline.matrixAutoUpdate=false;outline.frustumCulled=false;outline.visible=false;world.add(outline);let outlineFor=null,outlineN=0;
 const reticle=new THREE.Mesh(new THREE.RingGeometry(.05,.065,28),new THREE.MeshBasicMaterial({color:0x55ffaa,side:THREE.DoubleSide}));reticle.visible=false;world.add(reticle);
-const ghost=labelMesh('',PW,PH,{bg:'rgba(77,150,255,.14)',border:'rgba(120,190,255,.9)',radius:10,ppm:160});ghost.matrixAutoUpdate=false;ghost.visible=false;world.add(ghost);
+const ghost=labelMesh('',PW,PH,{bg:'rgba(77,150,255,.14)',border:'rgba(120,190,255,.9)',radius:10,ppm:160,order:-5});ghost.matrixAutoUpdate=false;ghost.visible=false;world.add(ghost);
+
+/* direction arrow: tiny, only when the next station is far away (no menu needed to find your way) */
+const arrow=new THREE.Group(),arrowCone=new THREE.Mesh(new THREE.ConeGeometry(.055,.2,18).rotateX(-Math.PI/2),new THREE.MeshBasicMaterial({color:0x4ddac0,transparent:true,opacity:.92,depthTest:false}));
+arrowCone.renderOrder=999;arrow.add(arrowCone);const arrowLbl=labelMesh('',.5,.09,{size:.62,fg:'#4ddac0'});arrowLbl.material.depthTest=false;arrowLbl.renderOrder=999;arrowLbl.position.set(0,-.1,0);arrow.add(arrowLbl);arrow.visible=false;arrow.scale.setScalar(.65);scene.add(arrow);
+const padPrev=new WeakMap();
+function pollPad(){let pads=0;for(const src of session.inputSources){if(!src.gamepad||src.hand)continue;pads++;const b=src.gamepad.buttons[5],dn=!!(b&&b.pressed);if(dn&&!padPrev.get(src))toggleMenu();padPrev.set(src,dn);}return pads;}
 
 /* ------------------------------------------------------------------ main loop */
-let last=performance.now(),cardTick=0;
+let last=performance.now(),cardTick=0,handOnly=false;
 renderer.setAnimationLoop((time,frame)=>{
  const dt=Math.min((time-last)/1000,.05);last=time;const now=performance.now();
  if(session&&frame){ref=renderer.xr.getReferenceSpace();guard(()=>scan(frame));
   for(const sp of spots){if(!sp.tried&&frame.createAnchor){sp.tried=true;guard(async()=>{const q=new THREE.Quaternion(),pp=new THREE.Vector3(),sc=new THREE.Vector3();sp.matrix.decompose(pp,q,sc);sp.anchor=await frame.createAnchor(new XRRigidTransform({x:pp.x,y:pp.y,z:pp.z},{x:q.x,y:q.y,z:q.z,w:q.w}),ref);});}
    if(sp.anchor){const pose=frame.getPose(sp.anchor.anchorSpace,ref);sp.lost=!pose;if(pose){sp.matrix.fromArray(pose.transform.matrix);sp.pos.setFromMatrixPosition(sp.matrix);if(sp.marker)sp.marker.matrix.copy(sp.matrix);}}}
-  guard(()=>hands(frame));}
+  guard(()=>hands(frame));handOnly=pollPad()===0;}
  if(demo&&!paused){const mv=new THREE.Vector3((keys.has('KeyD')||keys.has('ArrowRight')?1:0)-(keys.has('KeyA')||keys.has('ArrowLeft')?1:0),0,(keys.has('KeyS')||keys.has('ArrowDown')?1:0)-(keys.has('KeyW')||keys.has('ArrowUp')?1:0));mv.applyAxisAngle(new THREE.Vector3(0,1,0),yaw);camera.position.addScaledVector(mv,dt*1.6);}
  if(demo){camera.rotation.set(pitch,yaw,0);camera.updateMatrixWorld(true);}
  // gaze: which real surface am I looking at
@@ -350,18 +534,26 @@ renderer.setAnimationLoop((time,frame)=>{
  for(const sp of spots)if(sp.marker)sp.marker.matrixWorldNeedsUpdate=true;
  // puzzles: finished ones stay visible (their code is on them), future ones are hidden
  chain.forEach(p=>{if(session&&p.spot.anchor){p.missing=!!p.spot.lost;}p.group.matrix.copy(p.spot.matrix);p.group.matrixWorldNeedsUpdate=true;
-  p.group.visible=phase!=='spots'&&!paused&&!p.missing&&p.index<=Math.min(step,chain.length-1);const solved=p.index<step;p.body.visible=!solved&&p.unlocked;p.gate.visible=!solved&&!p.unlocked;p.done.visible=solved;p.hintBtn.visible=!solved&&p.unlocked;p.hintText.visible=!solved;});
+  p.group.visible=(phase==='play'||phase==='end')&&!paused&&!p.missing&&p.index<=Math.min(step,chain.length-1);
+  p.body.visible=p.state==='puzzle';p.safe.visible=p.state==='safe';p.done.visible=p.state==='done';p.hintBtn.visible=p.state!=='done';p.hintText.visible=p.state!=='done';
+  if(p.fbUntil&&now>p.fbUntil){p.fbUntil=0;p.fbMesh.userData.draw('');}});
  // card + HUD
  const {o,q,d}=headPose();
- if(now-cardTick>250){cardTick=now;const cd=cardFor(),key=cardJSON(cd)+phase+paused;if(key!==cardKey){cardKey=key;renderDOM(cd);if(session)buildHUD(cd);}}
- const wanted=phase!=='play'||paused||d.y<-.35||now<hudUntil,show=!!session&&wanted&&phase!=='start';
+ if(session&&handOnly&&phase==='play'&&!paused){const want=d.y<-.55;if(want!==menuOpen){menuOpen=want;notebookOpen=false;cardKey='';cardTick=0;}}
+ if(now-cardTick>250){cardTick=now;const cd=cardFor(),key=cardJSON(cd)+phase+paused+menuOpen+notebookOpen;if(key!==cardKey){cardKey=key;renderDOM(cd);if(session)buildHUD(cd);}}
+ const wanted=phase==='play'?(paused||menuOpen):true,show=!!session&&wanted&&phase!=='start';
  const tgt=o.clone().add(new THREE.Vector3(0,-.12-hudH/2,-1.4).applyQuaternion(q));
  if(!hudWasVisible){hud.position.copy(tgt);hud.quaternion.copy(q);}else{const k=1-Math.exp(-dt*4);hud.position.lerp(tgt,k);hud.quaternion.slerp(q,k);}
  hudWasVisible=show;hud.visible=show;
+ // arrow to the next station
+ {const p=chain[step];let showA=false;if(phase==='play'&&!paused&&!menuOpen&&p&&!p.missing){const tp=new THREE.Vector3().setFromMatrixPosition(p.group.matrix),dx=tp.x-o.x,dz=tp.z-o.z,dist=Math.hypot(dx,dz);
+  if(dist>2.2){showA=true;const fx=d.x,fz=d.z,fl=Math.hypot(fx,fz)||1;arrow.position.set(o.x+fx/fl*.85,o.y-.38,o.z+fz/fl*.85);arrow.rotation.set(0,Math.atan2(-dx,-dz),0);arrowLbl.quaternion.copy(q);arrowLbl.rotation.set(0,0,0);
+   const t='مرحله '+(step+1)+' · '+Math.round(dist)+' متر';if(t!==arrowTxt){arrowTxt=t;arrowLbl.userData.draw(t);}}}
+  arrow.visible=showA;if(showA)arrowLbl.lookAt(camera.getWorldPosition(new THREE.Vector3()));}
  // hover highlight
  if(session){const list=[];for(const c of rays){if(!c.visible)continue;const p=new THREE.Vector3(),qq=new THREE.Quaternion();c.getWorldPosition(p);c.getWorldQuaternion(qq);if(p.lengthSq()>0)list.push([p,new THREE.Vector3(0,0,-1).applyQuaternion(qq)]);}updateHover(list);}
  else if(demo&&mouseOn){ray.setFromCamera(mouse,camera);updateHover([[ray.ray.origin.clone(),ray.ray.direction.clone()]]);}
  renderer.render(scene,camera);
 });
-window.EscapeGame={Modules,get chain(){return chain;},get spots(){return spots;},get phase(){return phase;},cardFor,jigsawNext,seeded,get gaze(){return gazeInfo;},activate,clickables,get step(){return step;},placeAt,gazeCast,scan,addSurface,get surfaces(){return surfaces;},headPose,get hud(){return hud;}};
+window.EscapeGame={Modules,get chain(){return chain;},get spots(){return spots;},get phase(){return phase;},get step(){return step;},get story(){return story;},get game(){return game;},get menuOpen(){return menuOpen;},get hudVisible(){return hud.visible;},get arrowVisible(){return arrow.visible;},cardFor,toggleMenu,beginPlay,safeCode,notebookText,lightsSolve,ABJAD,ABJ_WORDS,makeSeq,seeded,get gaze(){return gazeInfo;},activate,clickables,placeAt,gazeCast,scan,addSurface,get surfaces(){return surfaces;},headPose,get hud(){return hud;}};
 </script></body></html>
