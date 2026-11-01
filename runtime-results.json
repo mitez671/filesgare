@@ -1,0 +1,5 @@
+{
+  "boundary": "Mocked DOM/WebGL; actual Three.js geometries and game update functions. This does not verify GPU output or headset support.",
+  "results": [],
+  "failed": 1
+}

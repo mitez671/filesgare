@@ -13,7 +13,7 @@ filesgare/
 │   ├── deploy-vr.sh     آپلود zip + استخراج روی سرور
 │   ├── get-assets.sh    دانلود مدل/عکس از سمت سرور و ارسال با FTP
 │   └── fix-cache.sh     اصلاح کش و مجوزها
-├── vr-games/            ۷۸ بازی و محیط VR
+├── vr-games/            ۷۹ بازی و محیط VR
 ├── anarshekan/          بازی مستقل انارشکن
 ├── zarb-shamshir/       بازی مستقل ضرب‌شمشیر
 ├── phone-agent/         عامل اندروید + سرور MCP
@@ -69,6 +69,7 @@ filesgare/
 | `deepsea` | سفر به اعماق دریا | — |
 | `dodge` | جاخالی | — |
 | `dooz` | دوز | — |
+| `escape` | خانهٔ رمزها (اتاق فرار AR) | — |
 | `drone` | پهپاد | — |
 | `drums` | طبل‌زن | — |
 | `english` | کلاس انگلیسی | — |
