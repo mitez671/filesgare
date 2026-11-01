@@ -225,8 +225,9 @@ K.init = function(cfg){
   const modeBtns = cfg.modes.map(md => makeButton(md.label, md.color || '#7c5cff', () => K.start(md.key)));
   const exitBtn = makeButton('→ فهرست بازی‌ها', '#8a8aa0', () => { location.href = cfg.hubUrl || '../index.html'; }, .62);
   const all = modeBtns.length;
-  modeBtns.forEach((b,i) => b.p.m.position.set(mp[0] + ((all-1)/2 - i)*.7, mp[1]-.55, mp[2]+.05));
-  exitBtn.p.m.position.set(mp[0], mp[1]-.95, mp[2]+.05);
+  const perRow = all > 4 ? 3 : all, rows = Math.ceil(all/perRow);
+  modeBtns.forEach((b,i) => { const r = Math.floor(i/perRow), c = i%perRow, inRow = Math.min(perRow, all - r*perRow); b.p.m.position.set(mp[0] + ((inRow-1)/2 - c)*.7, mp[1]-.55 - r*.24, mp[2]+.05); });
+  exitBtn.p.m.position.set(mp[0], mp[1]-.55-(rows-1)*.24-.4, mp[2]+.05);
   function showButtons(v){ modeBtns.forEach(b => b.p.m.visible = v); exitBtn.p.m.visible = v && cfg.hub !== false; }
 
   const hudL = K.panel(512,256,.9); const hp = cfg.hudPos || [-1.25,1.95,-2.1]; hudL.m.position.set(...hp); hudL.m.rotation.y = hp[0] < 0 ? .45 : -.45;
@@ -449,6 +450,13 @@ const LESSONS = [
   {name:'چهارمضراب', seq:[0,7,3,7,1,7,3,7,2,9,4,9,3,10,5,10,4,7,3,7,1,7,2,0]},
 ];
 
+// آهنگ‌های ایرانی (ساده‌شده): هر عدد شمارهٔ سیم است؛ ۰ = ر، ۷ = ر یک اکتاو بالاتر
+const SONGS = {
+  morgh:{name:'مرغ سحر', single:1, seq:[11,11,12,11,10,9,10,11, 10,9,8,7, 11,11,12,11,10,9,10,11, 9,8,7]},
+  iran:{name:'ای ایران', single:1, seq:[11,12,12,13,12,11,10,9, 11,12,12,13,12,11,10,9, 7,8,9,10,9,8,7,6,7]},
+  hoze:{name:'لی‌لی حوضک', single:1, seq:[11,11,9,11,11,9, 10,10,8,10,10,8, 9,9,7,9,8,7]},
+  amoo:{name:'عمو زنجیرباف', single:1, seq:[7,8,9,9,9,8,7, 8,9,10,10,10,9,8, 7,8,9,8,7]},
+};
 function mallet(h){
   const g = new THREE.Group();
   const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.004,.005,.22,6), K.lambert(0xe8d8b8)); shaft.rotation.x = Math.PI/2; shaft.position.z = -.1; g.add(shaft);
@@ -487,8 +495,8 @@ function env(K){
     const st = new THREE.Mesh(new THREE.CylinderGeometry(.0025,.0025,half*2,5), sm); st.rotation.z = Math.PI/2; st.position.set(CX,SY,z); s.add(st);
     const hitbox = new THREE.Mesh(new THREE.BoxGeometry(half*2,.02,DZ*.9), new THREE.MeshBasicMaterial({visible:false})); hitbox.position.copy(st.position); s.add(hitbox);
     // bridges (kharak)
-    [-1,1].forEach(sd => { const b = new THREE.Mesh(new THREE.BoxGeometry(.012,.014,.012), K.lambert(0xf0e0c0)); b.position.set(sd*half*.55, SY-.006, z); s.add(b); });
-    strings.push({i, z, half, mesh:st, hitbox, mat:sm, glow:0, target:false, midi:NOTES[i]});
+    const bridges = [-1,1].map(sd => { const bm = new THREE.MeshStandardMaterial({color:0xf0e0c0, emissive:0x000000, roughness:.6}); const b = new THREE.Mesh(new THREE.BoxGeometry(.012,.014,.012), bm); b.position.set(sd*half*.55, SY-.006, z); s.add(b); return bm; });
+    strings.push({i, z, half, mesh:st, hitbox, mat:sm, bridges, glow:0, target:false, next:false, midi:NOTES[i]});
   }
   // note label panel
   K.noteP = K.panel(512,96,.7); K.noteP.m.position.set(0,SY+.42,SZ0-.75);
@@ -518,12 +526,18 @@ function drawNote(t){ const {x} = K.noteP; x.clearRect(0,0,512,96); x.direction 
 
 function strike(s, vel, H){
   pluck(s, vel); H && H.buzz(clamp(vel*.4,.1,.6), 18);
-  if (mode !== 'lesson' || !lesson) return;
+  if (mode === 'free' || !lesson) return;
   const want = lesson.seq[li];
   if (s.i === want){ li++; K.emit(s.mesh.position, 0xffd27a, 8, .8, .4); if (li >= lesson.seq.length) nextLesson(); }
   else { errors++; }
 }
 function nextLesson(){
+  if (lesson.single){
+    const n = lesson.seq.length; lesson = null;
+    [0,4,7].forEach((x,i) => K.tone({t:K.ac.currentTime + .3 + i*.1, type:'triangle', f:K.mtof(74+x), dec:.3, peak:.08}));
+    setTimeout(() => K.state === 'play' && K.over({title:'آهنگ تمام شد!', value:Math.max(0, Math.round(100*n/(n + errors))), label:'دقت ٪', stats:[['نت درست', fa(n)], ['خطا', fa(errors)]]}), 800);
+    return;
+  }
   const idx = LESSONS.indexOf(lesson) + 1;
   [0,4,7].forEach((x,i) => K.tone({t:K.ac.currentTime + .3 + i*.1, type:'triangle', f:K.mtof(74+x), dec:.3, peak:.08}));
   if (idx >= LESSONS.length){ setTimeout(() => K.state === 'play' && K.over({title:'هر سه درس تمام شد', value:Math.round(lessonT), label:'ثانیه', lower:true, valueText:fa(Math.round(lessonT)), fmt: v => fa(v) + ' ثانیه', stats:[['خطا', fa(errors)]]}), 900); lesson = null; return; }
@@ -531,13 +545,13 @@ function nextLesson(){
 }
 function start(key){
   mode = key; errors = 0; lessonT = 0; played = 0; li = 0;
-  lesson = key === 'lesson' ? LESSONS[0] : null;
+  lesson = key === 'lesson' ? LESSONS[0] : (SONGS[key] || null);
   if (lesson) K.popup('درس: ' + lesson.name, '#ffd27a', V(0, SY+.55, SZ0-.6), 1.2);
 }
 function stop(){ lesson = null; strings.forEach(s => s.target = false); }
 const _tp = V();
 function update(dt){
-  if (mode === 'lesson' && lesson) lessonT += dt;
+  if (mode !== 'free' && lesson) lessonT += dt;
   if (K.mode === 'vr'){
     for (const H of K.activeHands()){
       const y = H.tip.y - SY, prev = prevY[H.h]; prevY[H.h] = y;
@@ -551,18 +565,19 @@ function update(dt){
     K.mouse.ray.setFromCamera(K.mouse.ndc, K.camera); const hit = K.mouse.ray.intersectObjects(strings.map(s => s.hitbox), false)[0];
     if (hit) strike(strings.find(s => s.hitbox === hit.object), .8, null);
   }
-  strings.forEach(s => s.target = false);
-  if (lesson){ const n = lesson.seq[li]; if (strings[n]) strings[n].target = true; const n2 = lesson.seq[li+1]; if (strings[n2] && n2 !== n) strings[n2].next = true; }
-  if (mode === 'lesson' && lesson) K.hud(lesson.name, fa(li) + ' از ' + fa(lesson.seq.length), 'خطا ' + fa(errors), 'زمان ' + fa(Math.round(lessonT)));
+  strings.forEach(s => { s.target = false; s.nextT = false; });
+  if (lesson){ const n = lesson.seq[li]; if (strings[n]) strings[n].target = true; const n2 = lesson.seq[li+1]; if (strings[n2] && n2 !== n) strings[n2].nextT = true; }
+  if (mode !== 'free' && lesson) K.hud(lesson.name, fa(li) + ' از ' + fa(lesson.seq.length), 'سیم آبی چشمک‌زن را بزن · خطا ' + fa(errors), 'زمان ' + fa(Math.round(lessonT)));
   else if (mode === 'free') K.hud('آزاد', fa(played), 'نت نواخته‌شده', 'دستگاه شور، کوک ر');
 }
 function always(dt){
   for (const s of strings){
     s.glow = Math.max(0, s.glow - dt*2.5);
-    const t = s.target ? .6 + .4*Math.sin(K.t*8) : 0;
-    s.mat.emissive.setRGB(s.glow*.9 + t*.9, s.glow*.7 + t*.65, s.glow*.3 + t*.1);
+    const t = s.target ? .65 + .35*Math.sin(K.t*8) : 0, n = s.nextT ? .25 : 0;
+    s.mat.emissive.setRGB(s.glow*.9 + t*.15 + n*.1, s.glow*.7 + t*.45 + n*.3, s.glow*.3 + t*1.0 + n*.9);
+    const th = s.target ? 3.2 : s.nextT ? 1.8 : 1; s.mesh.scale.set(th, 1, th);
+    for (const bm of s.bridges) bm.emissive.setRGB(t*.2, t*.5, t*1.0 + n*.6);
     s.mesh.position.y = SY + Math.sin(K.t*90 + s.i)*.0012*s.glow;
-    s.next = false;
   }
 }
 function onKey(e){ const i = KEYS.indexOf(e.code); if (i >= 0 && strings[i]) strike(strings[i], .8, null); }
@@ -570,9 +585,10 @@ function onKey(e){ const i = KEYS.indexOf(e.code); if (i >= 0 && strings[i]) str
 K.init({
   id:'santur', title:'سنتورزن', colors:{bg:'#1e130c', accent:'#ffd27a', accent2:'#7a1424'}, bg:0x2a1a10, fog:[6,14],
   tagline:'در یک اتاق ایرانی با فرش و پنجره‌های مشبک، سنتوری کوک‌شده در دستگاه شور جلویت است. با دو مضراب بنواز یا درس‌ها را دنبال کن.',
-  rules:['دو مضراب در دست داری. از بالا روی سیم‌ها ضربه بزن. هرچه تندتر بزنی صدا بلندتر است.','سیم‌های نزدیک بم‌ترند و هرچه دورتر بروی زیرتر می‌شوند. سیم‌های طلایی نت «ر» هستند.','سنتور در شور کوک شده و «می‌کرن» و «لا‌کرن» ربع‌پرده‌ای واقعی دارند.','درس: سیم بعدی طلایی چشمک می‌زند. سه درس پشت سر هم می‌آیند و زمانت ثبت می‌شود.'],
+  rules:['دو مضراب در دست داری. از بالا روی سیم‌ها ضربه بزن. هرچه تندتر بزنی صدا بلندتر است.','سیم‌های نزدیک بم‌ترند و هرچه دورتر بروی زیرتر می‌شوند. سیم‌های طلایی نت «ر» هستند.','سنتور در شور کوک شده و «می‌کرن» و «لا‌کرن» ربع‌پرده‌ای واقعی دارند.','درس و آهنگ‌های ایرانی: سیم بعدی آبی چشمک می‌زند و کمی ضخیم‌تر دیده می‌شود؛ پایه‌های آن هم روشن می‌شوند. سیم بعد از آن کم‌رنگ‌تر آبی است.'],
   deskRules:'روی سیم‌ها کلیک کن یا کلیدهای ۱ تا ۰، منها، مساوی، Q، W و E را بزن.',
-  modes:[{key:'free', label:'آزاد', color:'#ffd27a'}, {key:'lesson', label:'درس', color:'#7ad0ff'}],
+  modes:[{key:'free', label:'آزاد', color:'#ffd27a'}, {key:'lesson', label:'درس', color:'#7ad0ff'},
+    {key:'morgh', label:'مرغ سحر', color:'#19c3a6'}, {key:'iran', label:'ای ایران', color:'#2fbf5a'}, {key:'hoze', label:'لی‌لی حوضک', color:'#e8c23a'}, {key:'amoo', label:'عمو زنجیرباف', color:'#e8603a'}],
   deskCam:{pos:[0,1.5,.55], look:[0,.95,-1.1]}, menuPos:[0,1.85,-2.0], hudPos:[-1.05,1.45,-1.5],
   hand:mallet, tip: () => [0,-.012,-.215], env, start, update, stop, always, onKey, onAudio,
   desk(K){ K.R.holder.visible = false; },

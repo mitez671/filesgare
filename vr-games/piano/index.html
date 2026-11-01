@@ -225,8 +225,8 @@ K.init = function(cfg){
   const modeBtns = cfg.modes.map(md => makeButton(md.label, md.color || '#7c5cff', () => K.start(md.key)));
   const exitBtn = makeButton('→ فهرست بازی‌ها', '#8a8aa0', () => { location.href = cfg.hubUrl || '../index.html'; }, .62);
   const all = modeBtns.length;
-  const perRow = all > 5 ? 5 : all; modeBtns.forEach((b,i) => { const r = Math.floor(i/perRow), c = i%perRow, inRow = Math.min(perRow, all - r*perRow); b.p.m.position.set(mp[0] + ((inRow-1)/2 - c)*.62, mp[1]-.5 - r*.22, mp[2]+.05); });
-  exitBtn.p.m.position.set(mp[0], mp[1]-.95, mp[2]+.05);
+  const perRow = all > 10 ? 6 : all > 5 ? 5 : all; modeBtns.forEach((b,i) => { const r = Math.floor(i/perRow), c = i%perRow, inRow = Math.min(perRow, all - r*perRow); b.p.m.position.set(mp[0] + ((inRow-1)/2 - c)*.62, mp[1]-.5 - r*.22, mp[2]+.05); });
+  exitBtn.p.m.position.set(mp[0], mp[1]-.5-(Math.ceil(all/perRow)-1)*.22-.23, mp[2]+.05);
   function showButtons(v){ modeBtns.forEach(b => b.p.m.visible = v); exitBtn.p.m.visible = v && cfg.hub !== false; }
 
   const hudL = K.panel(512,256,.9); const hp = cfg.hudPos || [-1.25,1.95,-2.1]; hudL.m.position.set(...hp); hudL.m.rotation.y = hp[0] < 0 ? .45 : -.45;
@@ -446,6 +446,17 @@ const SONGS = {
   london:[67,69,67,65,64,65,67, 62,64,65, 64,65,67, 67,69,67,65,64,65,67, 62,67,64,60],
   jacques:[60,62,64,60, 60,62,64,60, 64,65,67, 64,65,67, 67,69,67,65,64,60, 67,69,67,65,64,60, 60,55,60, 60,55,60],
   ode:[64,64,65,67,67,65,64,62,60,60,62,64,64,62,62, 64,64,65,67,67,65,64,62,60,60,62,64,62,60,60], twinkle:[60,60,67,67,69,69,67,65,65,64,64,62,62,60,67,67,65,65,64,64,62,67,67,65,65,64,64,62,60,60,67,67,69,69,67,65,65,64,64,62,62,60] };
+// آهنگ‌های ایرانی: خانه‌های گام شور روی ر (۰ = ر۳ … ۷ = ر۴ … ۱۳ = دوی۵). می‌کرن روی پیانو به می‌بمل گرد شده است.
+const SHUR = [0,1,3,5,7,8,10];
+const fromShur = q => q.map(i => 50 + 12*Math.floor(i/7) + SHUR[i%7]);
+Object.assign(SONGS, {
+  morgh:fromShur([11,11,12,11,10,9,10,11, 10,9,8,7, 11,11,12,11,10,9,10,11, 9,8,7]),
+  iran:fromShur([11,12,12,13,12,11,10,9, 11,12,12,13,12,11,10,9, 7,8,9,10,9,8,7,6,7]),
+  hoze:fromShur([11,11,9,11,11,9, 10,10,8,10,10,8, 9,9,7,9,8,7]),
+  amoo:fromShur([7,8,9,9,9,8,7, 8,9,10,10,10,9,8, 7,8,9,8,7]),
+  shur:fromShur([7,8,9,10,11,12,13,12,11,10,9,8,7, 7,9,11,9,10,8,9,7]),
+  daramad:fromShur([7,7,8,7,6,5,6,7,7,5,4,3,4,5,4,3,2,1,2,3,1,0]),
+});
 let keys = [], mode = 'free', song = [], si = 0, played = 0, errors = 0, hits = 0;
 const isBlack = m => [1,3,6,8,10].includes(m % 12);
 function env(K){
@@ -470,7 +481,7 @@ function press(k, v){ k.down = .12; piano(k.m, v); K.emit(V(k.x, KY + .05, k.z),
   if (mode !== 'free'){ if (k.m === song[si]){ si++; hits++; if (si >= song.length){ setTimeout(() => K.state === 'play' && K.over({title:'آهنگ تمام شد!', value:Math.max(0, Math.round(100*hits/(hits + errors))), label:'دقت ٪', stats:[['نت درست', fa(hits)], ['نت اشتباه', fa(errors)]]}), 800); } } else errors++; } else played++; }
 function start(key){ mode = key; si = played = errors = hits = 0; song = key === 'free' ? [] : SONGS[key]; if (K.mode === 'desk') K.resetCamera(); }
 // with the mouse, look up at the song menu while it is open (the play camera looks down at the keys)
-function onMenu(K){ if (K.mode === 'desk'){ K.camera.position.set(0, 1.55, .45); K.camera.quaternion.identity(); K.camera.lookAt(0, 1.75, -2); } }
+function onMenu(K){ if (K.mode === 'desk'){ K.camera.position.set(0, 1.55, .45); K.camera.quaternion.identity(); K.camera.lookAt(0, 1.9, -2); } }
 function update(dt){
   for (const k of keys){ k.cool -= dt; if (k.down > 0) k.down -= dt; k.k.position.y = k.baseY - (k.down > 0 ? .012 : 0); const tgt = mode !== 'free' && song[si] === k.m; k.k.material.color.setHex(tgt ? (K.t % .6 < .4 ? 0x3c7aff : 0x8fb4ff) : k.down > 0 ? 0xffc870 : k.black ? 0x111111 : 0xf6f2ea); }
   for (const H of K.activeHands()){
@@ -483,12 +494,13 @@ function update(dt){
 K.init({
   id:'piano', title:'پیانو', colors:{bg:'#120c08', accent:'#ffd8a0', accent2:'#3c7aff'}, bg:0x120c08,
   tagline:'یک پیانوی مشکی براق با دو اکتاو کلید جلوی تو. با نوک دسته‌ها مثل انگشت روی کلیدها بزن؛ هرچه محکم‌تر بزنی، صدا بلندتر است. یا یک آهنگ را با راهنمای نورانی یاد بگیر.',
-  rules:['دست‌ها را بالای کلیدها نگه دار و نوک دسته را رو به پایین روی کلید بزن.','در حالت آموزش، کلیدی که باید بزنی آبی چشمک می‌زند.','آهنگ‌ها: «سرود شادی» بتهوون و «چشمک بزن ستاره‌ی کوچک».'],
+  rules:['دست‌ها را بالای کلیدها نگه دار و نوک دسته را رو به پایین روی کلید بزن.','در حالت آموزش، کلیدی که باید بزنی آبی چشمک می‌زند.','آهنگ‌های ایرانی: مرغ سحر، ای ایران، لی‌لی حوضک، عمو زنجیرباف و تمرین گام و درآمد شور. می‌کرن روی پیانو با می‌بمل نزدیک شده است.'],
   deskRules:'روی کلیدها کلیک کن.',
   modes:[{key:'free', label:'آزاد', color:'#ffd8a0'}, {key:'birthday', label:'تولدت مبارک', color:'#ff5c8a'}, {key:'twinkle', label:'ستارهٔ کوچک', color:'#ff7a3c'}, {key:'ode', label:'سرود شادی', color:'#3c7aff'}, {key:'jingle', label:'زنگوله‌ها', color:'#3ee08f'},
-    {key:'mary', label:'بره کوچولو', color:'#ffd23f'}, {key:'jacques', label:'برادر ژاک', color:'#c86aff'}, {key:'london', label:'پل لندن', color:'#4dd0ff'}, {key:'lullaby', label:'لالایی برامس', color:'#a0b4ff'}, {key:'elise', label:'برای الیزه', color:'#ff9a5c'}],
+    {key:'mary', label:'بره کوچولو', color:'#ffd23f'}, {key:'jacques', label:'برادر ژاک', color:'#c86aff'}, {key:'london', label:'پل لندن', color:'#4dd0ff'}, {key:'lullaby', label:'لالایی برامس', color:'#a0b4ff'}, {key:'elise', label:'برای الیزه', color:'#ff9a5c'},
+    {key:'morgh', label:'مرغ سحر', color:'#19c3a6'}, {key:'iran', label:'ای ایران', color:'#2fbf5a'}, {key:'hoze', label:'لی‌لی حوضک', color:'#e8c23a'}, {key:'amoo', label:'عمو زنجیرباف', color:'#e8603a'}, {key:'shur', label:'گام شور', color:'#d94a8c'}, {key:'daramad', label:'درآمد شور', color:'#8a6aff'}],
   tip:() => [0,0,-.06], hand, env, start, update, onMenu, onEnter:onMenu, desk:(K) => { K.R.holder.visible = false; },
-  deskCam:{pos:[0,1.35,.15], look:[0,.85,-.6]}, menuPos:[0,2.45,-2], hudPos:[-1.1,1.7,-1.6],
+  deskCam:{pos:[0,1.35,.15], look:[0,.85,-.6]}, menuPos:[0,2.62,-2], hudPos:[-1.1,1.7,-1.6],
 });
 })();
 
