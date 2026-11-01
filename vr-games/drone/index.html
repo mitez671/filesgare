@@ -7,7 +7,8 @@
 <meta name="description" content="یک پهپاد کوچک را با دو استیک هدایت کن و از میان حلقه‌های نورانی رد کن.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +380,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +421,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -436,10 +440,30 @@ let drone, props = [], vel = V(), yaw = 0, rings = [], ri = 0, time = 0, mode = 
 function env(K){ const s = K.scene; s.background = new THREE.Color(0x8ac8f0); s.fog = new THREE.Fog(0x8ac8f0, 40, 140);
   const g = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), K.lambert(0x7aa85a)); g.rotation.x = -Math.PI/2; s.add(g);
   for (let i=0;i<60;i++){ const t = new THREE.Group(); const tr = new THREE.Mesh(new THREE.CylinderGeometry(.2, .3, 2), K.lambert(0x6a4a2a)); tr.position.y = 1; t.add(tr); const top = new THREE.Mesh(new THREE.ConeGeometry(rand(1, 2), rand(3, 5), 8), K.lambert(0x3a7a3a)); top.position.y = 3.5; t.add(top); t.position.set(rand(-80, 80), 0, rand(-90, 20)); if (Math.hypot(t.position.x, t.position.z) > 6) s.add(t); }
-  for (let i=0;i<8;i++){ const b = new THREE.Mesh(new THREE.BoxGeometry(rand(4, 8), rand(5, 18), rand(4, 8)), K.lambert(K.pick([0xc8b8a8, 0xa8b0c0, 0xd8c8a0]))); b.position.set(rand(-50, 50), b.geometry.parameters.height/2, rand(-80, -30)); s.add(b); }
-  const pad = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, .05, 24), K.lambert(0x333)); pad.position.set(0, .4, -1.5); s.add(pad); const stand = new THREE.Mesh(new THREE.BoxGeometry(.5, .4, .5), K.lambert(0x555)); stand.position.set(0, .2, -1.5); s.add(stand);
-  drone = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(.18, .05, .18), K.std(0x2a2a30, .1)); drone.add(body); const cam = new THREE.Mesh(new THREE.SphereGeometry(.03, 8, 6), K.std(0xff3c3c, .8)); cam.position.z = -.1; drone.add(cam);
-  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ const arm = new THREE.Mesh(new THREE.BoxGeometry(.02, .015, .16), K.std(0x444, .05)); arm.position.set(x*.08, 0, z*.08); arm.rotation.y = Math.atan2(x, z); drone.add(arm); const p = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .005, 16), K.std(0xffffff, .1, {transparent:true, opacity:.5})); p.position.set(x*.13, .03, z*.13); drone.add(p); props.push(p); const led = new THREE.Mesh(new THREE.SphereGeometry(.012, 6, 4), K.basic(z < 0 ? 0x3cff7a : 0xff3c3c)); led.position.set(x*.13, -.01, z*.13); drone.add(led); }
+  // buildings with real facades: window grid, floor bands, parapet and rooftop plant
+  const facade = (wall, glass) => { const c = document.createElement('canvas'); c.width = c.height = 128; const x = c.getContext('2d'); x.fillStyle = wall; x.fillRect(0, 0, 128, 128);
+    for (let i=0;i<300;i++){ x.fillStyle = `rgba(0,0,0,${Math.random()*.06})`; x.fillRect(Math.random()*128, Math.random()*128, 3, 3); }
+    const g = x.createLinearGradient(0, 0, 128, 128); g.addColorStop(0, glass); g.addColorStop(.5, '#dbe8f4'); g.addColorStop(1, glass); x.fillStyle = g; x.fillRect(22, 26, 84, 62);
+    x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(22, 82, 84, 6); x.fillRect(62, 26, 4, 62); x.fillStyle = 'rgba(255,255,255,.5)'; x.fillRect(18, 90, 92, 5);
+    const t = new THREE.CanvasTexture(c); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; return t; };
+  const styles = [['#cbbfae', '#5c7488'], ['#a9b2bf', '#3f5f7c'], ['#d8cbb0', '#6b7f8c'], ['#b9a48e', '#4c6070'], ['#e2e0da', '#55779a']];
+  for (let i=0;i<8;i++){ const w = rand(5, 9), h = rand(6, 22), d = rand(5, 9), [wall, glass] = K.pick(styles);
+    const mk = (rx, ry) => { const t = facade(wall, glass); t.repeat.set(Math.max(1, Math.round(rx/2.6)), Math.max(2, Math.round(ry/3.2))); return new THREE.MeshLambertMaterial({map:t}); };
+    const side = mk(d, h), front = mk(w, h), roof = K.lambert(0x6a6a6e);
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), [side, side, roof, roof, front, front]); b.position.set(rand(-50, 50), h/2, rand(-80, -30)); s.add(b);
+    const par = new THREE.Mesh(new THREE.BoxGeometry(w + .3, .5, d + .3), K.lambert(0x8a8a8e)); par.position.set(b.position.x, h + .25, b.position.z); s.add(par);
+    const ac = new THREE.Mesh(new THREE.BoxGeometry(w*.3, 1.2, d*.25), K.lambert(0x9a9ea4)); ac.position.set(b.position.x + w*.15, h + .6, b.position.z - d*.15); s.add(ac); }
+  const padT = K.cv(256, 256, (x, w, h) => { x.fillStyle = '#2b2d31'; x.fillRect(0, 0, w, h); x.strokeStyle = '#f2c200'; x.lineWidth = 12; x.beginPath(); x.arc(128, 128, 112, 0, 7); x.stroke(); x.fillStyle = '#f2f2f2'; x.font = 'bold 150px Arial'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('H', 128, 136); });
+  const pad = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, .05, 32), [K.lambert(0x333333), new THREE.MeshLambertMaterial({map:padT}), K.lambert(0x333333)]); pad.position.set(0, .4, -1.5); s.add(pad); const stand = new THREE.Mesh(new THREE.BoxGeometry(.5, .4, .5), K.lambert(0x555555)); stand.position.set(0, .2, -1.5); s.add(stand);
+  // quadcopter: streamlined shell, battery, gimbal camera, round arms, motors, prop guards
+  drone = new THREE.Group(); const shell = K.std(0xe8e8ec, .1, {metalness:.2, roughness:.35}), dk = K.std(0x22252b, .05, {metalness:.4, roughness:.4});
+  const body = new THREE.Mesh(new THREE.SphereGeometry(.09, 24, 14), shell); body.scale.set(1, .38, 1.35); drone.add(body);
+  const bat = new THREE.Mesh(new THREE.CapsuleGeometry(.035, .08, 4, 12), dk); bat.rotation.x = Math.PI/2; bat.position.y = .03; drone.add(bat);
+  const gimbal = new THREE.Mesh(new THREE.SphereGeometry(.026, 14, 10), dk); gimbal.position.set(0, -.03, -.1); drone.add(gimbal);
+  const cam = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, .01, 14), K.std(0x3a6ad8, .8, {metalness:.5})); cam.rotation.x = Math.PI/2; cam.position.set(0, -.03, -.126); drone.add(cam);
+  for (const [x, z] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]){ const arm = new THREE.Mesh(new THREE.CylinderGeometry(.008, .01, .17, 10), dk); arm.rotation.x = Math.PI/2; const armG = new THREE.Group(); armG.add(arm); armG.position.set(x*.065, 0, z*.065); armG.rotation.y = Math.atan2(x, z); drone.add(armG);
+    const mot = new THREE.Mesh(new THREE.CylinderGeometry(.016, .018, .028, 14), dk); mot.position.set(x*.13, .012, z*.13); drone.add(mot);
+    const guard = new THREE.Mesh(new THREE.TorusGeometry(.078, .004, 6, 32), shell); guard.rotation.x = Math.PI/2; guard.position.set(x*.13, .03, z*.13); drone.add(guard); const p = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .005, 16), K.std(0xffffff, .1, {transparent:true, opacity:.5})); p.position.set(x*.13, .03, z*.13); drone.add(p); props.push(p); const led = new THREE.Mesh(new THREE.SphereGeometry(.012, 6, 4), K.basic(z < 0 ? 0x3cff7a : 0xff3c3c)); led.position.set(x*.13, -.01, z*.13); drone.add(led); }
   s.add(drone); }
 function course(){ for (const r of rings) K.scene.remove(r.m); rings = []; const pts = [];
   for (let i=0;i<10;i++){ const a = i/10*Math.PI*2; pts.push(V(Math.sin(a)*rand(10, 18), rand(2, 6), -18 + Math.cos(a)*rand(10, 15) - 4)); }

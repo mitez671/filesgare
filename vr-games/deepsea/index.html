@@ -7,7 +7,8 @@
 <meta name="description" content="با یک زیردریایی شیشه‌ای از سطح آب تا عمق ۱۱ کیلومتری گودال ماریانا پایین برو.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +309,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -324,16 +328,70 @@ const {V, rand, fa, clamp} = A;
 const ZONES = [[0, 'منطقهٔ نور خورشید', 'تا عمق ۲۰۰ متر نور خورشید می‌رسد؛ بیشتر ماهی‌ها، دلفین‌ها و مرجان‌ها اینجا زندگی می‌کنند.'], [200, 'منطقهٔ گرگ‌ومیش', 'نور کم‌کم تمام می‌شود. خیلی از جانوران اینجا خودشان نور تولید می‌کنند.'], [1000, 'منطقهٔ نیمه‌شب', 'تاریکی مطلق. نهنگ عنبر تا این عمق برای شکار ماهی مرکب غول‌پیکر شیرجه می‌زند.'], [3800, 'کشتی تایتانیک', 'لاشهٔ کشتی تایتانیک در عمق حدود ۳۸۰۰ متری اقیانوس اطلس آرمیده است.'], [4000, 'منطقهٔ مغاک', 'آب نزدیک صفر درجه است و فشار ۴۰۰ برابر سطح دریا. ماهی‌های فانوسی با طعمهٔ نورانی شکار می‌کنند.'], [6000, 'منطقهٔ هادال (گودال‌ها)', 'عمیق‌ترین درّه‌های اقیانوس؛ فقط چند انسان تا کنون به این عمق رسیده‌اند.'], [10935, 'کف گودال ماریانا', 'عمیق‌ترین نقطهٔ شناخته‌شدهٔ زمین (چلنجر دیپ). اگر قلهٔ اورست را اینجا بگذاری، نوکش هنوز دو کیلومتر زیر آب است!']];
 let depth = 0, target = 0, auto = false, cab, gauge, things = [], snow, info, zoneI = -1, sea;
 const SCALE = .02;  // world metres per real metre of depth (so 11 km = 220 units)
+
+// reef fish: lathe body, forked tail, dorsal fin, eyes (shared geometry, coloured per school)
+// dolphins and whales: streamlined lathe body (nose → tail stock), flukes, dorsal and pectoral fins, pale belly
+function cetacean(L, col, belly, whale){
+  const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({color:col, roughness:.45, metalness:.05}), mb = new THREE.MeshStandardMaterial({color:belly, roughness:.5});
+  const prof = whale ? [[0,0],[.25,.02],[.55,.08],[.78,.2],[.82,.38],[.7,.58],[.45,.78],[.2,.92],[.1,1]] : [[0,0],[.06,.02],[.12,.06],[.3,.14],[.42,.3],[.4,.5],[.3,.7],[.15,.88],[.07,1]];
+  const geo = new THREE.LatheGeometry(prof.map(([r, y]) => new THREE.Vector2(r*L*(whale ? .17 : .2), y*L)), 24); geo.rotateZ(-Math.PI/2); geo.translate(-L/2, 0, 0); geo.scale(1, whale ? .82 : .9, 1);
+  g.add(new THREE.Mesh(geo, m));
+  const bel = new THREE.Mesh(geo.clone(), mb); bel.scale.set(.9, .7, .86); bel.position.y = -L*.03; g.add(bel);
+  const fs = new THREE.Shape(); fs.moveTo(0, 0); fs.quadraticCurveTo(-.05, .1, -.22, .18); fs.quadraticCurveTo(-.12, .03, -.16, 0); fs.quadraticCurveTo(-.12, -.03, -.22, -.18); fs.quadraticCurveTo(-.05, -.1, 0, 0);
+  const fl = new THREE.Mesh(new THREE.ShapeGeometry(fs), new THREE.MeshStandardMaterial({color:col, side:THREE.DoubleSide, roughness:.5})); fl.scale.set(-L, L, L); fl.rotation.x = Math.PI/2; fl.position.x = L/2 - L*.03; g.add(fl);
+  if (!whale || true){ const ds = new THREE.Shape(); ds.moveTo(.06, 0); ds.quadraticCurveTo(0, .02, -.05, .1); ds.quadraticCurveTo(-.06, .04, -.1, 0); ds.lineTo(.06, 0);
+    const df = new THREE.Mesh(new THREE.ShapeGeometry(ds), fl.material); df.scale.set(-L*(whale ? .5 : 1), L*(whale ? .5 : 1), 1); df.position.set(L*.05, L*(whale ? .12 : .075), 0); g.add(df); }
+  for (const z of [-1, 1]){ const pf = new THREE.Mesh(new THREE.ShapeGeometry(fs), fl.material); pf.scale.set(-L*(whale ? .55 : .45), L*(whale ? .55 : .45), 1); pf.rotation.set(z*1.1, 0, 0); pf.position.set(-L*.2, -L*.05, z*L*.06); g.add(pf); }
+  for (const z of [-1, 1]){ const e = new THREE.Mesh(new THREE.SphereGeometry(L*.012, 8, 6), new THREE.MeshBasicMaterial({color:0x111111})); e.position.set(-L*.38, L*.01, z*L*(whale ? .06 : .045)); g.add(e); }
+  return g; }
+
+let FISHG = null;
+function fishGeos(){ if (FISHG) return FISHG;
+  const body = new THREE.LatheGeometry([[0,0],[.02,.01],[.045,.05],[.055,.11],[.05,.17],[.03,.23],[.012,.27],[0,.28]].map(([r,y]) => new THREE.Vector2(r, y)), 14); body.scale(1, 1, .45); body.rotateZ(-Math.PI/2); body.translate(.14, 0, 0);
+  const ts = new THREE.Shape(); ts.moveTo(0, 0); ts.lineTo(-.09, .06); ts.lineTo(-.07, 0); ts.lineTo(-.09, -.06); ts.lineTo(0, 0); const tail = new THREE.ShapeGeometry(ts); tail.translate(-.13, 0, 0);
+  const ds = new THREE.Shape(); ds.moveTo(-.06, 0); ds.quadraticCurveTo(-.01, .07, .04, 0); ds.lineTo(-.06, 0); const dorsal = new THREE.ShapeGeometry(ds); dorsal.translate(0, .045, 0);
+  const eye = new THREE.SphereGeometry(.009, 8, 6);
+  return FISHG = {body, tail, dorsal, eye}; }
+function reefFish(col, stripe){ const G = fishGeos(), g = new THREE.Group(), m = new THREE.MeshStandardMaterial({color:col, roughness:.4, metalness:.15}), fm = new THREE.MeshStandardMaterial({color:stripe, roughness:.5, side:THREE.DoubleSide, transparent:true, opacity:.9});
+  g.add(new THREE.Mesh(G.body, m)); g.add(new THREE.Mesh(G.tail, fm)); g.add(new THREE.Mesh(G.dorsal, fm));
+  for (const z of [-.02, .02]){ const e = new THREE.Mesh(G.eye, new THREE.MeshBasicMaterial({color:0x101010})); e.position.set(.09, .012, z); g.add(e); }
+  return g; }
+function coral(kind, col){ const g = new THREE.Group(), m = new THREE.MeshStandardMaterial({color:col, roughness:.85});
+  if (kind === 0){ // branching coral
+    const branch = (p, dir, len, r, depth) => { const c = new THREE.Mesh(new THREE.CylinderGeometry(r*.7, r, len, 7), m); const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir); c.quaternion.copy(q); c.position.copy(p).addScaledVector(dir, len/2); g.add(c);
+      const tip = p.clone().addScaledVector(dir, len); if (depth > 0) for (let k=0;k<2;k++){ const d2 = dir.clone().add(new THREE.Vector3(rand(-.7, .7), rand(.1, .4), rand(-.7, .7))).normalize(); branch(tip, d2, len*.72, r*.72, depth - 1); } else { const b = new THREE.Mesh(new THREE.SphereGeometry(r*.9, 8, 6), m); b.position.copy(tip); g.add(b); } };
+    branch(new THREE.Vector3(), new THREE.Vector3(0, 1, 0), rand(.35, .6), rand(.05, .08), 3); }
+  else if (kind === 1){ // brain coral
+    const geo = new THREE.SphereGeometry(rand(.3, .55), 32, 20, 0, Math.PI*2, 0, Math.PI*.55), q = geo.attributes.position; for (let i=0;i<q.count;i++){ const v = new THREE.Vector3(q.getX(i), q.getY(i), q.getZ(i)); v.multiplyScalar(1 + .06*Math.sin(v.x*28 + Math.sin(v.z*19)*2)); q.setXYZ(i, v.x, v.y, v.z); } geo.computeVertexNormals(); g.add(new THREE.Mesh(geo, m)); }
+  else { // sea fan / tube sponges
+    for (let k=0;k<rand(3, 6);k++){ const h = rand(.4, 1.1), t = new THREE.Mesh(new THREE.CylinderGeometry(.07, .05, h, 12, 1, true), new THREE.MeshStandardMaterial({color:col, roughness:.9, side:THREE.DoubleSide})); t.position.set(rand(-.15, .15), h/2, rand(-.15, .15)); t.rotation.set(rand(-.2, .2), 0, rand(-.2, .2)); g.add(t); } }
+  return g; }
+
 function creature(kind, d, x, z){ const g = new THREE.Group(); g.position.set(x, -d*SCALE, z); A.scene.add(g); let body;
-  if (kind === 'dolphin'){ body = new THREE.Mesh(new THREE.CapsuleGeometry(.3, 1.6, 6, 12), new THREE.MeshStandardMaterial({color:0x7a8a9a})); body.rotation.z = Math.PI/2; g.add(body); }
-  else if (kind === 'whale'){ body = new THREE.Mesh(new THREE.CapsuleGeometry(1.4, 9, 6, 16), new THREE.MeshStandardMaterial({color:0x4a4a52})); body.rotation.z = Math.PI/2; g.add(body); }
-  else if (kind === 'squid'){ body = new THREE.Mesh(new THREE.ConeGeometry(.8, 4, 12), new THREE.MeshStandardMaterial({color:0xc04a3a, emissive:0x401010})); body.rotation.z = Math.PI/2; g.add(body); for (let i=0;i<8;i++){ const t = new THREE.Mesh(new THREE.CylinderGeometry(.05, .02, 5), body.material); t.position.set(-4, Math.sin(i)*.4, Math.cos(i)*.4); t.rotation.z = Math.PI/2; g.add(t); } }
+  if (kind === 'dolphin'){ body = cetacean(2.2, 0x7a8a9a, 0xd8dde2, false); g.add(body); }
+  else if (kind === 'whale'){ body = cetacean(12, 0x4a4f5a, 0x8a8f98, true); g.add(body); }
+  else if (kind === 'squid'){ // giant squid: lathe mantle, side fins, eyes, curling arms and two long tentacles
+    const sm = new THREE.MeshStandardMaterial({color:0xc04a3a, emissive:0x401010, roughness:.5});
+    const mg = new THREE.LatheGeometry([[0,0],[.25,.15],[.6,.6],[.78,1.4],[.8,2.4],[.7,3.1],[.55,3.5],[.6,3.7],[.45,3.95],[0,4.05]].map(([r, y]) => new THREE.Vector2(r, y)), 20); mg.rotateZ(Math.PI/2); mg.translate(2, 0, 0);
+    body = new THREE.Mesh(mg, sm); g.add(body);
+    const finS = new THREE.Shape(); finS.moveTo(0, 0); finS.quadraticCurveTo(.4, .9, 1.3, 1.1); finS.quadraticCurveTo(1.2, .4, 1.4, 0); finS.lineTo(0, 0);
+    for (const sd of [-1, 1]){ const f = new THREE.Mesh(new THREE.ShapeGeometry(finS), new THREE.MeshStandardMaterial({color:0xb04234, emissive:0x301010, side:THREE.DoubleSide, transparent:true, opacity:.9})); f.rotation.x = sd*Math.PI/2; f.position.set(.6, 0, sd*.15); g.add(f); }
+    for (const sd of [-1, 1]){ const e = new THREE.Mesh(new THREE.SphereGeometry(.18, 12, 10), new THREE.MeshStandardMaterial({color:0x101418, roughness:.1, metalness:.4})); e.position.set(-1.65, .15, sd*.5); g.add(e); }
+    for (let i=0;i<10;i++){ const a = i/10*Math.PI*2, long = i < 2, len = long ? 6 : 2.6, pts = [];
+      for (let k=0;k<=12;k++){ const t = k/12; pts.push(new THREE.Vector3(-2 - t*len, Math.sin(a)*.35*(1 + t*1.4) + Math.sin(t*5 + i)*.25*t, Math.cos(a)*.35*(1 + t*1.4) + Math.cos(t*4 + i)*.25*t)); }
+      const tb = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 24, long ? .06 : .09, 6), sm); g.add(tb);
+      if (long){ const club = new THREE.Mesh(new THREE.SphereGeometry(.16, 10, 8), sm); club.scale.set(2.2, .8, .8); club.position.copy(pts[12]); g.add(club); } } }
   else if (kind === 'jelly'){ body = new THREE.Mesh(new THREE.SphereGeometry(.5, 16, 10, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshBasicMaterial({color:0x60f0ff, transparent:true, opacity:.6})); g.add(body); const l = new THREE.PointLight(0x60f0ff, .8, 6); g.add(l); }
   else if (kind === 'angler'){ body = new THREE.Mesh(new THREE.SphereGeometry(.6, 14, 10), new THREE.MeshStandardMaterial({color:0x2a2a30})); g.add(body); const lure = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 6), new THREE.MeshBasicMaterial({color:0xd0ff60})); lure.position.set(.9, .7, 0); g.add(lure); const l = new THREE.PointLight(0xd0ff60, 1.2, 5); l.position.copy(lure.position); g.add(l); const jaw = new THREE.Mesh(new THREE.ConeGeometry(.5, .5, 12, 1, true), new THREE.MeshBasicMaterial({color:0xffffff, wireframe:true})); jaw.rotation.z = -Math.PI/2; jaw.position.x = .5; g.add(jaw); }
-  else if (kind === 'ship'){ body = new THREE.Mesh(new THREE.BoxGeometry(26, 4, 3), new THREE.MeshStandardMaterial({color:0x3a2a20, roughness:1})); g.add(body); for (let i=0;i<4;i++){ const f = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, 3.5), new THREE.MeshStandardMaterial({color:0x5a4030})); f.position.set(-6 + i*4, 3.5, 0); f.rotation.z = .2; g.add(f); } g.rotation.y = .5; g.rotation.z = .08; }
+  else if (kind === 'ship'){ // rusted liner hull: pointed bow, rounded stern, superstructure
+    const hs = new THREE.Shape(); hs.moveTo(-13, -1.5); hs.lineTo(10, -1.5); hs.quadraticCurveTo(13.5, -.6, 13.5, 1.6); hs.lineTo(13, 2); hs.lineTo(-12.2, 2); hs.quadraticCurveTo(-13.6, 1.2, -13, -1.5);
+    const hg = new THREE.ExtrudeGeometry(hs, {depth:3, bevelEnabled:true, bevelSize:.2, bevelThickness:.2, bevelSegments:2}); hg.translate(0, 0, -1.5); const hp = hg.attributes.position; for (let k=0;k<hp.count;k++){ const x = hp.getX(k), t = x > 6 ? (x - 6)/7.5 : 0; hp.setZ(k, hp.getZ(k)*(1 - .85*t*t)); } hg.computeVertexNormals();
+    const rust = window.VRDecor ? VRDecor.material('steel', [6, 1], {color:new THREE.Color(0x6a3a22), roughness:1, metalness:.2}) : new THREE.MeshStandardMaterial({color:0x3a2a20, roughness:1});
+    body = new THREE.Mesh(hg, rust); g.add(body);
+    const sup = new THREE.Mesh(new THREE.BoxGeometry(14, 1.6, 2.3), new THREE.MeshStandardMaterial({color:0x5a4a3a, roughness:1})); sup.position.set(-1, 2.8, 0); g.add(sup); for (let i=0;i<4;i++){ const f = new THREE.Mesh(new THREE.CylinderGeometry(.6, .6, 3.5), new THREE.MeshStandardMaterial({color:0x5a4030})); f.position.set(-6 + i*4, 3.5, 0); f.rotation.z = .2; g.add(f); } g.rotation.y = .5; g.rotation.z = .08; }
   else if (kind === 'floor'){ body = new THREE.Mesh(new THREE.PlaneGeometry(80, 80, 30, 30), new THREE.MeshStandardMaterial({color:0x4a4038, roughness:1})); body.rotation.x = -Math.PI/2; const p = body.geometry.attributes.position; for (let i=0;i<p.count;i++) p.setZ(i, Math.random()*1.5); body.geometry.computeVertexNormals(); g.add(body); }
-  else if (kind === 'reef'){ for (let i=0;i<30;i++){ const c = new THREE.Mesh(new THREE.ConeGeometry(rand(.2, .5), rand(.6, 2), 6), new THREE.MeshLambertMaterial({color:A.pick([0xff6a8a, 0xffa03c, 0xc86aff, 0xffe03c])})); c.position.set(rand(-7, 7), 0, rand(-7, 7)); g.add(c); } const sand = new THREE.Mesh(new THREE.CircleGeometry(9, 24), new THREE.MeshLambertMaterial({color:0xd8c890})); sand.rotation.x = -Math.PI/2; g.add(sand); }
-  else if (kind === 'fish'){ for (let i=0;i<40;i++){ const f = new THREE.Mesh(new THREE.ConeGeometry(.08, .3, 5), new THREE.MeshStandardMaterial({color:A.pick([0xffd23f, 0x3cb0ff, 0xff7a3c])})); f.rotation.z = Math.PI/2; f.position.set(rand(-3, 3), rand(-1.5, 1.5), rand(-3, 3)); g.add(f); } }
+  else if (kind === 'reef'){ for (let i=0;i<34;i++){ const c = coral(i%3, A.pick([0xff6a8a, 0xffa03c, 0xc86aff, 0xffe03c, 0xe8d0b0])); c.position.set(rand(-7, 7), 0, rand(-7, 7)); c.rotation.y = rand(0, 6.3); c.scale.setScalar(rand(.9, 1.8)); g.add(c); } const sand = new THREE.Mesh(new THREE.CircleGeometry(9, 24), new THREE.MeshLambertMaterial({color:0xd8c890})); sand.rotation.x = -Math.PI/2; g.add(sand); }
+  else if (kind === 'fish'){ const pal = [[0xffd23f, 0x1a1a1a], [0x3cb0ff, 0xffe03c], [0xff7a3c, 0xffffff]]; for (let i=0;i<40;i++){ const [c1, c2] = pal[i%3], f = reefFish(c1, c2); f.position.set(rand(-3, 3), rand(-1.5, 1.5), rand(-3, 3)); f.rotation.y = Math.PI + rand(-.25, .25); f.scale.setScalar(rand(.9, 1.4)); g.add(f); } }
   things.push({g, kind, d, ph:rand(0, 6)}); return g; }
 function setup(A){
   const s = A.scene; A.hemi.intensity = .9; s.fog = new THREE.FogExp2(0x1a6aa0, .045);

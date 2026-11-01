@@ -7,7 +7,8 @@
 <meta name="description" content="توپ را بردار و پرتاب کن؛ پرتاب سه‌امتیازی در واقعیت مجازی.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +380,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +421,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -437,6 +441,7 @@ let hoop, rimPos = V(0, RIM_Y, -4.2), board, balls = [], held = [null, null], sc
 const ballMat = new THREE.MeshStandardMaterial({map:K.cv(256,128,(x,w,h) => { x.fillStyle = '#e8732c'; x.fillRect(0,0,w,h); x.strokeStyle = '#2a1408'; x.lineWidth = 4; for (const yy of [h/2]){ x.beginPath(); x.moveTo(0,yy); x.lineTo(w,yy); x.stroke(); } for (const xx of [w/4, w/2, w*3/4]){ x.beginPath(); x.moveTo(xx,0); x.lineTo(xx,h); x.stroke(); } }), roughness:.7});
 const ballGeo = new THREE.SphereGeometry(BR, 24, 16);
 function env(K){
+  ballMat.normalMap=VRDecor.texture('basketball-normal',[4,2],true); ballMat.normalScale=new THREE.Vector2(.5,.5); ballMat.needsUpdate=true;
   const s = K.scene;
   const floorT = K.cv(512,512,(x,w,h) => { x.fillStyle = '#c98d4f'; x.fillRect(0,0,w,h); for (let i=0;i<32;i++){ x.fillStyle = i%2 ? '#bf844a' : '#d39859'; x.fillRect(0,i*16,w,16); } x.strokeStyle = '#fff'; x.lineWidth = 6; x.beginPath(); x.arc(w/2, 40, 330, 0, Math.PI); x.stroke(); });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(15, 15), K.lambert(0xffffff, {map:floorT})); floor.rotation.x = -Math.PI/2; floor.position.z = -4; s.add(floor);

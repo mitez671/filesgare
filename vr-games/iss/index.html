@@ -7,7 +7,9 @@
 <meta name="description" content="ایستگاه فضایی بین‌المللی را زنده روی کرهٔ زمین دنبال کن و از پنجره‌اش به زمین نگاه کن.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/models.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +310,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -352,6 +357,7 @@ A.init({
     const n = 2500, pos = new Float32Array(n*3); for (let i=0;i<n;i++){ const v = V(A.rand(-1,1), A.rand(-1,1), A.rand(-1,1)).normalize().multiplyScalar(A.rand(900, 1500)); pos.set([v.x, v.y, v.z], i*3); } const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); A.scene.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff, size:1.5, sizeAttenuation:false})));
     G = A.makeGlobe({r:R, pos:[0, 1.4, -1.05], autoSpin:false});
     iss = issModel(); iss.scale.setScalar(.05); G.spin.add(iss);
+    if (window.VRModels) VRModels.place('../_shared/models/iss.glb', {size:1.15, metal:.4}).then(m => { for (const c of [...iss.children]) iss.remove(c); m.position.y = -.2; iss.add(m); }).catch(e => console.warn('iss model', e));
     trail = new THREE.Line(new THREE.BufferGeometry(), new THREE.LineBasicMaterial({color:0xffd23f, transparent:true, opacity:.8})); G.spin.add(trail);
     info = A.panel(1024, 380, .95); info.m.position.set(.85, 1.45, -.85); info.m.rotation.y = -.55; A.card(info, 'ایستگاه فضایی بین‌المللی', 'در حال پیدا کردن ایستگاه…');
     history(); poll();

@@ -7,7 +7,8 @@
 <meta name="description" content="سنتور مجازی: با دو مضراب روی سیم‌ها بزن؛ آزاد بنواز یا درس بگیر.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +380,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +421,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -460,9 +464,9 @@ function env(K){
     x.save(); x.translate(w/2,h/2); for (let r=0;r<16;r++){ x.rotate(Math.PI/8); x.fillStyle = r%2 ? '#d9b26a' : '#1b2a5a'; x.beginPath(); x.ellipse(0,60,22,70,0,0,Math.PI*2); x.fill(); } x.beginPath(); x.arc(0,0,40,0,Math.PI*2); x.fillStyle = '#f2e6c8'; x.fill(); x.restore();
     for (let i=0;i<4;i++){ x.save(); x.translate(i%2 ? w-110 : 110, i<2 ? 110 : h-110); x.fillStyle = '#1b2a5a'; x.beginPath(); x.arc(0,0,40,0,Math.PI*2); x.fill(); x.restore(); }
   });
-  const rug = new THREE.Mesh(new THREE.PlaneGeometry(3.2,4.2), new THREE.MeshLambertMaterial({map:carpet})); rug.rotation.x = -Math.PI/2; rug.position.set(0,.005,-.6); s.add(rug);
+  const rug = new THREE.Mesh(new THREE.PlaneGeometry(3.2,4.2), VRDecor.material('carpet',[1,1])); rug.rotation.x = -Math.PI/2; rug.position.set(0,.005,-.6); s.add(rug);
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(20,20), K.lambert(0x5a3e28)); fl.rotation.x = -Math.PI/2; s.add(fl);
-  const wallM = K.lambert(0xe9dcc2);
+  const wallM = VRDecor.material('plaster',[3,2]);
   const lattice = K.cv(256,384,(x,w,h) => { x.fillStyle = '#ffd89a'; x.fillRect(0,0,w,h); x.strokeStyle = '#5a3420'; x.lineWidth = 7; for (let i=-h;i<w+h;i+=32){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i,0); x.lineTo(i-h,h); x.stroke(); } x.lineWidth = 16; x.strokeRect(0,0,w,h); });
   const back = new THREE.Mesh(new THREE.PlaneGeometry(10,4), wallM); back.position.set(0,2,-3.2); s.add(back);
   [-2.2,0,2.2].forEach(x => { const wnd = new THREE.Mesh(new THREE.PlaneGeometry(1.1,1.7), new THREE.MeshBasicMaterial({map:lattice})); wnd.position.set(x,1.75,-3.18); s.add(wnd); const arch = new THREE.Mesh(new THREE.CircleGeometry(.55,24,0,Math.PI), new THREE.MeshBasicMaterial({color:0xffc878})); arch.position.set(x,2.6,-3.18); s.add(arch); });
@@ -471,9 +475,9 @@ function env(K){
   const lamp = new THREE.PointLight(0xffc878, .9, 8); lamp.position.set(0,2.4,-1); s.add(lamp);
   // santur body: trapezoid
   const shape = new THREE.Shape(); shape.moveTo(-.46,0); shape.lineTo(.46,0); shape.lineTo(.3,.6); shape.lineTo(-.3,.6); shape.closePath();
-  const body = new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth:.07, bevelEnabled:false}), K.lambert(0x7a3e1c));
+  const body = new THREE.Mesh(new THREE.ExtrudeGeometry(shape,{depth:.07, bevelEnabled:false}), VRDecor.material('rosewood',[2,1]));
   body.rotation.x = -Math.PI/2; body.position.set(0,SY-.08,SZ0 + .05); s.add(body);
-  const top = new THREE.Mesh(new THREE.ShapeGeometry(shape), K.lambert(0xb07a44)); top.rotation.x = -Math.PI/2; top.position.set(0,SY-.009,SZ0+.05); s.add(top);
+  const top = new THREE.Mesh(new THREE.ShapeGeometry(shape), VRDecor.material('rosewood',[2,1])); top.rotation.x = -Math.PI/2; top.position.set(0,SY-.009,SZ0+.05); s.add(top);
   const rose = new THREE.Mesh(new THREE.RingGeometry(.02,.035,16), K.basic(0x3a1a08)); rose.rotation.x = -Math.PI/2; [-.18,.18].forEach(x => { const r = rose.clone(); r.position.set(x,SY-.008,SZ0-.3); s.add(r); });
   const stand = new THREE.Mesh(new THREE.BoxGeometry(.7,SY-.08,.35), K.lambert(0x4a2a14)); stand.position.set(0,(SY-.08)/2,SZ0-.27); s.add(stand);
   // strings

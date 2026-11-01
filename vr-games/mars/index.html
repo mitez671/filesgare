@@ -7,7 +7,9 @@
 <meta name="description" content="روی خاک سرخ مریخ کنار مریخ‌نورد راه برو، هلی‌کوپتر کوچکش را ببین و غروب آبی مریخ را تماشا کن.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/models.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +310,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -331,16 +336,30 @@ function roverModel(){ const g = new THREE.Group(), w = new THREE.MeshStandardMa
   for (const x of [-.85, .85]) for (const z of [-.95, 0, .95]){ const wh = new THREE.Mesh(new THREE.CylinderGeometry(.26, .26, .25, 16), d); wh.rotation.z = Math.PI/2; wh.position.set(x, .26, z); g.add(wh); const hub = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .27, 8), gold); hub.rotation.z = Math.PI/2; hub.position.set(x, .26, z); g.add(hub); }
   const rocker = new THREE.Mesh(new THREE.BoxGeometry(.08, .08, 2.1), w); for (const x of [-.85, .85]){ const r = rocker.clone(); r.position.set(x, .6, 0); g.add(r); }
   return g; }
-function heliModel(){ const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(.2, .15, .2), new THREE.MeshStandardMaterial({color:0xd8d0c0})); g.add(b); for (let i=0;i<2;i++){ const r = new THREE.Mesh(new THREE.BoxGeometry(1.2, .01, .08), new THREE.MeshStandardMaterial({color:0x333})); r.position.y = .2 + i*.08; g.add(r); g['r' + i] = r; } for (let i=0;i<4;i++){ const l = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .35), new THREE.MeshStandardMaterial({color:0xcccccc})); const a = i*Math.PI/2; l.position.set(Math.cos(a)*.15, -.18, Math.sin(a)*.15); l.rotation.z = Math.cos(a)*.4; l.rotation.x = -Math.sin(a)*.4; g.add(l); } return g; }
+function heliModel(){ const g = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(.2, .15, .2), new THREE.MeshStandardMaterial({color:0xd8d0c0})); g.add(b); for (let i=0;i<2;i++){ const r = new THREE.Mesh(new THREE.BoxGeometry(1.2, .01, .08), new THREE.MeshStandardMaterial({color:0x333333})); r.position.y = .2 + i*.08; g.add(r); g['r' + i] = r; } for (let i=0;i<4;i++){ const l = new THREE.Mesh(new THREE.CylinderGeometry(.01, .01, .35), new THREE.MeshStandardMaterial({color:0xcccccc})); const a = i*Math.PI/2; l.position.set(Math.cos(a)*.15, -.18, Math.sin(a)*.15); l.rotation.z = Math.cos(a)*.4; l.rotation.x = -Math.sin(a)*.4; g.add(l); } return g; }
 function setup(A){
   const s = A.scene; s.fog = new THREE.Fog(0xd8a070, 40, 220); A.sun.position.set(-30, 40, -20); A.sun.intensity = 1.1; A.sun.color.setHex(0xffe8d0); A.hemi.color.setHex(0xffc898); A.hemi.groundColor.setHex(0x6a2a10); A.hemi.intensity = .6;
   const geo = new THREE.PlaneGeometry(400, 400, 150, 150); geo.rotateX(-Math.PI/2); const p = geo.attributes.position; for (let i=0;i<p.count;i++) p.setY(i, hgt(p.getX(i), p.getZ(i))); geo.computeVertexNormals();
   const tex = A.cv(256, 256, (x, w) => { x.fillStyle = '#b2582a'; x.fillRect(0, 0, w, w); for (let i=0;i<1500;i++){ x.fillStyle = A.pick(['#9a4a22', '#c4683a', '#8a3a1a', '#d07a4a']); x.globalAlpha = .5; x.fillRect(Math.random()*w, Math.random()*w, 3, 3); } x.globalAlpha = 1; }, [40, 40]);
-  s.add(new THREE.Mesh(geo, new THREE.MeshStandardMaterial({map:tex, roughness:1})));
-  for (let i=0;i<300;i++){ const r = new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.08, .9), 0), new THREE.MeshStandardMaterial({color:A.pick([0x6a3a2a, 0x5a2a1a, 0x8a4a2a]), roughness:1, flatShading:true})); const x = rand(-80, 80), z = rand(-80, 80); r.position.set(x, hgt(x, z), z); r.rotation.set(rand(0, 3), rand(0, 3), 0); s.add(r); }
+  s.add(new THREE.Mesh(geo, VRDecor.material('mars',[100,100])));
+  // basalt rocks: lumpy, textured, half buried; none on the start spot or the rover's track
+  const rockMat = VRDecor.material('mars', [1, 1], {color:0x8a6a5a, roughness:1}), rockGeo = [];
+  for (let k=0;k<6;k++){ const g = new THREE.IcosahedronGeometry(1, 3), q = g.attributes.position, ph = rand(0, 9);
+    for (let i=0;i<q.count;i++){ const v = V(q.getX(i), q.getY(i), q.getZ(i)), n = 1 + .25*Math.sin(v.x*2.9 + ph)*Math.cos(v.y*3.1 + ph*.6) + .12*Math.sin(v.z*5.7 + ph*1.4) + .05*Math.sin((v.x - v.y)*12); v.multiplyScalar(n); q.setXYZ(i, v.x, v.y*.6, v.z); }
+    g.computeVertexNormals(); rockGeo.push(g); }
+  for (let i=0;i<320;i++){ const x = rand(-80, 80), z = rand(-80, 80); if (Math.hypot(x, z) < 4 || (Math.abs(x - 3) < 2.5 && z > -9 && z < 20)) continue;
+    const sz = Math.pow(Math.random(), 2.2)*1.0 + .07, r = new THREE.Mesh(rockGeo[i%6], rockMat); r.scale.set(sz*rand(.8, 1.3), sz, sz*rand(.8, 1.3)); r.rotation.set(rand(-.3, .3), rand(0, 6.3), rand(-.3, .3)); r.position.set(x, hgt(x, z) - sz*.25, z); s.add(r); }
   rover = roverModel(); rover.position.set(3, hgt(3, -6), -6); rover.rotation.y = -.6; s.add(rover);
   heli = heliModel(); s.add(heli);
-  for (let i=0;i<40;i++){ const f = new THREE.Mesh(new THREE.PlaneGeometry(.35, .2), new THREE.MeshBasicMaterial({color:0x4a2a1a, transparent:true, opacity:.5})); const z = -6 + i*.6; f.rotation.x = -Math.PI/2; f.position.set(3 + (i % 2 ? .85 : -.85) + Math.sin(i*.2)*.5, hgt(3, z) + .03, z); s.add(f); }
+  if (window.VRModels){
+    // NASA's own models of Perseverance and Ingenuity replace the simplified ones once loaded
+    VRModels.place('../_shared/models/perseverance.glb', {size:3.0, metal:.35}).then(m => { for (const c of [...rover.children]) rover.remove(c); rover.add(m); }).catch(e => console.warn('rover model', e));
+    VRModels.place('../_shared/models/ingenuity.glb', {size:1.2, metal:.35}).then(m => { for (const c of [...heli.children]) heli.remove(c); heli.add(m); m.position.y -= .25;
+      let r0 = null, r1 = null; m.traverse(n => { if (n.name === 'rotors_01') r0 = n; if (n.name === 'rotors_02') r1 = n; }); heli.r0 = r0 || new THREE.Object3D(); heli.r1 = r1 || new THREE.Object3D(); }).catch(e => console.warn('heli model', e));
+  }
+  const treadT = A.cv(128, 64, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = 'rgba(70,32,16,.35)'; x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(50,20,8,.55)'; for (let k=0;k<8;k++){ x.save(); x.translate(k*16 + 8, h/2); x.rotate(.5); x.fillRect(-3, -h, 6, h*2); x.restore(); } });
+  const treadM = new THREE.MeshBasicMaterial({map:treadT, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2});
+  for (let i=0;i<40;i++){ const f = new THREE.Mesh(new THREE.PlaneGeometry(.4, .62), treadM); const z = -6 + i*.6; f.rotation.x = -Math.PI/2; f.position.set(3 + (i % 2 ? .85 : -.85) + Math.sin(i*.2)*.5, hgt(3, z) + .03, z); s.add(f); }
   const n = 600, dp = new Float32Array(n*3); for (let i=0;i<n;i++) dp.set([rand(-20, 20), rand(0, 6), rand(-20, 20)], i*3); const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.BufferAttribute(dp, 3)); dust = new THREE.Points(dg, new THREE.PointsMaterial({color:0xe8b080, size:.05, transparent:true, opacity:.5})); s.add(dust);
   const phobos = new THREE.Mesh(new THREE.DodecahedronGeometry(3, 1), new THREE.MeshStandardMaterial({color:0x6a6058, flatShading:true})); phobos.position.set(-120, 140, -300); s.add(phobos);
   info = A.panel(1024, 480, 1.3); info.m.position.set(-2, 1.6, -4); info.m.rotation.y = .4;
@@ -358,7 +377,7 @@ A.init({
   tagline:'خاک سرخ، سنگ‌های پراکنده و آسمان نارنجی. کنار یک مریخ‌نورد شش‌چرخ ایستاده‌ای و هلی‌کوپتر کوچکش بالای سرت پرواز می‌کند. راه برو، ردّ چرخ‌ها را دنبال کن و غروب آبی مریخ را ببین.',
   rules:['ماشه روی زمین جای پرش را نشان می‌دهد؛ استیک چپ راه می‌برد.','از منو غروب را ببین؛ در مریخ برعکس زمین، غروب آبی است.'],
   deskRules:'W/A/S/D راه رفتن و کشیدن موس نگاه.',
-  note:'صحنه بازسازی هنری است؛ مدل‌ها ساده‌سازی شده‌اند.',
+  note:'مدل‌های سه‌بعدی مریخ‌نورد پشتکار و بالگرد نبوغ از مجموعهٔ آزاد NASA 3D Resources هستند؛ زمین اطراف بازسازی هنری است.',
   menu: () => [{label: sunset ? 'روز مریخ' : 'غروب مریخ', act:() => setSunset(!sunset)}, {label:'کنار مریخ‌نورد', act:() => A.home()}],
   setup, update,
 });

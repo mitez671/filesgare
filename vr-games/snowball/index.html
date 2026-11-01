@@ -7,7 +7,8 @@
 <meta name="description" content="گلوله برفی بساز و به آدم‌برفی‌های شیطون بزن، قبل از اینکه آن‌ها تو را بزنند.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +380,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +421,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -439,9 +443,16 @@ const SPOTS = [[-3.5, -7], [-1.2, -8.5], [1.2, -8.5], [3.5, -7], [-5.5, -11], [0
 function env(K){
   const s = K.scene; s.background = new THREE.Color(0xcfe0f0); s.fog = new THREE.Fog(0xcfe0f0, 15, 60);
   const g = new THREE.Mesh(new THREE.PlaneGeometry(120, 120, 30, 30), K.lambert(0xf2f6fb)); g.rotation.x = -Math.PI/2; const p = g.geometry.attributes.position; for (let i=0;i<p.count;i++) p.setZ(i, Math.random()*.2); g.geometry.computeVertexNormals(); s.add(g);
-  for (const [x, z] of SPOTS){ const w = new THREE.Mesh(new THREE.BoxGeometry(1.5, .75, .5), snowM); w.position.set(x, .37, z + .7); s.add(w); }
+  // packed-snow wall: stacked, slightly irregular snow blocks with rounded tops
+  let SB = null; const SNOWBLOCK = () => { if (SB) return SB; const r = .16, sh = new THREE.Shape(); sh.moveTo(-.5 + r, -.5); sh.lineTo(.5 - r, -.5); sh.quadraticCurveTo(.5, -.5, .5, -.5 + r); sh.lineTo(.5, .5 - r); sh.quadraticCurveTo(.5, .5, .5 - r, .5); sh.lineTo(-.5 + r, .5); sh.quadraticCurveTo(-.5, .5, -.5, .5 - r); sh.lineTo(-.5, -.5 + r); sh.quadraticCurveTo(-.5, -.5, -.5 + r, -.5);
+    SB = new THREE.ExtrudeGeometry(sh, {depth:.76, bevelEnabled:true, bevelSize:.1, bevelThickness:.12, bevelSegments:3, curveSegments:4}); SB.center(); SB.scale(.84, .84, 1); return SB; };
+  const snowWall = (w, h, d) => { const g = new THREE.Group(), rows = Math.max(2, Math.round(h/.3)), bh = h/rows;
+    for (let r=0;r<rows;r++){ const n = Math.max(2, Math.round(w/.45)), bw = w/n; for (let i=0;i<n;i++){ const off = r%2 ? bw*.5 : 0, x = -w/2 + bw/2 + i*bw + off; if (x > w/2 - bw*.3) continue;
+      const b = new THREE.Mesh(SNOWBLOCK(), snowM); b.scale.set(bw*.97, bh*.95, d*(.95 + Math.random()*.1)); b.position.set(x, bh/2 + r*bh, (Math.random() - .5)*.04); b.rotation.y = (Math.random() - .5)*.15; g.add(b); } }
+    return g; };
+  for (const [x, z] of SPOTS){ const w = snowWall(1.5, .75, .5); w.position.set(x, 0, z + .7); s.add(w); }
   for (let i=0;i<40;i++){ const t = new THREE.Group(); for (let k=0;k<3;k++){ const c = new THREE.Mesh(new THREE.ConeGeometry(1.4 - k*.35, 1.6, 8), K.lambert(0x2f5a3a)); c.position.y = 1 + k*.9; t.add(c); const sn = new THREE.Mesh(new THREE.ConeGeometry(1.0 - k*.3, .5, 8), snowM); sn.position.y = 1.55 + k*.9; t.add(sn); } const a = rand(0, 6.28), d = rand(18, 40); t.position.set(Math.cos(a)*d, 0, Math.sin(a)*d); s.add(t); }
-  const fort = new THREE.Mesh(new THREE.BoxGeometry(2.2, .9, .5), snowM); fort.position.set(0, .45, -.9); s.add(fort);
+  const fort = snowWall(2.2, .9, .55); fort.position.set(0, 0, -.9); s.add(fort);
   // snowfall
   const n = 1500, pos = new Float32Array(n*3); for (let i=0;i<n;i++) pos.set([rand(-20, 20), rand(0, 15), rand(-30, 5)], i*3); const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); K.snow = new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff, size:.06})); s.add(K.snow);
 }

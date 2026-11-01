@@ -8,6 +8,8 @@
  *           → ../tour/pano/ و ../tour/pano/manifest.json
  * - models: مدل‌های سه‌بعدی اشیای واقعی موزه‌های اسمیتسونین (فهرست در ../museum3d/objects.json)
  *           → ../museum3d/models/ و ../museum3d/models/manifest.json (اجرای دوباره فقط موارد جامانده را می‌گیرد)
+ * - photos: عکس واقعی هر شیء گنجینه از ویکی‌مدیا کامنز (برای تابلوی کنار مشخصات)
+ *           → ../museum3d/photos/ و ../museum3d/photos/manifest.json (اجرای دوباره فقط موارد جامانده را می‌گیرد)
  * کار در چند مرحلهٔ کوتاه انجام می‌شود و صفحه خودش را تازه می‌کند تا تمام شود.
  * فقط از چند نشانی ثابت دانلود می‌کند. بعد از پایان، اجرای دوباره کاری نمی‌کند؛
  * برای دانلود دوباره، فایل manifest.json همان پوشه را از File Manager پاک کن.
@@ -23,7 +25,7 @@ if (!function_exists('str_contains')) { function str_contains($h, $n) { return $
 if (!function_exists('mb_strtolower')) { function mb_strtolower($s) { return strtolower($s); } }
 const UA = 'QuestGameHall-ImageFetcher/1.0 (self-hosted VR museum and 360 tour; https://github.com/mitez671/filesgare)';
 const BUDGET = 18;            // seconds of work per page load
-const HOSTS = ['api.artic.edu', 'www.artic.edu', 'collectionapi.metmuseum.org', 'images.metmuseum.org', 'commons.wikimedia.org', 'upload.wikimedia.org', '3d-api.si.edu'];
+const HOSTS = ['api.artic.edu', 'www.artic.edu', 'collectionapi.metmuseum.org', 'images.metmuseum.org', 'commons.wikimedia.org', 'upload.wikimedia.org', 'thumb.wikimedia.org', '3d-api.si.edu'];
 $T0 = microtime(true);
 $ROOT = dirname(__DIR__);
 
@@ -152,7 +154,7 @@ function museum_step(array &$w, string $dir): void {
           if ($sj === null) { $w['errors']++; $w['commonsFail'] = ($w['commonsFail'] ?? 0) + 1; }
           $titles = array_values(array_filter(array_map(fn($x) => $x['title'], $sj['query']['search'] ?? []), fn($t) => preg_match('/\.jpe?g$/i', $t)));
           foreach (array_chunk($titles, 20) as $chunk) {
-            $ij = http_json('https://commons.wikimedia.org/w/api.php?' . http_build_query(['action' => 'query', 'format' => 'json', 'formatversion' => 2, 'prop' => 'imageinfo', 'iiprop' => 'url|size|mime|extmetadata', 'iiurlwidth' => 1600, 'iiextmetadatafilter' => 'LicenseShortName|Artist|ObjectName|DateTimeOriginal', 'titles' => implode('|', $chunk)]));
+            $ij = http_json('https://commons.wikimedia.org/w/api.php?' . http_build_query(['action' => 'query', 'format' => 'json', 'formatversion' => 2, 'prop' => 'imageinfo', 'iiprop' => 'url|size|mime|extmetadata', 'iiurlwidth' => 1280, 'iiextmetadatafilter' => 'LicenseShortName|Artist|ObjectName|DateTimeOriginal', 'titles' => implode('|', $chunk)]));
             foreach (($ij['query']['pages'] ?? []) as $pg) {
               if (count($w['items'][$k]) >= $R['max']) break 2;
               $ii = $pg['imageinfo'][0] ?? null; if (!$ii || empty($ii['height'])) continue;
@@ -333,6 +335,47 @@ function models_finish(array &$w, string $dir, array $objs, array $have): void {
   $w['phase'] = 'done'; $w['msg'] = 'تمام شد';
 }
 
+/* ---------------- object photos job (Wikimedia Commons) ---------------- */
+// Same choice rule as museum3d/index.html: search order, landscape, >= 900 px wide, free licence.
+function photos_pick(array $O): ?array {
+  $base = ['action' => 'query', 'format' => 'json', 'formatversion' => 2, 'prop' => 'imageinfo', 'iiprop' => 'url|size|mime|extmetadata', 'iiurlwidth' => 1280, 'iiextmetadatafilter' => 'LicenseShortName|Artist'];
+  $tries = !empty($O['photo']) ? [['titles' => (string)$O['photo']]] : array_map(fn($q) => ['generator' => 'search', 'gsrsearch' => $q . ' filetype:bitmap', 'gsrnamespace' => 6, 'gsrlimit' => 15], (array)($O['photoQueries'] ?? [$O['en']]));
+  foreach ($tries as $q) {
+    $j = http_json('https://commons.wikimedia.org/w/api.php?' . http_build_query($base + $q));
+    if ($j === null) continue;
+    $pages = $j['query']['pages'] ?? []; usort($pages, fn($a, $b) => ($a['index'] ?? 0) <=> ($b['index'] ?? 0));
+    foreach ($pages as $pg) {
+      $ii = $pg['imageinfo'][0] ?? null; if (!$ii || !preg_match('/jpeg|png/', (string)($ii['mime'] ?? '')) || empty($ii['height'])) continue;
+      $r = $ii['width'] / $ii['height']; if (empty($O['photo']) && ($ii['width'] < 900 || $r < .95 || $r > 2.4)) continue;
+      $m = $ii['extmetadata'] ?? []; $lic = (string)($m['LicenseShortName']['value'] ?? '');
+      if (!tour_free($lic)) continue;
+      return ['url' => (string)($ii['thumburl'] ?? $ii['url']), 'title' => (string)$pg['title'], 'page' => (string)($ii['descriptionurl'] ?? ''), 'artist' => clean_html((string)($m['Artist']['value'] ?? '')) ?: 'unknown', 'license' => $lic];
+    }
+  }
+  return null;
+}
+function photos_step(array &$w, string $dir, array $objs, array $have): void {
+  while (elapsed() < BUDGET) {
+    if ($w['p'] >= count($objs)) { photos_finish($w, $dir, $objs, $have); return; }
+    $O = $objs[$w['p']]; $k = (string)$O['key']; $w['p']++;
+    if (isset($have[$k]) || !preg_match('/^[a-z0-9_-]+$/', $k)) continue;
+    $it = photos_pick($O);
+    if (!$it) { $w['errors']++; $w['fail'][$O['fa']] = 'عکس مناسبی در کامنز پیدا نشد'; continue; }
+    $bin = http_get($it['url'], 60);
+    $ok = $bin !== null && strlen($bin) > 5000 && (substr($bin, 0, 2) === "\xFF\xD8" || substr($bin, 0, 4) === "\x89PNG");
+    if (!$ok) { $w['errors']++; $w['fail'][$O['fa']] = 'دانلود عکس کامل نشد'; continue; }
+    $ext = substr($bin, 0, 2) === "\xFF\xD8" ? 'jpg' : 'png';
+    file_put_contents("$dir/$k.$ext", $bin);
+    unset($it['url']); $it['file'] = "photos/$k.$ext"; $w['items'][$k] = $it; $w['done']++; $w['msg'] = 'دانلود عکس: ' . $O['en'];
+  }
+}
+function photos_finish(array &$w, string $dir, array $objs, array $have): void {
+  $out = $have + $w['items'];
+  foreach ($objs as $O) $w['report'][$O['fa']] = isset($out[$O['key']]) ? 1 : 0;
+  save_json("$dir/manifest.json", ['generated' => gmdate('c'), 'objects' => $out]);
+  $w['phase'] = 'done'; $w['msg'] = 'تمام شد';
+}
+
 /* ---------------- page ---------------- */
 $job = $_GET['job'] ?? '';
 $jobs = [
@@ -340,15 +383,19 @@ $jobs = [
   'tour'   => ['dir' => "$ROOT/tour/pano",  'title' => 'عکس‌های سفر ۳۶۰',    'app' => '../tour/'],
   'persian'=> ['dir' => "$ROOT/museum/art", 'title' => 'تالار نگارگری ایرانی', 'app' => '../museum/', 'only' => 'persian'],
   'models' => ['dir' => "$ROOT/museum3d/models", 'title' => 'مدل‌های سه‌بعدی موزه', 'app' => '../museum3d/', 'only' => 'models'],
+  'photos' => ['dir' => "$ROOT/museum3d/photos", 'title' => 'عکس اشیای گنجینه', 'app' => '../museum3d/', 'only' => 'photos'],
 ];
 if ($job === 'models') @set_time_limit(300);
 $out = ''; $refresh = false;
 if (isset($jobs[$job])) {
   $J = $jobs[$job]; $dir = $J['dir'];
   if (!is_dir($dir) && !@mkdir($dir, 0755, true)) { $out = '<p class="err">ساخت پوشهٔ ' . h($dir) . ' ممکن نشد. دسترسی نوشتن پوشه را در File Manager بررسی کن.</p>'; }
-  elseif ($job === 'models' && !is_file("$ROOT/museum3d/objects.json")) { $out = '<p class="err">فایل museum3d/objects.json پیدا نشد. پوشهٔ museum3d را کامل آپلود کن.</p>'; }
+  elseif (($job === 'models' || $job === 'photos') && !is_file("$ROOT/museum3d/objects.json")) { $out = '<p class="err">فایل museum3d/objects.json پیدا نشد. پوشهٔ museum3d را کامل آپلود کن.</p>'; }
   elseif ($job === 'models' && is_file("$dir/manifest.json") && !is_file("$dir/_work_models.json") && count(load_json("$dir/manifest.json", [])['objects'] ?? []) >= count(load_json("$ROOT/museum3d/objects.json", [])['objects'] ?? [])) {
     $out = '<p class="ok">همهٔ مدل‌ها قبلاً روی سایت دانلود شده‌اند.</p><p><a class="btn" href="' . h($J['app']) . '">باز کردن موزه</a></p><p class="muted">برای دانلود دوباره، فایل manifest.json را از پوشهٔ museum3d/models پاک کن.</p>';
+  }
+  elseif ($job === 'photos' && is_file("$dir/manifest.json") && !is_file("$dir/_work_photos.json") && count(load_json("$dir/manifest.json", [])['objects'] ?? []) >= count(load_json("$ROOT/museum3d/objects.json", [])['objects'] ?? [])) {
+    $out = '<p class="ok">عکس همهٔ اشیا قبلاً روی سایت دانلود شده است.</p><p><a class="btn" href="' . h($J['app']) . '">باز کردن گنجینه</a></p><p class="muted">برای دانلود دوباره، فایل manifest.json را از پوشهٔ museum3d/photos پاک کن.</p>';
   }
   elseif (is_file("$dir/manifest.json") && empty($J['only'])) {
     $m = load_json("$dir/manifest.json", []);
@@ -361,21 +408,23 @@ if (isset($jobs[$job])) {
       $wf = "$dir/_work" . (empty($J['only']) ? '' : '_' . $J['only']) . ".json";
       $w = load_json($wf, ['phase' => 'build', 'room' => 0, 'sub' => 0, 'queue' => [], 'p' => 0, 'q' => 0, 'items' => [], 'done' => 0, 'errors' => 0, 'msg' => 'شروع', 'only' => $J['only'] ?? '']);
       if ($job === 'models') { $objs = load_json("$ROOT/museum3d/objects.json", [])['objects'] ?? []; $have = load_json("$dir/manifest.json", [])['objects'] ?? []; $have = array_intersect_key($have, array_flip(array_map(fn($o) => $o['key'], $objs))); foreach ($have as $hk => $hv) foreach ($hv['models'] as $hm) if (!is_file("$dir/$hk/" . $hm['file'])) { unset($have[$hk]); break; } models_step($w, $dir, $objs, $have); }
+      elseif ($job === 'photos') { $objs = load_json("$ROOT/museum3d/objects.json", [])['objects'] ?? []; $have = load_json("$dir/manifest.json", [])['objects'] ?? []; $have = array_filter(array_intersect_key($have, array_flip(array_map(fn($o) => $o['key'], $objs))), fn($v) => is_file("$ROOT/museum3d/" . ($v['file'] ?? '_'))); photos_step($w, $dir, $objs, $have); }
       elseif ($job === 'museum' || $job === 'persian') museum_step($w, $dir);
       else { $pl = load_json("$ROOT/tour/places.json", ['iran' => [], 'world' => []]); $per = max(1, min(3, (int)($_GET['per'] ?? 1))); tour_step($w, $dir, array_merge($pl['iran'], $pl['world']), $per); }
       save_json($wf, $w);
       if ($lock){ flock($lock, LOCK_UN); fclose($lock); }
-      $total = $job === 'models' ? array_sum(array_map(fn($it) => count($it['picks']), $w['items'])) : array_sum(array_map('count', $w['items']));
+      $total = $job === 'models' ? array_sum(array_map(fn($it) => count($it['picks']), $w['items'])) : ($job === 'photos' ? count(load_json("$ROOT/museum3d/objects.json", [])['objects'] ?? []) : array_sum(array_map('count', $w['items'])));
       if ($w['phase'] === 'done') {
         @unlink($wf); @unlink("$dir/_lock");
         $rep = '';
         foreach (($w['report'] ?? []) as $rn => $c) $rep .= '<li>' . h($rn) . ': ' . $c . ($c ? '' : ' <span class="err">(چیزی پیدا نشد)</span>') . '</li>';
         if (!empty($w['metFail'])) $rep .= '<li class="muted">موزهٔ متروپولیتن از این سرور ' . $w['metFail'] . ' بار جواب نداد؛ به جایش از ویکی‌مدیا استفاده شد.</li>';
+        if ($job === 'photos') { $rep = ''; foreach (($w['report'] ?? []) as $rn => $c) $rep .= '<li>' . h($rn) . ': ' . ($c ? '<span class="ok">روی سایت است</span>' : '<span class="err">' . h($w['fail'][$rn] ?? 'دریافت نشد') . '</span>') . '</li>'; if (array_sum($w['report'] ?? []) < count($w['report'] ?? [])) $rep .= '<li class="muted">برای موارد جامانده، گنجینه در زمان نمایش از خود اسکن تصویر می‌سازد. می‌توانی همین دکمه را دوباره بزنی.</li>'; }
         if ($job === 'models') { $rep = ''; foreach (($w['report'] ?? []) as $rn => $c) $rep .= '<li>' . h($rn) . ': ' . ($c ? '<span class="ok">روی سایت است</span>' : '<span class="err">' . h($w['fail'][$rn] ?? 'دریافت نشد') . '</span>') . '</li>'; if (!empty($w['bytes'])) $rep .= '<li class="muted">حجم دانلود این بار: ' . round($w['bytes'] / 1048576, 1) . ' مگابایت</li>'; if (array_sum($w['report'] ?? []) < count($w['report'] ?? [])) $rep .= '<li class="muted">برای امتحان دوبارهٔ موارد جامانده، همین دکمه را دوباره بزن؛ موارد دانلودشده دوباره گرفته نمی‌شوند.</li>'; }
         if (!empty($w['commonsFail'])) $rep .= '<li class="err">ویکی‌مدیا هم از این سرور ' . $w['commonsFail'] . ' بار جواب نداد.</li>';
-        $out = '<p class="ok">تمام شد! ' . $w['done'] . ($job === 'models' ? ' فایل مدل' : ' تصویر') . ' دانلود شد' . ($w['errors'] ? ' (' . $w['errors'] . ' مورد خطا داشت و کنار گذاشته شد)' : '') . '.</p>' . ($rep ? '<ul>' . $rep . '</ul>' : '') . '<p><a class="btn" href="' . h($J['app']) . '">باز کردن برنامه</a></p>';
+        $out = '<p class="ok">تمام شد! ' . $w['done'] . ($job === 'models' ? ' فایل مدل' : ($job === 'photos' ? ' عکس' : ' تصویر')) . ' دانلود شد' . ($w['errors'] ? ' (' . $w['errors'] . ' مورد خطا داشت و کنار گذاشته شد)' : '') . '.</p>' . ($rep ? '<ul>' . $rep . '</ul>' : '') . '<p><a class="btn" href="' . h($J['app']) . '">باز کردن برنامه</a></p>';
       } else {
-        $pct = $w['phase'] === 'build' ? 5 : (int)round(5 + 95 * $w['done'] / max(1, $total));
+        $pct = $job === 'photos' ? (int)round(100 * $w['p'] / max(1, $total)) : ($w['phase'] === 'build' ? 5 : (int)round(5 + 95 * $w['done'] / max(1, $total)));
         $out = '<p>' . h($w['msg']) . '</p><div class="bar"><i style="width:' . $pct . '%"></i></div><p class="muted">' . ($w['phase'] === 'build' ? 'مرحلهٔ ۱ از ۲: پیدا کردن تصاویر' : 'مرحلهٔ ۲ از ۲: ' . $w['done'] . ' از ' . $total . ' دانلود شد') . ' · خطا: ' . $w['errors'] . '</p><p class="muted">این صفحه را نبند؛ خودش ادامه می‌دهد.</p>';
         $refresh = true;
       }
@@ -404,7 +453,7 @@ h1{font-size:26px;margin:0 0 6px;color:var(--accent)}
 <?php else: ?>
   <p class="muted">هر دکمه تصاویر لازم را یک بار روی همین سایت دانلود می‌کند تا برنامه‌ها بدون وابستگی به سرورهای خارجی کار کنند. این کار چند دقیقه طول می‌کشد.</p>
   <div class="card"><b>موزهٔ مجازی</b><p class="muted">حدود ۱۵۰ تابلو با مجوز آزاد CC0 از موزهٔ هنر شیکاگو و نگارگری ایرانی از موزهٔ متروپولیتن · حدود ۵۰ مگابایت</p><a class="btn" href="?job=museum">دانلود تابلوها</a><p class="muted">اگر تالار نگارگری ایرانی خالی ماند، فقط همان را دوباره بگیر (بقیهٔ تالارها دست نمی‌خورند):</p><a class="btn" href="?job=persian">دریافت دوبارهٔ نگارگری ایرانی</a></div>
-  <div class="card"><b>موزهٔ اشیای واقعی (سه‌بعدی)</b><p class="muted">مدل‌های سه‌بعدی اسکن‌شدهٔ موزه‌های اسمیتسونین: دایناسورها، ماموت، هواپیمای برادران رایت، کپسول آپولو ۱۱، شاتل دیسکاوری و… · بین ۴۰ تا ۲۰۰ مگابایت، بسته به نسخه‌ای که موزه گذاشته</p><a class="btn" href="?job=models">دانلود مدل‌ها</a></div>
+  <div class="card"><b>موزهٔ اشیای واقعی (سه‌بعدی)</b><p class="muted">مدل‌های سه‌بعدی اسکن‌شدهٔ موزه‌های اسمیتسونین: دایناسورها، ماموت، هواپیمای برادران رایت، کپسول آپولو ۱۱، شاتل دیسکاوری و… · بین ۴۰ تا ۲۰۰ مگابایت، بسته به نسخه‌ای که موزه گذاشته</p><a class="btn" href="?job=models">دانلود مدل‌ها</a><p class="muted">عکس واقعی هر شیء برای تابلوی کنار مشخصاتش، از ویکی‌مدیا کامنز · حدود ۵ مگابایت</p><a class="btn" href="?job=photos">دانلود عکس اشیا</a></div>
   <div class="card"><b>سفر ۳۶۰</b><p class="muted">برای هر مکان یک عکس کروی با مجوز آزاد از ویکی‌مدیا کامنز · حدود ۱۰۰ مگابایت</p><a class="btn" href="?job=tour">دانلود عکس‌های ۳۶۰</a> <a class="muted" href="?job=tour&amp;per=2">(یا ۲ عکس برای هر مکان)</a></div>
 <?php endif; ?>
 </main></body></html>

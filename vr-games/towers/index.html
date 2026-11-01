@@ -7,7 +7,8 @@
 <meta name="description" content="بلندترین ساختمان‌ها و بناهای مشهور دنیا در اندازهٔ واقعی، کنار هم؛ از برج آزادی تا برج خلیفه.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +309,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -339,22 +343,182 @@ const B = [
   ['برج خلیفه', 'دبی', 828, 'khalifa', 0xc8d4e0, 2010],
 ];
 let info, objs = [];
+// ---------- recognisable landmark models, real dimensions in metres (base on y = 0) ----------
+const TXC = {};
+function cvt(key, w, h, draw, rx = 1, ry = 1){ if (!TXC[key]){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); TXC[key] = c; }
+  const t = new THREE.CanvasTexture(TXC[key]); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(rx, ry); t.anisotropy = 8; t.encoding = THREE.sRGBEncoding; return t; }
+const glassT = (tint, frame, rx, ry) => cvt('g' + tint + frame, 128, 128, (x, w, h) => { const g = x.createLinearGradient(0, 0, w*.6, h); g.addColorStop(0, tint); g.addColorStop(.5, '#e8f2ff'); g.addColorStop(.55, tint); g.addColorStop(1, tint); x.fillStyle = g; x.fillRect(0, 0, w, h); x.globalAlpha = .25; x.fillStyle = '#000'; x.fillRect(0, h*.72, w, h*.28); x.globalAlpha = 1; x.fillStyle = frame; x.fillRect(0, h*.78, w, h*.1); x.fillRect(0, 0, w*.06, h); }, rx, ry);
+const stoneWinT = (base, win, rx, ry) => cvt('s' + base + win, 128, 128, (x, w, h) => { x.fillStyle = base; x.fillRect(0, 0, w, h); for (let i=0;i<300;i++){ x.fillStyle = `rgba(0,0,0,${Math.random()*.05})`; x.fillRect(Math.random()*w, Math.random()*h, 3, 3); } x.fillStyle = win; x.fillRect(w*.3, h*.15, w*.4, h*.62); x.fillStyle = 'rgba(255,255,255,.25)'; x.fillRect(w*.3, h*.15, w*.4, h*.06); }, rx, ry);
+const latticeT = (rx, ry) => cvt('lat', 128, 128, (x, w, h) => { x.clearRect(0, 0, w, h); x.strokeStyle = '#fff'; x.lineCap = 'square'; x.lineWidth = 10; x.strokeRect(5, 5, w - 10, h - 10); x.lineWidth = 6; x.beginPath(); x.moveTo(0, 0); x.lineTo(w, h); x.moveTo(w, 0); x.lineTo(0, h); x.stroke(); x.lineWidth = 3; x.beginPath(); x.moveTo(w/2, 0); x.lineTo(w/2, h); x.moveTo(0, h/2); x.lineTo(w, h/2); x.stroke(); }, rx, ry);
+const coursesT = (rx, ry) => cvt('courses', 64, 64, (x, w, h) => { x.fillStyle = '#d6bf8a'; x.fillRect(0, 0, w, h); for (let i=0;i<400;i++){ x.fillStyle = `rgba(${Math.random()<.5?90:255},${Math.random()<.5?70:240},40,${Math.random()*.12})`; x.fillRect(Math.random()*w, Math.random()*h, 2, 2); } x.fillStyle = 'rgba(80,60,30,.45)'; x.fillRect(0, h - 5, w, 5); for (let k=0;k<3;k++){ x.fillRect(k*22 + (Math.random()*6), 0, 2, h); } }, rx, ry);
+const archFaceT = () => cvt('archface', 512, 320, (x, w, h) => { x.fillStyle = '#f4f0e8'; x.fillRect(0, 0, w, h); for (let i=0;i<800;i++){ x.fillStyle = `rgba(120,110,100,${Math.random()*.05})`; x.fillRect(Math.random()*w, Math.random()*h, 3, 3); }
+  const arch = (cx, by, aw, ah, dark) => { x.beginPath(); x.moveTo(cx - aw/2, by); x.lineTo(cx - aw/2, by - ah*.62); x.quadraticCurveTo(cx - aw/2, by - ah*.95, cx, by - ah); x.quadraticCurveTo(cx + aw/2, by - ah*.95, cx + aw/2, by - ah*.62); x.lineTo(cx + aw/2, by); x.closePath(); x.fillStyle = dark; x.fill(); };
+  x.strokeStyle = '#c9b9a0'; x.lineWidth = 6; x.strokeRect(w*.3, h*.08, w*.4, h*.92); arch(w/2, h*.98, w*.3, h*.78, '#3a3430'); arch(w/2, h*.98, w*.22, h*.66, '#58504a');
+  for (const cx of [w*.12, w*.88]){ arch(cx, h*.47, w*.13, h*.33, '#4a423c'); arch(cx, h*.95, w*.13, h*.33, '#4a423c'); } });
+const clockT = () => cvt('clock', 256, 256, (x, w, h) => { x.fillStyle = '#1d1a14'; x.fillRect(0, 0, w, h); x.fillStyle = '#f2ead2'; x.beginPath(); x.arc(128, 128, 110, 0, 7); x.fill(); x.strokeStyle = '#1d1a14'; x.lineWidth = 4; for (let i=0;i<12;i++){ const a = i/12*Math.PI*2; x.beginPath(); x.moveTo(128 + Math.sin(a)*86, 128 - Math.cos(a)*86); x.lineTo(128 + Math.sin(a)*104, 128 - Math.cos(a)*104); x.stroke(); }
+  x.lineWidth = 7; x.beginPath(); x.moveTo(128, 128); x.lineTo(128 + 50, 128 - 30); x.stroke(); x.lineWidth = 5; x.beginPath(); x.moveTo(128, 128); x.lineTo(128 - 20, 128 - 85); x.stroke(); x.strokeStyle = '#c8a040'; x.lineWidth = 8; x.beginPath(); x.arc(128, 128, 114, 0, 7); x.stroke(); });
+function M(o){ return new THREE.MeshStandardMaterial(Object.assign({roughness:.6, metalness:0}, o)); }
+function std(name, rep, col){ return window.VRDecor ? VRDecor.material(name, rep, {color:new THREE.Color(col)}) : M({color:col}); }
+function lathe(pts, seg = 32){ return new THREE.LatheGeometry(pts.map(([r, y]) => new THREE.Vector2(r, y)), seg); }
+function frustumQuads(g, levels, mat, rx = 1){
+  // four flat sides between square sections [y, halfWidth] (lattice/glass curtains)
+  const pos = [], uv = [], idx = [];
+  for (let s=0;s<4;s++){ const a0 = s*Math.PI/2;
+    for (let i=0;i<levels.length - 1;i++){ const [y0, w0] = levels[i], [y1, w1] = levels[i + 1], base = pos.length/3;
+      const c = Math.cos(a0), sn = Math.sin(a0), P = (y, w, t) => [c*w - sn*w*t, y, sn*w + c*w*t];
+      pos.push(...P(y0, w0, -1), ...P(y0, w0, 1), ...P(y1, w1, 1), ...P(y1, w1, -1));
+      const v0 = y0/10, v1 = y1/10; uv.push(0, v0, w0*2/10*rx, v0, w1*2/10*rx, v1, 0, v1); idx.push(base, base+1, base+2, base, base+2, base+3); } }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, mat); g.add(m); return m;
+}
 function shape(b){
-  const [, , h, kind, col] = b, m = new THREE.MeshStandardMaterial({color:col, roughness:.6, metalness:kind === 'box' || kind === 'twist' || kind === 'khalifa' ? .4 : .05}), g = new THREE.Group();
-  const add = (geo, y) => { const x = new THREE.Mesh(geo, m); x.position.y = y; g.add(x); return x; };
-  if (kind === 'arch'){ add(new THREE.BoxGeometry(50, h*.5, 40), h*.25); add(new THREE.CylinderGeometry(8, 22, h*.5, 4), h*.75).rotation.y = Math.PI/4; }
-  else if (kind === 'cyl'){ const t = add(new THREE.CylinderGeometry(7.7, 7.7, h, 24), h/2); t.rotation.z = .07; }
-  else if (kind === 'dome'){ add(new THREE.BoxGeometry(57, 30, 57), 15); add(new THREE.SphereGeometry(18, 24, 16), 45); for (const s of [[-35,-35],[35,-35],[-35,35],[35,35]]){ const mn = add(new THREE.CylinderGeometry(2.5, 3, 42, 12), 21); mn.position.x = s[0]; mn.position.z = s[1]; } }
-  else if (kind === 'statue'){ add(new THREE.BoxGeometry(20, 47, 20), 23.5); add(new THREE.CylinderGeometry(3, 5, 34, 10), 64); const arm = add(new THREE.CylinderGeometry(1, 1, 14, 8), 85); arm.position.x = 3; }
-  else if (kind === 'clock'){ add(new THREE.BoxGeometry(12, 70, 12), 35); add(new THREE.ConeGeometry(9, 26, 4), 83).rotation.y = Math.PI/4; }
-  else if (kind === 'pyr'){ add(new THREE.ConeGeometry(163, h, 4), h/2).rotation.y = Math.PI/4; }
-  else if (kind === 'sail'){ const s = add(new THREE.CylinderGeometry(4, 30, h, 3, 1), h/2); s.scale.z = .6; }
-  else if (kind === 'eiffel'){ for (let i=0;i<4;i++){ const leg = add(new THREE.CylinderGeometry(2, 8, 120, 4), 60); const a = i*Math.PI/2 + Math.PI/4; leg.position.set(Math.cos(a)*42, 60, Math.sin(a)*42); leg.lookAt(0, 200, 0); leg.rotateX(Math.PI/2); } add(new THREE.CylinderGeometry(3, 18, 200, 4), 220).rotation.y = Math.PI/4; add(new THREE.BoxGeometry(70, 6, 70), 58); }
-  else if (kind === 'milad'){ add(new THREE.CylinderGeometry(7, 14, 315, 8), 157); add(new THREE.SphereGeometry(30, 20, 14), 300).scale.y = .55; add(new THREE.CylinderGeometry(1.5, 2.5, 120, 8), 375); add(new THREE.CylinderGeometry(40, 40, 6, 8), 6); }
-  else if (kind === 'twin'){ for (const x of [-30, 30]){ const t = add(new THREE.CylinderGeometry(15, 23, 380, 16), 190); t.position.x = x; const sp = add(new THREE.CylinderGeometry(.6, 3, 72, 8), 416); sp.position.x = x; } add(new THREE.BoxGeometry(40, 4, 4), 175); }
-  else if (kind === 'twist'){ for (let i=0;i<24;i++){ const s = add(new THREE.CylinderGeometry(30 - i*.6, 30 - (i+1)*.6, h/24, 3), (i + .5)*h/24); s.rotation.y = i*.05; } }
-  else if (kind === 'khalifa'){ const steps = [[30, 160],[24, 140],[19, 120],[15, 100],[11, 90],[8, 70],[5, 50]]; let y = 0; for (const [r, hh] of steps){ add(new THREE.CylinderGeometry(r, r, hh, 3), y + hh/2); y += hh; } add(new THREE.CylinderGeometry(.6, 4, h - y, 8), y + (h - y)/2); }
-  else { const w = h > 500 ? 58 : 42; add(new THREE.BoxGeometry(w, h*.85, w), h*.425); add(new THREE.BoxGeometry(w*.6, h*.1, w*.6), h*.9); add(new THREE.CylinderGeometry(.6, 2, h*.05, 8), h*.975); }
+  const [, , h, kind, col] = b, g = new THREE.Group();
+  const add = (geo, mat, x = 0, y = 0, z = 0) => { const o = new THREE.Mesh(geo, mat); o.position.set(x, y, z); g.add(o); return o; };
+  if (kind === 'arch'){ // Azadi Tower: concave sweeping sides, pointed central arch, marble
+    const s = new THREE.Shape(); s.moveTo(-31.5, 0); s.quadraticCurveTo(-13, 7, -9.5, 37); s.lineTo(-7, 45); s.lineTo(7, 45); s.lineTo(9.5, 37); s.quadraticCurveTo(13, 7, 31.5, 0);
+    s.lineTo(9, 0); s.lineTo(9, 13); s.quadraticCurveTo(8.5, 21, 0, 25); s.quadraticCurveTo(-8.5, 21, -9, 13); s.lineTo(-9, 0); s.lineTo(-31.5, 0);
+    const geo = new THREE.ExtrudeGeometry(s, {depth:42, bevelEnabled:false, curveSegments:24}); geo.translate(0, 0, -21);
+    const p = geo.attributes.position; for (let i=0;i<p.count;i++){ const y = p.getY(i); p.setZ(i, p.getZ(i)*(1 - .62*Math.pow(y/45, .8))); } geo.computeVertexNormals();
+    add(geo, std('travertine', [.08, .08], 0xf2ece0));
+    const crown = add(new THREE.BoxGeometry(13, 5, 7), std('travertine', [1, 1], 0xf2ece0), 0, 47.5, 0);
+    add(new THREE.SphereGeometry(3.2, 20, 12, 0, Math.PI*2, 0, Math.PI/2), std('travertine', [1, 1], 0xf2ece0), 0, 50, 0);
+    add(new THREE.BoxGeometry(14, 1.2, 8), M({color:0x2f8fb0, roughness:.4}), 0, 44.7, 0); // turquoise tile band
+  }
+  else if (kind === 'cyl'){ // Leaning Tower of Pisa: arcaded marble drum, 8 storeys, belfry
+    const t = new THREE.Group(), mar = std('marble', [3, 4], 0xf4f0e4); g.add(t);
+    const tiers = [[0, 11], [11, 18.2], [18.2, 25.4], [25.4, 32.6], [32.6, 39.8], [39.8, 47], [47, 50]];
+    const colGeo = new THREE.CylinderGeometry(.32, .36, 1, 10), cols = new THREE.InstancedMesh(colGeo, mar, tiers.length*28); let k = 0; const d = new THREE.Object3D();
+    tiers.forEach(([y0, y1], i) => { const r = 7.7; const core = new THREE.Mesh(new THREE.CylinderGeometry(r*.86, r*.86, y1 - y0, 32), mar); core.position.y = (y0 + y1)/2; t.add(core);
+      const ring = new THREE.Mesh(new THREE.CylinderGeometry(r + .35, r + .35, .7, 40), mar); ring.position.y = y1 - .35; t.add(ring);
+      if (i < 6) for (let j=0;j<28;j++){ const a = j/28*Math.PI*2; d.position.set(Math.cos(a)*r, (y0 + y1)/2 - .3, Math.sin(a)*r); d.scale.set(1, y1 - y0 - .8, 1); d.updateMatrix(); cols.setMatrixAt(k++, d.matrix); } });
+    cols.count = k; t.add(cols);
+    const bell = new THREE.Mesh(new THREE.CylinderGeometry(5.6, 5.6, 6, 32), mar); bell.position.y = 53; t.add(bell);
+    const bellR = new THREE.Mesh(new THREE.CylinderGeometry(5.9, 5.9, .6, 32), mar); bellR.position.y = 56.2; t.add(bellR);
+    t.rotation.z = .07;
+  }
+  else if (kind === 'dome'){ // Taj Mahal: plinth, iwan facade, onion dome, chattris, four minarets
+    const mar = std('marble', [4, 4], 0xf8f5ee), face = M({map:archFaceT(), roughness:.55});
+    add(new THREE.BoxGeometry(95, 7, 95), mar, 0, 3.5, 0);
+    const body = add(new THREE.BoxGeometry(57, 35, 57), [face, face, mar, mar, face, face], 0, 24.5, 0);
+    add(new THREE.CylinderGeometry(15, 15, 8, 40), mar, 0, 46, 0);
+    add(lathe([[0, 0], [15.5, 0], [17.5, 4], [20, 10], [19.5, 15], [16, 20], [10, 24.5], [4, 27.5], [1.2, 29.5], [0, 30]], 48), mar, 0, 50, 0);
+    add(new THREE.CylinderGeometry(.35, .6, 6, 10), M({color:0xd4a840, metalness:.7, roughness:.3}), 0, 82, 0);
+    for (const [x, z] of [[-20, -20], [20, -20], [-20, 20], [20, 20]]){ add(new THREE.CylinderGeometry(4.2, 4.2, 6, 8), mar, x, 45, z); add(lathe([[0, 0], [4.6, 0], [5, 1.8], [4, 3.6], [1.6, 5.2], [0, 6]], 24), mar, x, 48, z); }
+    for (const [x, z] of [[-43, -43], [43, -43], [-43, 43], [43, 43]]){ add(new THREE.CylinderGeometry(2.1, 2.7, 40, 16), mar, x, 27, z);
+      for (const y of [17, 30, 43]) add(new THREE.CylinderGeometry(3.4, 3.4, .8, 16), mar, x, y, z);
+      add(new THREE.CylinderGeometry(2.4, 2.4, 3, 8), mar, x, 48.5, z); add(lathe([[0, 0], [2.8, 0], [3, 1.2], [2.2, 2.4], [.8, 3.4], [0, 3.8]], 18), mar, x, 50, z); }
+  }
+  else if (kind === 'statue'){ // Statue of Liberty: granite pedestal, copper-green robed figure, raised torch, crown
+    const gran = std('travertine', [3, 6], 0xe6dccb), cu = M({color:0x6fb59a, roughness:.55, metalness:.25}), gold = M({color:0xe8b23a, metalness:.6, roughness:.3, emissive:0x553300});
+    add(new THREE.CylinderGeometry(20, 24, 14, 11), gran, 0, 7, 0);
+    const ped = add(new THREE.CylinderGeometry(9, 12, 33, 4), gran, 0, 30.5, 0); ped.rotation.y = Math.PI/4;
+    add(new THREE.BoxGeometry(14.5, 2, 14.5), gran, 0, 47.5, 0);
+    add(lathe([[0, 0], [5.4, 0], [5.6, 2], [4.8, 10], [4.2, 17], [4.6, 22], [4.9, 26], [3.5, 28.5], [1.6, 29.5], [0, 30]], 28), cu, 0, 48.5, 0);
+    add(new THREE.CylinderGeometry(1, 1.2, 2, 14), cu, 0, 79, 0);
+    const head = add(new THREE.SphereGeometry(2.2, 20, 16), cu, 0, 81.5, .2); head.scale.set(.9, 1.15, 1);
+    for (let i=0;i<7;i++){ const a = -1.2 + i*.4, sp = add(new THREE.ConeGeometry(.35, 3.2, 6), cu, Math.sin(a)*2.1, 84 + Math.cos(a)*.8, Math.cos(a)*.6 + .3); sp.rotation.z = -a*.9; sp.rotation.x = .35; }
+    const arm = add(new THREE.CylinderGeometry(.75, 1.05, 13, 12), cu, 3.6, 84, 0); arm.rotation.z = -.22;
+    add(new THREE.CylinderGeometry(1.1, .6, 2.2, 14), cu, 5.1, 91.2, 0);
+    const flame = add(new THREE.ConeGeometry(.9, 2.6, 12), gold, 5.1, 93.3, 0);
+    const tab = add(new THREE.BoxGeometry(1, 6, 3.6), cu, -4.6, 66, 1.6); tab.rotation.z = .25;
+  }
+  else if (kind === 'clock'){ // Big Ben (Elizabeth Tower): gothic shaft, clock stage, belfry, iron spire
+    const stone = M({map:stoneWinT('#c8b07a', '#3a3428', 2, 16), roughness:.8}), dark = M({color:0x2a2f2c, roughness:.6, metalness:.3}), gold = M({color:0xc89a3a, metalness:.6, roughness:.35});
+    add(new THREE.BoxGeometry(12, 55, 12), stone, 0, 27.5, 0);
+    add(new THREE.BoxGeometry(13.6, 14, 13.6), M({color:0xc8b07a, roughness:.75}), 0, 62, 0);
+    const cf = M({map:clockT(), roughness:.5}); for (let i=0;i<4;i++){ const a = i*Math.PI/2, c = add(new THREE.CircleGeometry(3.5, 40), cf, Math.sin(a)*6.85, 62, Math.cos(a)*6.85); c.rotation.y = a; }
+    add(new THREE.BoxGeometry(12.4, 9, 12.4), M({map:stoneWinT('#c8b07a', '#2a241c', 3, 1), roughness:.8}), 0, 73.5, 0);
+    const roof = add(new THREE.ConeGeometry(9.2, 18, 4), dark, 0, 87, 0); roof.rotation.y = Math.PI/4;
+    add(new THREE.CylinderGeometry(.25, .6, 5, 8), gold, 0, 98, 0);
+    for (const [x, z] of [[-6.2, -6.2], [6.2, -6.2], [-6.2, 6.2], [6.2, 6.2]]){ add(new THREE.ConeGeometry(.8, 7, 4), gold, x, 81.5, z); add(new THREE.BoxGeometry(1.4, 69, 1.4), M({color:0xbfa66e, roughness:.8}), x, 34.5, z); }
+  }
+  else if (kind === 'pyr'){ // Great Pyramid: sandstone courses
+    const p = add(new THREE.ConeGeometry(162.6, h, 4, 1), M({map:coursesT(60, h/1.3), roughness:.95}), 0, h/2, 0); p.rotation.y = Math.PI/4;
+  }
+  else if (kind === 'sail'){ // Burj Al Arab: billowing sail, rear mast, helipad
+    const s = new THREE.Shape(); s.moveTo(0, 0); for (let i=0;i<=24;i++){ const t = i/24, y = t*290; s.lineTo(70*Math.sin(Math.PI*Math.pow(1 - t, .75)*.95) + 4, y); } s.lineTo(0, 300); s.lineTo(0, 0);
+    const geo = new THREE.ExtrudeGeometry(s, {depth:56, bevelEnabled:false, curveSegments:24}); geo.translate(0, 0, -28);
+    const p = geo.attributes.position; for (let i=0;i<p.count;i++){ const x = p.getX(i); p.setZ(i, p.getZ(i)*(1 - .55*Math.min(1, x/74))); } geo.computeVertexNormals();
+    const sail = add(geo, M({map:glassT('#c9dcef', '#ffffff', 6, 60), roughness:.35, metalness:.2})); sail.position.x = -30;
+    for (const z of [-26, 26]){ const m = add(new THREE.CylinderGeometry(2.2, 3, 300, 12), M({color:0xf4f6fa, roughness:.4}), -32, 150, z); }
+    add(new THREE.CylinderGeometry(.8, 2, 30, 10), M({color:0xf4f6fa}), -32, 315, 0);
+    add(new THREE.CylinderGeometry(12, 12, 1.4, 32), M({color:0xd8dde4}), 4, 212, 0);
+  }
+  else if (kind === 'eiffel'){ // Eiffel Tower: wrought-iron lattice legs, arches, platforms, mast
+    const iron = M({map:latticeT(1, 1), alphaTest:.5, side:THREE.DoubleSide, color:0x7a5a40, roughness:.7, metalness:.2}), solid = M({color:0x6e5038, roughness:.7});
+    for (const [sx, sz] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]){ const lg = new THREE.Group(); lg.position.set(sx*50, 0, sz*50); g.add(lg);
+      const leg = frustumQuads(lg, [[0, 13], [57, 8]], iron); const p = leg.geometry.attributes.position;
+      for (let i=0;i<p.count;i++){ const y = p.getY(i), f = y/57; p.setX(i, p.getX(i) - sx*f*22); p.setZ(i, p.getZ(i) - sz*f*22); } leg.geometry.computeVertexNormals(); }
+    for (let i=0;i<4;i++){ const a = i*Math.PI/2, arc = add(new THREE.TorusGeometry(34, .9, 6, 40, Math.PI), solid); arc.position.set(Math.sin(a)*40, 18, Math.cos(a)*40); arc.rotation.y = a + Math.PI/2; arc.scale.y = .9; }
+    add(new THREE.BoxGeometry(74, 6, 74), solid, 0, 57, 0);
+    frustumQuads(g, [[60, 34], [115, 21]], iron); add(new THREE.BoxGeometry(44, 4, 44), solid, 0, 116, 0);
+    frustumQuads(g, [[118, 19], [200, 10], [276, 5]], iron); add(new THREE.BoxGeometry(17, 3, 17), solid, 0, 277, 0);
+    frustumQuads(g, [[278, 4.5], [300, 2.6]], iron); add(new THREE.CylinderGeometry(.6, 1.6, 30, 8), solid, 0, 315, 0);
+  }
+  else if (kind === 'milad'){ // Milad Tower: octagonal concrete shaft, glass pod, antenna mast
+    const conc = std('plaster', [2, 30], 0xd8dcdf), glass = M({map:glassT('#6f8fae', '#cfd6dc', 24, 4), roughness:.3, metalness:.3});
+    add(new THREE.CylinderGeometry(42, 46, 8, 8), conc, 0, 4, 0);
+    add(new THREE.CylinderGeometry(7.5, 14, 300, 8), conc, 0, 150, 0);
+    add(lathe([[0, 0], [10, 0], [24, 6], [31, 16], [34, 28], [33, 38], [28, 48], [18, 56], [8, 60], [0, 60]], 48), glass, 0, 255, 0);
+    for (const y of [266, 280, 294]) add(new THREE.CylinderGeometry(34.6, 34.6, .8, 48), conc, 0, y, 0);
+    add(new THREE.CylinderGeometry(2.4, 4, 120, 12), conc, 0, 375, 0);
+    for (const y of [330, 360, 395]) add(new THREE.CylinderGeometry(5.5, 5.5, 2, 12), conc, 0, y, 0);
+  }
+  else if (kind === 'twin'){ // Petronas Towers: 8-point star plan, setbacks, pinnacles, skybridge
+    const steel = M({map:glassT('#9aa6b2', '#e4e8ec', 1, 1), roughness:.3, metalness:.55});
+    const star = r => { const s = new THREE.Shape(); for (let i=0;i<=16;i++){ const a = i/16*Math.PI*2, rr = i%2 ? r*.8 : r; if (i) s.lineTo(Math.cos(a)*rr, Math.sin(a)*rr); else s.moveTo(rr, 0); } return s; };
+    for (const x of [-52, 52]){
+      for (const [y0, y1, r] of [[0, 170, 23], [170, 250, 21], [250, 300, 19], [300, 340, 16], [340, 368, 12.5], [368, 384, 8.5]]){
+        const geo = new THREE.ExtrudeGeometry(star(r), {depth:y1 - y0, bevelEnabled:false}); geo.rotateX(-Math.PI/2);
+        const uv = geo.attributes.uv; for (let i=0;i<uv.count;i++) uv.setXY(i, uv.getX(i)/4, uv.getY(i)/4);
+        add(geo, steel, x, y0, 0); add(new THREE.CylinderGeometry(r*1.02, r*1.02, 1, 32), M({color:0xd8dde2, metalness:.5, roughness:.3}), x, y1, 0); }
+      add(new THREE.CylinderGeometry(.5, 4, 68, 12), M({color:0xd8dde2, metalness:.6, roughness:.3}), x, 418, 0);
+    }
+    add(new THREE.BoxGeometry(60, 9, 6), steel, 0, 174, 0);
+    for (const s of [-1, 1]){ const leg = add(new THREE.CylinderGeometry(.8, .8, 60, 8), M({color:0xd8dde2}), s*14, 146, 0); leg.rotation.z = s*.5; }
+  }
+  else if (kind === 'twist'){ // Shanghai Tower: rounded triangle plan, 120° twist, tapering
+    const N = 48, L = 60, H = 600, pos = [], uv = [], idx = [];
+    for (let j=0;j<=L;j++){ const y = j/L*H, R = 37*(1 - .42*j/L), th = j/L*Math.PI*2/3;
+      for (let i=0;i<=N;i++){ const a = i/N*Math.PI*2, r = R*(1 + .13*Math.cos(3*a) - .05*Math.pow(Math.max(0, Math.cos(1.5*(a - Math.PI/3))), 40)); pos.push(Math.cos(a + th)*r, y, Math.sin(a + th)*r); uv.push(i/N*40, y/4.5); } }
+    for (let j=0;j<L;j++) for (let i=0;i<N;i++){ const a = j*(N + 1) + i, b2 = a + N + 1; idx.push(a, b2, a + 1, b2, b2 + 1, a + 1); }
+    const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.setIndex(idx); geo.computeVertexNormals();
+    add(geo, M({map:glassT('#7f9db8', '#c8d4de', 1, 1), roughness:.25, metalness:.35, side:THREE.DoubleSide}));
+    add(new THREE.CylinderGeometry(20, 21.5, 32, 24, 1, true), M({color:0xc8d4de, metalness:.4, roughness:.3, side:THREE.DoubleSide}), 0, 616, 0);
+  }
+  else if (kind === 'khalifa'){ // Burj Khalifa: Y-shaped plan, spiralling setbacks, hexagonal core, spire
+    const skin = M({map:glassT('#a9b8c6', '#e8edf2', 1, 1), roughness:.25, metalness:.5});
+    const tiers = [62, 52, 43, 35, 28, 21, 14];
+    for (let k=0;k<3;k++){ const a = k*Math.PI*2/3; let y = 0;
+      tiers.forEach((L, j) => { const hh = 70 + ((j + k)%3)*12, top = Math.min(585, y + hh); if (top <= y) return;
+        const box = new THREE.Mesh(new THREE.BoxGeometry(L, top - y, 21), skin); box.position.set(Math.cos(a)*L/2, (y + top)/2, -Math.sin(a)*L/2); box.rotation.y = a; g.add(box);
+        const tip = new THREE.Mesh(new THREE.CylinderGeometry(10.5, 10.5, top - y, 24), skin); tip.position.set(Math.cos(a)*L, (y + top)/2, -Math.sin(a)*L); g.add(tip);
+        const uvb = box.geometry.attributes.uv; for (let i=0;i<uvb.count;i++) uvb.setXY(i, uvb.getX(i)*L/3, uvb.getY(i)*(top - y)/4);
+        const uvt = tip.geometry.attributes.uv; for (let i=0;i<uvt.count;i++) uvt.setXY(i, uvt.getX(i)*22, uvt.getY(i)*(top - y)/4);
+        y = top; }); }
+    const core = add(new THREE.CylinderGeometry(13, 16, 600, 6), skin, 0, 300, 0); const uc = core.geometry.attributes.uv; for (let i=0;i<uc.count;i++) uc.setXY(i, uc.getX(i)*30, uc.getY(i)*150);
+    add(new THREE.CylinderGeometry(.7, 7, 228, 12), M({color:0xd8dee6, metalness:.6, roughness:.25}), 0, 714, 0);
+  }
+  else { // stepped skyscrapers: Empire State (limestone), Taipei 101 (pagoda modules), One WTC (twisting square)
+    const name = b[0];
+    if (/تایپه/.test(name)){ const gl = M({map:glassT('#4f8a86', '#2f5450', 1, 1), roughness:.3, metalness:.3});
+      frustumQuads(g, [[0, 36], [90, 28]], gl, 3); for (let i=0;i<8;i++){ const y = 90 + i*33; frustumQuads(g, [[y, 22], [y + 33, 27]], gl, 3); add(new THREE.BoxGeometry(54, 1.2, 54), M({color:0x2f5450}), 0, y + 33, 0); }
+      frustumQuads(g, [[354, 18], [380, 13], [392, 9]], gl, 3); add(new THREE.CylinderGeometry(.8, 4, 116, 10), M({color:0xc8d0d0, metalness:.6}), 0, 450, 0); }
+    else if (/ورلد/.test(name)){ const gl = M({map:glassT('#8fb0c8', '#d4dee6', 1, 1), roughness:.2, metalness:.45, side:THREE.DoubleSide});
+      const base = add(new THREE.BoxGeometry(61, 56, 61), M({color:0xc4ccd2, metalness:.5, roughness:.35}), 0, 28, 0);
+      const B0 = [], T0 = [], y0 = 56, y1 = 417; for (let k=0;k<4;k++){ const a = k*Math.PI/2 + Math.PI/4; B0.push([Math.cos(a)*43.1, Math.sin(a)*43.1]); const a2 = k*Math.PI/2; T0.push([Math.cos(a2)*29.7, Math.sin(a2)*29.7]); }
+      const pos = [], uv = [];
+      const tri = (p, q, r) => { pos.push(...p, ...q, ...r); uv.push(0, p[1]/4, 6, q[1]/4, 3, r[1]/4); };
+      for (let k=0;k<4;k++){ const b0 = B0[k], b1 = B0[(k + 1)%4], t1 = T0[(k + 1)%4], t0 = T0[k];
+        tri([b0[0], y0, b0[1]], [b1[0], y0, b1[1]], [t1[0], y1, t1[1]]); tri([b0[0], y0, b0[1]], [t1[0], y1, t1[1]], [t0[0], y1, t0[1]]); }
+      const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); geo.computeVertexNormals(); add(geo, gl);
+      add(new THREE.BoxGeometry(42, 4, 42), M({color:0xc4ccd2, metalness:.5}), 0, 419, 0).rotation.y = Math.PI/4; add(new THREE.CylinderGeometry(.6, 2.2, 124, 10), M({color:0xe0e4e8, metalness:.6}), 0, 479, 0); }
+    else { const lime = M({map:stoneWinT('#cfc6b4', '#3a4048', 1, 1), roughness:.8});
+      const sec = [[0, 25, 100, 60], [25, 80, 78, 50], [80, 320, 56, 40], [320, 345, 46, 34], [345, 370, 34, 26], [370, 381, 24, 18]];
+      for (const [y0, y1, w, d] of sec){ const bx = add(new THREE.BoxGeometry(w, y1 - y0, d), lime, 0, (y0 + y1)/2, 0); const u = bx.geometry.attributes.uv; for (let i=0;i<u.count;i++) u.setXY(i, u.getX(i)*w/3, u.getY(i)*(y1 - y0)/3.8); }
+      add(new THREE.CylinderGeometry(5, 7, 30, 8), M({color:0xd8d0bc, roughness:.6}), 0, 396, 0); add(new THREE.CylinderGeometry(.5, 3, 32, 8), M({color:0xc8c8c8, metalness:.6}), 0, 427, 0); }
+  }
+  g.traverse(o => { if (o.isMesh) o.userData.realism = true; });
   return g;
 }
 function label(b){ const t = A.cv(512, 160, (x) => { A.rr(x, 4, 4, 504, 152, 24); x.fillStyle = 'rgba(10,14,22,.85)'; x.fill(); x.direction = 'rtl'; x.textAlign = 'center'; x.fillStyle = '#ffd23f'; x.font = `400 60px ${A.F_DISP}`; x.fillText(b[0], 256, 70); x.fillStyle = '#fff'; x.font = `600 40px ${A.F_BODY}`; x.fillText(fa(b[2]) + ' متر · ' + b[1], 256, 128); });
@@ -367,10 +531,10 @@ A.init({
   tagline:'برج آزادی، برج میلاد، ایفل، هرم جیزه و برج خلیفه، همه در اندازهٔ واقعی کنار هم روی یک دشت. پرواز کن، از پای برج خلیفه بالا را نگاه کن و ببین برج میلاد چقدر بلند است.',
   rules:['استیک چپ پرواز می‌کند (به هر طرف نگاه کنی همان طرف می‌روی). دکمهٔ پهلوی چپ سرعت را سه برابر می‌کند.','استیک راست بالا و پایین می‌برد و می‌چرخاند.','از منو اسم هر بنا را بزن تا به ارتفاع نوکش بروی.'],
   deskRules:'W/A/S/D پرواز، E و Q بالا و پایین، Shift تند، کشیدن موس نگاه.',
-  note:'شکل‌ها ساده‌سازی شده‌اند ولی ارتفاع‌ها واقعی‌اند (به متر).',
+  note:'مدل‌ها با کد و بر پایهٔ ابعاد واقعی ساخته شده‌اند؛ ارتفاع‌ها واقعی‌اند (به متر) و جزئیات ساده‌سازی شده است.',
   menu: () => B.map((b, i) => ({label:b[0] + ' (' + fa(b[2]) + ')', act:() => goTop(i)})).concat([{label:'برگشت به زمین', act:() => { A.home(); info.m.visible = false; }}]),
   setup(A){ const s = A.scene; s.fog = new THREE.Fog(0x9fc8ea, 800, 4500); A.sun.position.set(300, 600, 200); A.sun.intensity = 1;
-    const g = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000), new THREE.MeshLambertMaterial({map:A.cv(256, 256, (x, w) => { x.fillStyle = '#8aa86a'; x.fillRect(0,0,w,w); for (let i=0;i<300;i++){ x.fillStyle = A.pick(['#7a9a5a', '#9ab87a', '#a8a070']); x.fillRect(Math.random()*w, Math.random()*w, 6, 6); } }, [120, 120])})); g.rotation.x = -Math.PI/2; s.add(g);
+    const g = new THREE.Mesh(new THREE.PlaneGeometry(12000, 12000), window.VRDecor ? VRDecor.material('grass', [600, 600], {color:0xb4c89a, roughness:1}) : new THREE.MeshLambertMaterial({color:0x8aa86a})); g.userData.realism = true; g.rotation.x = -Math.PI/2; s.add(g);
     const road = new THREE.Mesh(new THREE.PlaneGeometry(30, 3600), new THREE.MeshLambertMaterial({color:0x4a4a4a})); road.rotation.x = -Math.PI/2; road.position.set(0, .05, -1700); s.add(road);
     let z = 0; B.forEach((b, i) => { const o = shape(b); const side = i % 2 ? 1 : -1, w = b[3] === 'pyr' ? 240 : b[3] === 'eiffel' ? 140 : 120; z -= w*.6 + 60; o.position.set(side*(w*.5 + 40), 0, z); s.add(o); objs.push(o); const l = label(b); l.position.set(o.position.x, b[2] + 14, o.position.z); s.add(l);
       const human = new THREE.Mesh(new THREE.CapsuleGeometry(.25, 1.25, 4, 8), new THREE.MeshLambertMaterial({color:0xff4d6d})); human.position.set(o.position.x - side*(w*.5 + 6), .9, o.position.z + 10); s.add(human); });

@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>گنجینه</title>
-<meta name="description" content="موزهٔ VR با مدل‌های سه‌بعدی اسکن‌شدهٔ اشیای واقعی اسمیتسونین: تی‌رکس، ماموت، هواپیمای برادران رایت، کپسول آپولو ۱۱ و شاتل دیسکاوری.">
+<meta name="description" content="موزهٔ VR با معماری مدرن و مدل‌های سه‌بعدی اسکن‌شدهٔ اشیای واقعی اسمیتسونین: تی‌رکس، ماموت، هواپیمای برادران رایت، کپسول آپولو ۱۱ و شاتل دیسکاوری.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
 <style>
-/* Layout: full-bleed 3D stage; RTL lobby card over it; thin top bar while touring. Look: museum at night, stone + brass. */
+/* Layout: full-bleed 3D stage; RTL lobby card over it; thin top bar while touring. Look: modern museum, daylight concrete + glass + brass. */
 :root{--bg:#101215;--panel:rgba(18,21,26,.9);--ink:#eef1f4;--muted:#a6afba;--line:rgba(238,241,244,.16);--accent:#e8b04b;--accent2:#7fb7e8;
 --display:Lalezar,Vazirmatn,Tahoma,sans-serif;--body:Vazirmatn,Tahoma,"Segoe UI",system-ui,sans-serif;color-scheme:dark}
 [hidden]{display:none!important}
@@ -48,12 +48,12 @@ h1{margin:0;font:400 clamp(52px,14vw,92px)/1.05 var(--display);color:var(--accen
   <main class="card">
     <a class="hub" href="../index.html">→ همهٔ بازی‌ها</a>
     <h1>گنجینه</h1>
-    <p class="lede">اشیای واقعی موزه‌های اسمیتسونین آمریکا، با اندازهٔ واقعی. کنار پای تی‌رکس بایست، زیر بال هواپیمای برادران رایت راه برو و ببین شاتل دیسکاوری چقدر بزرگ است. همهٔ این‌ها اسکن سه‌بعدی خود اشیاست، نه مدل‌سازی.</p>
+    <p class="lede">اشیای واقعی موزه‌های اسمیتسونین آمریکا، با اندازهٔ واقعی، در یک ساختمان مدرن از بتن و شیشه. از سرسرا وارد آتریوم تاریخ طبیعی یا آشیانهٔ هوا و فضا شو، از بالکن به تی‌رکس نگاه کن و زیر هواپیماهای آویزان راه برو. کنار هر شیء، تابلوی مشخصات و عکس واقعی خود آن شیء هست.</p>
     <div class="actions"><button class="btn primary" id="bVR" type="button" disabled>ورود به واقعیت مجازی</button><button class="btn" id="bDesk" type="button">گشت با موس</button></div>
     <div class="halls" id="halls"></div>
     <ul class="how">
-      <li>در VR: ماشه روی زمین جای پرش را نشان می‌دهد و با رها کردن می‌پری. ماشه روی هر شیء تو را کنار تابلوی توضیحش می‌برد. استیک چپ راه می‌برد و استیک راست می‌چرخاند. B یا Y منوی تالارها را باز می‌کند.</li>
-      <li>با موس: W، A، S و D راه می‌برند (Shift برای تند رفتن)، کشیدن موس نگاه می‌کند و کلیک روی هر شیء تو را کنارش می‌برد.</li>
+      <li>در VR: ماشه روی زمین یا بالکن جای پرش را نشان می‌دهد و با رها کردن می‌پری. ماشه روی هر شیء تو را کنار تابلویش می‌برد و ماشه روی عکس، آن را بزرگ می‌کند. ماشه روی درها و آسانسور شیشه‌ای جابه‌جایت می‌کند. استیک چپ راه می‌برد، استیک راست می‌چرخاند و B یا Y منو را باز می‌کند.</li>
+      <li>با موس: W، A، S و D راه می‌برند (Shift برای تند رفتن) و کشیدن موس نگاه می‌کند. با کلیک روی هر شیء کنارش می‌روی و با کلیک روی عکس، آن را بزرگ می‌بینی. کلیک روی درها و آسانسور هم جابه‌جایت می‌کند.</li>
     </ul>
     <p class="note" id="srcNote">در حال بررسی مدل‌ها…</p>
   </main>
@@ -61,6 +61,7 @@ h1{margin:0;font:400 clamp(52px,14vw,92px)/1.05 var(--display);color:var(--accen
 <div id="bar" hidden dir="rtl"><button class="btn" id="bMenu" type="button">منو</button><div class="halls" id="halls2"></div></div>
 <div id="status" hidden dir="rtl"></div>
 
+<script src="../_shared/realism.js?v=20261101"></script>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from './lib/GLTFLoader.js';
@@ -71,22 +72,28 @@ const V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const fa = n => Math.round(n).toLocaleString('fa-IR');
 const HUB = '../index.html', TOOL = '../tools/fetch-images.php', LIVE = 'https://3d-api.si.edu/content/document/3d_package:';
+const COMMONS = 'https://commons.wikimedia.org/w/api.php?';
 const UNIT = {mm:.001, cm:.01, m:1, km:1000, in:.0254, ft:.3048, yd:.9144, mi:1609.344};
-let DATA = {halls:[], objects:[]}, MAN = null, curHall = -1;
+const LOBBY = {key:'lobby', name:'سرسرای گنجینه', sub:'ورودی تالارها', w:28, d:20, h:8, arch:'lobby', accent:'#e8b04b'};
+let DATA = {halls:[], objects:[]}, ALL = [LOBBY], MAN = null, PHOTOS = null, curHall = -1;
 
 /* ================= data ================= */
 async function loadData(){
   try { DATA = await (await fetch('objects.json', {cache:'no-cache'})).json(); } catch(e){ $('#srcNote').textContent = 'فهرست اشیا (objects.json) پیدا نشد.'; return; }
+  ALL = [LOBBY, ...DATA.halls];
   try { const r = await fetch('models/manifest.json', {cache:'no-cache'}); if (r.ok){ const m = await r.json(); if (m.objects && Object.keys(m.objects).length) MAN = m; } } catch(e){}
-  const n = MAN ? Object.keys(MAN.objects).length : 0, all = DATA.objects.length;
+  try { const r = await fetch('photos/manifest.json', {cache:'no-cache'}); if (r.ok){ const m = await r.json(); if (m.objects && Object.keys(m.objects).length) PHOTOS = m; } } catch(e){}
+  const n = MAN ? Object.keys(MAN.objects).length : 0, all = DATA.objects.length, np = PHOTOS ? Object.keys(PHOTOS.objects).length : 0;
   $('#srcNote').innerHTML = (MAN
     ? `${fa(n)} از ${fa(all)} مدل از همین سایت بارگذاری می‌شوند` + (n < all ? ' و بقیه مستقیم از سرور اسمیتسونین. برای گرفتن جامانده‌ها <a href="' + TOOL + '?job=models">ابزار بارگذاری</a> را دوباره اجرا کن.' : '.')
     : 'مدل‌ها هنوز روی این سایت نیستند و مستقیم از سرور اسمیتسونین می‌آیند؛ ممکن است کند باشد یا از ایران باز نشود. <a href="' + TOOL + '?job=models">ابزار بارگذاری مدل‌ها</a> را یک بار اجرا کن تا روی سایت خودت بنشینند.')
+    + ' ' + (np ? `عکس ${fa(np)} شیء روی همین سایت است.` : 'عکس اشیا از ویکی‌مدیا کامنز می‌آید و اگر نرسد، از خود اسکن ساخته می‌شود. با <a href="' + TOOL + '?job=photos">ابزار عکس‌ها</a> می‌توانی آن‌ها را روی سایت خودت بگذاری.')
     + ' مدل‌ها اسکن‌های «دسترسی آزاد» (CC0) برنامهٔ دیجیتال‌سازی سه‌بعدی اسمیتسونین هستند.';
   renderChips();
 }
+function hallLabel(h){ const c = DATA.objects.filter(o => o.hall === h.key).length; return h.key === 'lobby' ? 'سرسرا' : h.name + '، ' + fa(c) + ' شیء'; }
 function renderChips(){
-  for (const id of ['#halls', '#halls2']){ const box = $(id); box.innerHTML = ''; DATA.halls.forEach((h, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (i === curHall ? ' on' : ''); b.textContent = h.name + '، ' + fa(DATA.objects.filter(o => o.hall === h.key).length) + ' شیء'; b.onclick = () => { if (id === '#halls') startDesk(); openHall(i); }; box.appendChild(b); }); }
+  for (const id of ['#halls', '#halls2']){ const box = $(id); box.innerHTML = ''; ALL.forEach((h, i) => { const b = document.createElement('button'); b.type = 'button'; b.className = 'chip' + (i === curHall ? ' on' : ''); b.textContent = hallLabel(h); b.onclick = () => { if (id === '#halls') startDesk(); openHall(i); }; box.appendChild(b); }); }
 }
 
 /* ================= renderer ================= */
@@ -95,95 +102,491 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWid
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
 $('#stage').appendChild(renderer.domElement);
-const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0c0d10);
+VRDecor.configure(THREE, renderer);
+const scene = new THREE.Scene(); scene.background = new THREE.Color(0xbfd3e2);
 const rig = new THREE.Group(); scene.add(rig);
-const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .05, 400); camera.position.set(0, 1.6, 0); rig.add(camera);
-scene.add(new THREE.HemisphereLight(0xf4f1ea, 0x3b3631, 1.05));
-const sun = new THREE.DirectionalLight(0xfff4e2, .9); sun.position.set(6, 20, 10); scene.add(sun);
-const fill = new THREE.DirectionalLight(0xcfe0ff, .35); fill.position.set(-8, 6, -12); scene.add(fill);
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, .05, 900); camera.position.set(0, 1.6, 0); rig.add(camera);
+const hemi = new THREE.HemisphereLight(0xf6f4ef, 0x8a8278, 1.0); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff1dc, .85); sun.position.set(-14, 22, 8); scene.add(sun);
+const fill = new THREE.DirectionalLight(0xd7e6ff, .35); fill.position.set(10, 8, -12); scene.add(fill);
 const hall = new THREE.Group(); scene.add(hall);
 
 const loader = new GLTFLoader();
 const draco = new DRACOLoader(); draco.setDecoderPath('./lib/draco/'); loader.setDRACOLoader(draco);
 
-function canvasTex(w, h, draw, rep){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8; if (rep){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); } return t; }
-const stone = (W, D) => canvasTex(512, 512, (x) => { for (let r=0;r<4;r++) for (let c=0;c<4;c++){ const v = 150 + ((r*5 + c*11) % 7)*7; x.fillStyle = `rgb(${v},${v-6},${v-16})`; x.fillRect(c*128, r*128, 128, 128); for (let k=0;k<40;k++){ x.fillStyle = `rgba(80,70,60,${Math.random()*.08})`; x.fillRect(c*128 + Math.random()*128, r*128 + Math.random()*128, 2 + Math.random()*10, 1 + Math.random()*3); } x.strokeStyle = 'rgba(60,52,44,.55)'; x.lineWidth = 3; x.strokeRect(c*128, r*128, 128, 128); } }, [W/4, D/4]);
+/* ================= small helpers ================= */
+let seed = 1;
+const rnd = () => { seed = (seed*1664525 + 1013904223) >>> 0; return seed/4294967296; };
+const CAN = {};
+function canv(key, w, h, draw){ if (!CAN[key]){ const c = document.createElement('canvas'); c.width = w; c.height = h; seed = 7 + key.length*131; draw(c.getContext('2d'), w, h); CAN[key] = c; } return CAN[key]; }
+function texOf(c, rep, srgb = true){ const t = new THREE.CanvasTexture(c); t.encoding = srgb ? THREE.sRGBEncoding : THREE.LinearEncoding; t.anisotropy = 8; if (rep){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(...rep); } return t; }
+function canvasTex(w, h, draw, rep){ const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); return texOf(c, rep); }
 function rr(x,X,Y,W,H,R){ x.beginPath(); x.moveTo(X+R,Y); x.arcTo(X+W,Y,X+W,Y+H,R); x.arcTo(X+W,Y+H,X,Y+H,R); x.arcTo(X,Y+H,X,Y,R); x.arcTo(X,Y,X+W,Y,R); x.closePath(); }
 function wrapRTL(x, text, maxW){ const out = []; let line = ''; for (const w of (text || '').split(/\s+/)){ const t = line ? line + ' ' + w : w; if (x.measureText(t).width > maxW && line){ out.push(line); line = w; } else line = t; } if (line) out.push(line); return out; }
+function speckle(x, w, h, n, cols, smin, smax){ for (let i=0;i<n;i++){ x.fillStyle = cols[(rnd()*cols.length)|0]; const s = smin + rnd()*(smax - smin); x.beginPath(); x.ellipse(rnd()*w, rnd()*h, s, s*(.5 + rnd()*.6), rnd()*3, 0, Math.PI*2); x.fill(); } }
+const add = (m, x=0, y=0, z=0, p=hall) => { m.position.set(x, y, z); p.add(m); return m; };
+const boxM = (w, h, d, mat, x, y, z, p=hall) => add(new THREE.Mesh(new THREE.BoxGeometry(w, h, d), mat), x, y, z, p);
+const lam = (c, extra={}) => new THREE.MeshLambertMaterial(Object.assign({color:c}, extra));
+const basic = (c, extra={}) => new THREE.MeshBasicMaterial(Object.assign({color:c}, extra));
 
-/* ================= hall ================= */
-const exhibits = [];   // {o, holder, inner, pick, plaque, plaqueTex, state, pct, err, box}
-let HW = 30, HD = 40, Z0 = 2.5, opening = 0;
+/* procedural surfaces (drawn once, re-wrapped per hall) */
+const terrazzoC = () => canv('terrazzo', 1024, 1024, (x, w, h) => {
+  x.fillStyle = '#cdc8bf'; x.fillRect(0, 0, w, h);
+  for (let i=0;i<9000;i++){ const v = 200 + rnd()*30; x.fillStyle = `rgba(${v},${v-3},${v-8},.35)`; x.fillRect(rnd()*w, rnd()*h, 2, 2); }
+  speckle(x, w, h, 2600, ['#a9a49b', '#8f8a82', '#ebe7e0', '#c4b9a6', '#7d7973', '#b6ab98'], 1.2, 4.2);
+  speckle(x, w, h, 260, ['#6f6a63', '#9b8f7b', '#f2efe9'], 4, 8);
+  x.strokeStyle = 'rgba(90,86,80,.35)'; x.lineWidth = 2; x.strokeRect(1, 1, w-2, h-2); x.beginPath(); x.moveTo(w/2, 0); x.lineTo(w/2, h); x.moveTo(0, h/2); x.lineTo(w, h/2); x.stroke();
+});
+const concreteFloorC = () => canv('cfloor', 1024, 1024, (x, w, h) => {
+  x.fillStyle = '#9a9c9f'; x.fillRect(0, 0, w, h);
+  for (let i=0;i<220;i++){ const g = x.createRadialGradient(rnd()*w, rnd()*h, 0, 0, 0, 1); x.globalAlpha = .05; x.fillStyle = rnd() < .5 ? '#7c7f83' : '#b4b6b9'; x.beginPath(); x.arc(rnd()*w, rnd()*h, 20 + rnd()*90, 0, 7); x.fill(); }
+  x.globalAlpha = 1; for (let i=0;i<14000;i++){ const v = 130 + rnd()*50; x.fillStyle = `rgba(${v},${v+1},${v+3},.4)`; x.fillRect(rnd()*w, rnd()*h, 1.5, 1.5); }
+  x.strokeStyle = 'rgba(40,42,46,.55)'; x.lineWidth = 3; x.strokeRect(1.5, 1.5, w-3, h-3);
+});
+const boardConcreteC = () => canv('board', 1024, 1024, (x, w, h) => {
+  x.fillStyle = '#b9b5ae'; x.fillRect(0, 0, w, h);
+  for (let r=0;r<8;r++){ const v = 175 + rnd()*22; x.fillStyle = `rgb(${v},${v-3},${v-8})`; x.fillRect(0, r*128, w, 128);
+    for (let i=0;i<70;i++){ x.fillStyle = `rgba(${rnd()<.5?120:220},${rnd()<.5?116:214},110,.08)`; x.fillRect(rnd()*w, r*128 + rnd()*128, 30 + rnd()*200, 1 + rnd()*2); }
+    x.fillStyle = 'rgba(70,66,60,.35)'; x.fillRect(0, r*128, w, 2); }
+  for (let i=0;i<9000;i++){ x.fillStyle = `rgba(80,76,70,${rnd()*.18})`; x.fillRect(rnd()*w, rnd()*h, 1.5, 1.5); }
+  for (let r=0;r<4;r++) for (let c=0;c<4;c++){ const cx = 128 + c*256, cy = 64 + r*256; x.fillStyle = 'rgba(60,56,52,.75)'; x.beginPath(); x.arc(cx, cy, 9, 0, 7); x.fill(); x.fillStyle = 'rgba(150,146,140,.9)'; x.beginPath(); x.arc(cx, cy, 5, 0, 7); x.fill(); }
+});
+const ribbedC = () => canv('ribbed', 512, 512, (x, w, h) => {
+  const g = x.createLinearGradient(0, 0, 64, 0); g.addColorStop(0, '#d9dde2'); g.addColorStop(.45, '#f1f3f5'); g.addColorStop(.55, '#c3c8ce'); g.addColorStop(1, '#d9dde2');
+  for (let i=0;i<8;i++){ x.save(); x.translate(i*64, 0); x.fillStyle = g; x.fillRect(0, 0, 64, h); x.restore(); }
+  for (let i=0;i<3000;i++){ x.fillStyle = `rgba(110,116,124,${rnd()*.08})`; x.fillRect(rnd()*w, rnd()*h, 1, 3); }
+});
+const panelC = () => canv('panel', 512, 512, (x, w, h) => {
+  x.fillStyle = '#e4e6e8'; x.fillRect(0, 0, w, h);
+  for (let i=0;i<4000;i++){ x.fillStyle = `rgba(120,124,130,${rnd()*.06})`; x.fillRect(rnd()*w, rnd()*h, 2, 2); }
+  x.strokeStyle = 'rgba(120,126,134,.55)'; x.lineWidth = 3; for (let i=0;i<=2;i++){ x.beginPath(); x.moveTo(0, i*256); x.lineTo(w, i*256); x.stroke(); x.beginPath(); x.moveTo(i*256, 0); x.lineTo(i*256, h); x.stroke(); }
+});
+const blobC = () => canv('blob', 256, 256, (x, w, h) => { const g = x.createRadialGradient(128, 128, 10, 128, 128, 126); g.addColorStop(0, 'rgba(0,0,0,.62)'); g.addColorStop(.55, 'rgba(0,0,0,.32)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, w, h); });
+const shaftC = () => canv('shaft', 64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#fff'); g.addColorStop(.6, '#555'); g.addColorStop(1, '#000'); x.fillStyle = g; x.fillRect(0, 0, w, h); });
+
+const glassMat = () => new THREE.MeshBasicMaterial({color:0xbcd6e0, transparent:true, opacity:.16, depthWrite:false, side:THREE.DoubleSide});
+const steelMat = () => lam(0x2d3136);
+const whiteMat = () => new THREE.MeshStandardMaterial({color:0xf3f1ec, roughness:.85});
+const ledMat = () => basic(0xfff1d6);
+
+/* ================= hall state ================= */
+const exhibits = [];   // {o, holder, inner, pick, plaque, board, photoBoard, state, pct, err, box, photo, photoState}
+let HW = 30, HD = 40, Z0 = 2.5, HT = 10, opening = 0;
+let levels = [], doors = [], lifts = [], pickables = [], ceilY = () => HT;
 const loadQueue = []; let loadingNow = null;
 
 function disposeTree(root){ root.traverse(o => { if (o.geometry) o.geometry.dispose(); const ms = o.material ? (Array.isArray(o.material) ? o.material : [o.material]) : []; for (const m of ms){ for (const k in m){ const v = m[k]; if (v && v.isTexture) v.dispose(); } m.dispose(); } }); }
+function inZone(x, z, y = 0){ return levels.some(L => Math.abs(L.y - y) < .2 && x > L.x0 + .4 && x < L.x1 - .4 && z > L.z0 + .4 && z < L.z1 - .4); }
+
+/* ================= architecture kit ================= */
+function floor(W, D, zc, kind){
+  const c = kind === 'concrete' ? concreteFloorC() : terrazzoC(), rep = kind === 'concrete' ? [W/6, D/6] : [W/4, D/4];
+  const m = new THREE.MeshStandardMaterial({map:texOf(c, rep), roughness:kind === 'concrete' ? .42 : .32, metalness:0});
+  const f = add(new THREE.Mesh(new THREE.PlaneGeometry(W, D), m), 0, 0, zc); f.rotation.x = -Math.PI/2;
+}
+function ceiling(W, D, zc, y, color = 0xf1efea){ const c = add(new THREE.Mesh(new THREE.PlaneGeometry(W, D), lam(color)), 0, y, zc); c.rotation.x = Math.PI/2; return c; }
+// wall plane between two points (along x or z), with optional door openings [{c, w, h}] measured along the wall
+function wall(x0, z0, x1, z1, y0, y1, mat, openings = [], repPerM = null){
+  const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(-(z1 - z0), x1 - x0);
+  const g = new THREE.Group(); g.position.set(x0, 0, z0); g.rotation.y = ang; hall.add(g);
+  const piece = (a, b, ya, yb) => { if (b - a < .01 || yb - ya < .01) return; const geo = new THREE.PlaneGeometry(b - a, yb - ya);
+    if (repPerM){ const uv = geo.attributes.uv; for (let i=0;i<uv.count;i++) uv.setXY(i, (a + uv.getX(i)*(b - a))/repPerM[0], (ya + uv.getY(i)*(yb - ya))/repPerM[1]); }
+    const m = new THREE.Mesh(geo, mat); m.position.set((a + b)/2, (ya + yb)/2, 0); g.add(m); };
+  let s = 0; const ops = openings.slice().sort((a, b) => a.c - b.c);
+  for (const o of ops){ piece(s, o.c - o.w/2, y0, y1); piece(o.c - o.w/2, o.c + o.w/2, o.h, y1); s = o.c + o.w/2; }
+  piece(s, len, y0, y1); return g;
+}
+// floor-level shadow gap and LED cove along a wall
+function trims(x0, z0, x1, z1, y1){
+  const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(-(z1 - z0), x1 - x0);
+  const g = new THREE.Group(); g.position.set(x0, 0, z0); g.rotation.y = ang; hall.add(g);
+  boxM(len, .06, .04, lam(0x1a1b1e), len/2, .03, .02, g);
+  boxM(len, .05, .05, ledMat(), len/2, y1 - .28, .03, g);
+}
+// vertical glass curtain wall from (x0,z0) to (x1,z1); heightAt(t) lets the top follow a vault
+function glassWall(x0, z0, x1, z1, h, step = 3.5, transoms = [], heightAt = null, y0 = 0){
+  const len = Math.hypot(x1 - x0, z1 - z0), ang = Math.atan2(-(z1 - z0), x1 - x0);
+  const g = new THREE.Group(); g.position.set(x0, 0, z0); g.rotation.y = ang; hall.add(g);
+  const st = steelMat(), n = Math.max(1, Math.round(len/step));
+  if (heightAt){ const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(len, 0); for (let i=0;i<=48;i++){ const t = len - i*len/48; sh.lineTo(t, heightAt(t)); } sh.lineTo(0, 0); g.add(new THREE.Mesh(new THREE.ShapeGeometry(sh), glassMat())); }
+  else { const p = new THREE.Mesh(new THREE.PlaneGeometry(len, h - y0), glassMat()); p.position.set(len/2, (h + y0)/2, 0); g.add(p); }
+  for (let i=0;i<=n;i++){ const t = i*len/n, hh = heightAt ? heightAt(clamp(t, .01, len - .01)) : h; boxM(.09, hh - y0, .18, st, t, (hh + y0)/2, 0, g); }
+  for (const y of transoms){ if (heightAt){ let a = null; for (let i=0;i<=96;i++){ const t = i*len/96, ok = heightAt(t) > y + .1; if (ok && a === null) a = t; if ((!ok || i === 96) && a !== null){ const b = ok ? t : t - len/96; if (b - a > .2) boxM(b - a, .08, .14, st, (a + b)/2, y, 0, g); a = null; } } }
+    else boxM(len, .08, .14, st, len/2, y, 0, g); }
+  boxM(len, .14, .3, st, len/2, y0 + .07, 0, g);
+  return g;
+}
+function outside(cx, cz){
+  const pano = VRDecor.texture('forest-panorama'); pano.wrapS = pano.wrapT = THREE.ClampToEdgeWrapping;
+  add(new THREE.Mesh(new THREE.SphereGeometry(420, 48, 24), new THREE.MeshBasicMaterial({map:pano, side:THREE.BackSide, fog:false})), cx, -30, cz);
+  const gr = add(new THREE.Mesh(new THREE.CircleGeometry(230, 48), new THREE.MeshLambertMaterial({map:VRDecor.texture('grass', [90, 90]), color:0xb9c7a4})), cx, -.06, cz); gr.rotation.x = -Math.PI/2;
+  const gv = add(new THREE.Mesh(new THREE.PlaneGeometry(HW + 16, HD + 16), lam(0xc8c3b8)), 0, -.03, Z0 - HD/2); gv.rotation.x = -Math.PI/2;
+}
+function banner(text, sub, w, color, x, y, z, ry){
+  const t = canvasTex(1024, 300, (c, cw, ch) => { c.clearRect(0, 0, cw, ch); c.direction = 'rtl'; c.textAlign = 'center'; c.fillStyle = color; c.font = '400 120px Lalezar, Vazirmatn, Tahoma'; c.fillText(text, cw/2, 140); if (sub){ c.fillStyle = '#3a3d42'; c.font = '600 50px Vazirmatn, Tahoma'; c.fillText(sub, cw/2, 235); } });
+  const m = add(new THREE.Mesh(new THREE.PlaneGeometry(w, w*300/1024), new THREE.MeshBasicMaterial({map:t, transparent:true})), x, y, z); m.rotation.y = ry; m.userData.banner = {text, sub, color}; return m;
+}
+function bench(x, z, ry = 0, len = 2.6){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; hall.add(g);
+  boxM(len, .1, .5, new THREE.MeshStandardMaterial({map:VRDecor.texture('maple', [2, .4]), roughness:.5}), 0, .44, 0, g);
+  for (const s of [-1, 1]) boxM(.08, .4, .44, steelMat(), s*(len/2 - .25), .2, 0, g);
+}
+function planter(x, z, s = 1){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(s); hall.add(g);
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.55, .45, .9, 32), whiteMat()), 0, .45, 0, g);
+  const leaf = VRDecor.material('foliage', [1, 1], {color:0x9fbf86});
+  for (let i=0;i<7;i++){ const r = .35 + rnd()*.35, a = rnd()*6.28; add(new THREE.Mesh(new THREE.IcosahedronGeometry(r, 1), leaf), Math.cos(a)*.25, 1.1 + rnd()*.9, Math.sin(a)*.25, g); }
+  add(new THREE.Mesh(new THREE.CylinderGeometry(.05, .07, 1.2, 8), VRDecor.material('bark')), 0, 1.2, 0, g);
+}
+// doorway: steel frame + glowing passage plane labelled with the destination; facing = +1 means the label faces +z
+function doorway(x, z, w, h, target, facing, color){
+  const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = facing > 0 ? 0 : Math.PI; hall.add(g);
+  const st = steelMat();
+  boxM(.16, h + .16, .5, st, -w/2 - .08, (h + .16)/2, 0, g); boxM(.16, h + .16, .5, st, w/2 + .08, (h + .16)/2, 0, g); boxM(w + .32, .16, .5, st, 0, h + .08, 0, g);
+  boxM(w, .04, .06, basic(new THREE.Color(color)), 0, h - .04, .26, g);
+  const H = ALL[target];
+  const tx = canvasTex(512, 600, (c, cw, ch) => {
+    const gr = c.createLinearGradient(0, 0, 0, ch); gr.addColorStop(0, '#2b3038'); gr.addColorStop(.65, '#4a515c'); gr.addColorStop(1, '#8a8f96'); c.fillStyle = gr; c.fillRect(0, 0, cw, ch);
+    const rg = c.createRadialGradient(cw/2, ch*.62, 10, cw/2, ch*.62, cw*.7); rg.addColorStop(0, 'rgba(255,240,210,.55)'); rg.addColorStop(1, 'rgba(255,240,210,0)'); c.fillStyle = rg; c.fillRect(0, 0, cw, ch);
+    c.strokeStyle = 'rgba(255,255,255,.18)'; c.lineWidth = 2; for (let i=0;i<8;i++){ c.beginPath(); c.moveTo(cw/2, ch*.55); c.lineTo(i < 4 ? 0 : cw, ch*(.1 + (i%4)*.3)); c.stroke(); }
+    c.direction = 'rtl'; c.textAlign = 'center'; c.fillStyle = color; c.font = '400 64px Lalezar, Vazirmatn, Tahoma'; wrapRTL(c, H.key === 'lobby' ? 'بازگشت به سرسرا' : H.name, cw - 60).slice(0, 2).forEach((l, i) => c.fillText(l, cw/2, 110 + i*74));
+    c.fillStyle = '#e9ecef'; c.font = '600 30px Vazirmatn, Tahoma'; c.fillText(H.sub || '', cw/2, 270); c.font = '600 34px Vazirmatn, Tahoma'; c.fillText('برای ورود بزن یا جلو برو', cw/2, ch - 40);
+  });
+  const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), basic(0xffffff, {map:tx})); p.position.set(0, h/2, -.25); g.add(p);
+  p.userData.door = target; pickables.push(p);
+  const wz = z + (facing > 0 ? .9 : -.9);
+  doors.push({x, z, w, target, wz});
+  return g;
+}
+// glass lift between two levels
+function glassLift(x, z, yTop, toTop, toBottom){
+  const g = new THREE.Group(); g.position.set(x, 0, z); hall.add(g);
+  const st = steelMat(), hh = yTop + 3.2, s = 1.9;
+  for (const [dx, dz] of [[-1,-1],[1,-1],[-1,1],[1,1]]) boxM(.1, hh, .1, st, dx*s/2, hh/2, dz*s/2, g);
+  for (const [dx, dz, ry] of [[0,-1,0],[0,1,0],[-1,0,Math.PI/2],[1,0,Math.PI/2]]){ const p = new THREE.Mesh(new THREE.PlaneGeometry(s, hh), glassMat()); p.position.set(dx*s/2, hh/2, dz*s/2); p.rotation.y = ry; g.add(p); }
+  boxM(s + .2, .3, s + .2, st, 0, hh, 0, g);
+  const cab = boxM(s - .2, .08, s - .2, lam(0x3a3e44), 0, .04, 0, g);
+  const pad = (y, label, dest) => {
+    const t = canvasTex(512, 512, (c, w, h) => { c.fillStyle = 'rgba(0,0,0,0)'; c.clearRect(0, 0, w, h); c.strokeStyle = '#7fb7e8'; c.lineWidth = 18; c.beginPath(); c.arc(256, 256, 230, 0, 7); c.stroke(); c.fillStyle = 'rgba(127,183,232,.25)'; c.fill(); c.direction = 'rtl'; c.textAlign = 'center'; c.fillStyle = '#eaf4ff'; c.font = '800 70px Vazirmatn, Tahoma'; c.fillText(label, 256, 280); });
+    const m = new THREE.Mesh(new THREE.CircleGeometry(.75, 40), basic(0xffffff, {map:t, transparent:true})); m.rotation.x = -Math.PI/2; m.position.set(0, y + .02, 0); g.add(m);
+    m.userData.lift = dest; pickables.push(m);
+    const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .6), basic(0xffffff, {map:t, transparent:true})); sign.position.set(0, y + 2.4, s/2 + .02); g.add(sign); sign.userData.lift = dest; pickables.push(sign);
+  };
+  pad(0, 'بالکن ↑', toTop); pad(yTop, '↓ پایین', toBottom);
+  g.userData.cab = cab; return g;
+}
+
+/* ================= halls ================= */
+function setLight(h, s, sx, sy, sz){ hemi.intensity = h; sun.intensity = s; sun.position.set(sx, sy, sz); }
+
+function buildLobby(H){
+  const W = HW, D = HD, zb = Z0 - D, zc = (Z0 + zb)/2, Ht = HT;
+  setLight(.8, .55, -20, 18, 10);
+  outside(0, zc);
+  floor(W, D, zc, 'terrazzo'); ceiling(W, D, zc, Ht, 0xf4f2ee);
+  for (let i=0;i<3;i++) for (const x of [-5, 5]){ const r = add(new THREE.Mesh(new THREE.RingGeometry(1.6, 1.85, 48), ledMat()), x, Ht - .02, zb + 4 + i*6); r.rotation.x = Math.PI/2; }
+  const plaster = new THREE.MeshStandardMaterial({map:VRDecor.texture('plaster', [1, 1]), color:0xf4f1ea, roughness:.95});
+  const board = new THREE.MeshStandardMaterial({map:texOf(boardConcreteC(), [1, 1]), roughness:.9});
+  // back wall: board-formed concrete with two doorways into the halls
+  wall(-W/2, zb, W/2, zb, 0, Ht, board, [{c:W/2 - 6.5, w:5, h:5.4}, {c:W/2 + 6.5, w:5, h:5.4}], [3, 3]);
+  trims(-W/2, zb + .01, W/2, zb + .01, Ht);
+  DATA.halls.forEach((h, i) => { const x = i ? 6.5 : -6.5; doorway(x, zb, 5, 5.4, i + 1, 1, h.accent || '#e8b04b'); banner(h.name, h.sub, 7.5, h.accent || '#e8b04b', x, 6.6, zb + .03, 0); });
+  // right wall: plaster with the museum name; left wall + entrance: glass
+  wall(W/2, zb, W/2, Z0, 0, Ht, plaster, [], [4, 4]); trims(W/2 - .01, zb, W/2 - .01, Z0, Ht);
+  const name = canvasTex(1024, 420, (c, w, h) => { c.clearRect(0, 0, w, h); c.direction = 'rtl'; c.textAlign = 'center'; c.fillStyle = '#c99a3c'; c.font = '400 300px Lalezar, Vazirmatn, Tahoma'; c.fillText('گنجینه', w/2, 300); c.fillStyle = '#5a5c60'; c.font = '600 48px Vazirmatn, Tahoma'; c.fillText('اشیای واقعی، اندازهٔ واقعی', w/2, 395); });
+  const nm = add(new THREE.Mesh(new THREE.PlaneGeometry(10, 10*420/1024), new THREE.MeshBasicMaterial({map:name, transparent:true})), W/2 - .04, 4.6, zc + 1); nm.rotation.y = -Math.PI/2; nm.userData.banner = {text:'گنجینه'};
+  glassWall(-W/2, Z0, -W/2, zb, Ht, 3.4, [3.2]);
+  glassWall(-W/2, Z0, W/2, Z0, Ht, 3.5, [3.2]);
+  // reception desk (curved), planters, benches
+  const desk = new THREE.Group(); desk.position.set(W/2 - 5, 0, zc + 1); hall.add(desk);
+  const dm = new THREE.Mesh(new THREE.CylinderGeometry(2.2, 2.2, 1.1, 40, 1, true, -Math.PI*.15, Math.PI*.8), new THREE.MeshStandardMaterial({color:0xf5f3ee, roughness:.6, side:THREE.DoubleSide})); dm.position.y = .55; desk.add(dm);
+  const top = new THREE.Mesh(new THREE.RingGeometry(1.9, 2.3, 40, 1, -Math.PI*.15 + Math.PI/2, Math.PI*.8), new THREE.MeshStandardMaterial({map:VRDecor.texture('walnut'), roughness:.5, side:THREE.DoubleSide})); top.rotation.x = -Math.PI/2; top.rotation.z = Math.PI; top.position.y = 1.12; desk.add(top);
+  const led = new THREE.Mesh(new THREE.CylinderGeometry(2.21, 2.21, .04, 40, 1, true, -Math.PI*.15, Math.PI*.8), basic(0xffd59a, {side:THREE.DoubleSide})); led.position.y = .06; desk.add(led);
+  for (const [x, z] of [[-W/2 + 2.5, zb + 2.5], [W/2 - 2.5, zb + 2.5], [-W/2 + 2.5, Z0 - 3], [0, zb + 2.2]]) planter(x, z, 1.1);
+  bench(-W/2 + 4, zc, Math.PI/2); bench(-W/2 + 4, zc - 5, Math.PI/2);
+  // help panel
+  const help = canvasTex(1024, 640, (c, w, h) => { c.fillStyle = '#f5f3ee'; c.fillRect(0, 0, w, h); c.fillStyle = '#c99a3c'; c.fillRect(0, 0, w, 14); c.direction = 'rtl'; c.textAlign = 'right'; c.fillStyle = '#17140f'; c.font = '800 56px Vazirmatn, Tahoma'; c.fillText('راهنمای گنجینه', w - 50, 100);
+    c.font = '400 34px Vazirmatn, Tahoma'; c.fillStyle = '#2a2b2e'; ['از درهای پشت سرسرا وارد تالارها شو.', 'روی هر شیء بزن تا کنار تابلوی آن بروی.', 'کنار هر تابلو عکس واقعی همان شیء هست؛ رویش بزن تا بزرگ شود.', 'در تالار تاریخ طبیعی با آسانسور شیشه‌ای به بالکن برو.', 'در VR دکمهٔ B یا Y منوی تالارها را باز می‌کند.'].forEach((l, i) => c.fillText('• ' + l, w - 50, 190 + i*82)); });
+  const hp = add(new THREE.Mesh(new THREE.PlaneGeometry(3.2, 2), basic(0xffffff, {map:help})), 0, 2.4, zb + .05);
+  boxM(3.3, 2.1, .04, steelMat(), 0, 2.4, zb + .02);
+  levels = [{y:0, x0:-W/2, x1:W/2, z0:zb, z1:Z0}];
+}
+
+function buildAtrium(H){
+  const W = HW, D = HD, zb = Z0 - D, zc = (Z0 + zb)/2, Ht = HT, BY = 5, BX = W/2 - 5, BZ = zb + 5;
+  setLight(.78, .7, -26, 20, -6);
+  outside(-10, zc);
+  floor(W, D, zc, 'terrazzo');
+  const plaster = new THREE.MeshStandardMaterial({map:VRDecor.texture('plaster', [1, 1]), color:new THREE.Color(H.wall || '#ece7de'), roughness:.95});
+  const board = new THREE.MeshStandardMaterial({map:texOf(boardConcreteC(), [1, 1]), roughness:.9});
+  // walls: glass to the west, plaster to the east, board concrete at the back, plaster entrance with a doorway to the lobby
+  glassWall(-W/2, Z0, -W/2, zb, Ht, 4, [5, 10]);
+  wall(W/2, zb, W/2, Z0, 0, Ht, plaster, [], [4, 4]); trims(W/2 - .01, zb, W/2 - .01, Z0, Ht);
+  wall(-W/2, zb, W/2, zb, 0, Ht, board, [], [3, 3]); trims(-W/2, zb + .01, W/2, zb + .01, Ht);
+  wall(W/2, Z0, -W/2, Z0, 0, Ht, plaster, [{c:W/2, w:5, h:5.4}], [4, 4]); trims(W/2, Z0 - .01, -W/2, Z0 - .01, Ht);
+  doorway(0, Z0, 5, 5.4, 0, -1, '#e8b04b');
+  banner(H.name, H.sub, 20, H.accent || '#d9a441', 0, 10.4, zb + .05, 0);
+  banner(H.name, '', 8, H.accent || '#d9a441', 0, 7.4, Z0 - .05, Math.PI);
+  // slatted walnut ceiling with an oculus over the T. rex
+  const OX = 0, OZ = -24, OR = 5.5, sy = Ht - .35;
+  { const cs = new THREE.Shape(); cs.moveTo(-W/2, zb); cs.lineTo(W/2, zb); cs.lineTo(W/2, Z0); cs.lineTo(-W/2, Z0); cs.lineTo(-W/2, zb); const hp = new THREE.Path(); hp.absarc(OX, OZ, OR, 0, Math.PI*2, true); cs.holes.push(hp);
+    const cg = new THREE.ShapeGeometry(cs, 48); cg.rotateX(Math.PI/2); const cm = add(new THREE.Mesh(cg, lam(0x2a2622, {side:THREE.DoubleSide})), 0, Ht, 0); }
+  const segs = [];
+  for (let z = Z0 - .3; z > zb + .2; z -= .45){ const dz = z - OZ; if (Math.abs(dz) < OR){ const hx = Math.sqrt(OR*OR - dz*dz); segs.push([-W/2, OX - hx, z], [OX + hx, W/2, z]); } else segs.push([-W/2, W/2, z]); }
+  const slats = new THREE.InstancedMesh(new THREE.BoxGeometry(1, .22, .07), new THREE.MeshLambertMaterial({map:VRDecor.texture('walnut', [8, .3]), color:0xd8c3a4}), segs.length);
+  const d = new THREE.Object3D(); segs.forEach(([a, b, z], i) => { d.position.set((a + b)/2, sy, z); d.scale.set(b - a, 1, 1); d.updateMatrix(); slats.setMatrixAt(i, d.matrix); }); hall.add(slats);
+  const well = add(new THREE.Mesh(new THREE.CylinderGeometry(OR, OR, 3.6, 64, 1, true), lam(0xf7f5f0, {side:THREE.DoubleSide})), OX, Ht + 1.4, OZ);
+  const sky = add(new THREE.Mesh(new THREE.CircleGeometry(OR, 64), basic(0xeaf4ff)), OX, Ht + 3.2, OZ); sky.rotation.x = Math.PI/2;
+  add(new THREE.Mesh(new THREE.TorusGeometry(OR, .06, 8, 96), ledMat()), OX, sy - .12, OZ).rotation.x = Math.PI/2;
+  const beam = add(new THREE.Mesh(new THREE.CylinderGeometry(OR*.96, OR*1.25, Ht - .3, 48, 1, true), new THREE.MeshBasicMaterial({map:texOf(shaftC()), color:0x6f6655, transparent:true, opacity:.22, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide})), OX, (Ht - .3)/2, OZ);
+  beam.userData.deco = true;
+  // L-shaped mezzanine along the east and back walls
+  const slab = new THREE.MeshStandardMaterial({color:0xf2f0eb, roughness:.8});
+  boxM(W/2 - BX, .45, D, slab, (BX + W/2)/2, BY - .225, zc);
+  boxM(BX + W/2, .45, BZ - zb, slab, (BX - W/2)/2, BY - .225, (zb + BZ)/2);
+  const deck = new THREE.MeshStandardMaterial({map:VRDecor.texture('maple', [3, 12]), color:0xc9bba6, roughness:.5});
+  add(new THREE.Mesh(new THREE.PlaneGeometry(W/2 - BX, D), deck), (BX + W/2)/2, BY + .005, zc).rotation.x = -Math.PI/2;
+  add(new THREE.Mesh(new THREE.PlaneGeometry(BX + W/2, BZ - zb), deck), (BX - W/2)/2, BY + .005, (zb + BZ)/2).rotation.x = -Math.PI/2;
+  const led = ledMat(), st = steelMat();
+  boxM(.04, .05, Z0 - BZ, led, BX - .02, BY - .47, (Z0 + BZ)/2); boxM(BX + W/2, .05, .04, led, (BX - W/2)/2, BY - .47, BZ - .02);
+  const rail = (x0, z0, x1, z1) => { const len = Math.hypot(x1 - x0, z1 - z0), g = new THREE.Group(); g.position.set((x0 + x1)/2, BY, (z0 + z1)/2); g.rotation.y = Math.atan2(-(z1 - z0), x1 - x0); hall.add(g);
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(len, 1.05), glassMat()); p.position.y = .55; g.add(p); boxM(len, .06, .08, st, 0, 1.1, 0, g); boxM(len, .05, .1, st, 0, .03, 0, g); };
+  rail(BX, Z0 - 3.6, BX, BZ); rail(-W/2, BZ, BX, BZ); rail(BX, Z0, BX, Z0 - 1.6);
+  for (let z = Z0 - 6; z > BZ; z -= 8) add(new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, BY - .45, 20), slab), BX + .3, (BY - .45)/2, z);
+  for (let x = BX - 8; x > -W/2; x -= 8) add(new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, BY - .45, 20), slab), x, (BY - .45)/2, BZ - .3);
+  // glass lift beside the mezzanine edge, near the entrance
+  glassLift(BX - 1.05, Z0 - 2.6, BY, {x:BX + 2.2, y:BY, z:Z0 - 2.6, yaw:Math.PI/2}, {x:BX - 3.2, y:0, z:Z0 - 1.2, yaw:Math.PI*.75});
+  // benches facing the exhibits along the glass
+  for (const z of [-10, -26, -42]) bench(-W/2 + 3.2, z, Math.PI/2);
+  for (const z of [-14, -34]) bench((BX + W/2)/2 + .6, z, Math.PI/2);
+  for (const [x, z] of [[-W/2 + 2, Z0 - 2.5], [-W/2 + 2, zb + 7.5], [W/2 - 2.5, Z0 - 7]]) planter(x, z, 1.2);
+  levels = [{y:0, x0:-W/2, x1:W/2, z0:zb, z1:Z0}, {y:BY, x0:BX, x1:W/2, z0:zb, z1:Z0}, {y:BY, x0:-W/2, x1:W/2, z0:zb, z1:BZ}];
+}
+
+function buildHangar(H){
+  const W = HW, D = HD, zb = Z0 - D, zc = (Z0 + zb)/2, Ht = HT, WH = H.wallH || 12;
+  const half = W/2, sag = Ht - WH, R = (half*half + sag*sag)/(2*sag), cy = Ht - R;
+  ceilY = x => cy + Math.sqrt(Math.max(0, R*R - x*x));
+  setLight(.85, .6, -30, 30, -10);
+  outside(0, zc);
+  floor(W, D, zc, 'concrete');
+  // side walls: dark panel dado, ribbed metal above; west wall gets a clerestory glass band
+  const dado = new THREE.MeshStandardMaterial({map:VRDecor.texture('steel', [12, 1]), color:0x50555c, roughness:.6, metalness:.3});
+  const rib = new THREE.MeshLambertMaterial({map:texOf(ribbedC(), [D/4, 2])});
+  const ribE = new THREE.MeshLambertMaterial({map:texOf(ribbedC(), [D/4, 2.7])});
+  wall(-half, Z0, -half, zb, 0, 4, dado); wall(-half, Z0, -half, zb, 4, 7, rib); glassWall(-half, Z0, -half, zb, WH, 6, [], null, 7);
+  wall(half, zb, half, Z0, 0, 4, dado); wall(half, zb, half, Z0, 4, WH, ribE); trims(half - .01, zb, half - .01, Z0, 4.3);
+  // vault skin
+  const t0 = Math.acos(half/R), t1 = Math.PI - t0, N = 64, pos = [], uv = [], nor = [], idx = [];
+  for (let i=0;i<=N;i++){ const t = t0 + (t1 - t0)*i/N, x = R*Math.cos(t), y = cy + R*Math.sin(t), s = R*(t - t0); for (const [j, z] of [[0, Z0], [1, zb]]){ pos.push(x, y, z); nor.push(-Math.cos(t), -Math.sin(t), 0); uv.push(s/8, j*D/8); } }
+  for (let i=0;i<N;i++){ const a = i*2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  const vg = new THREE.BufferGeometry(); vg.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); vg.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3)); vg.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); vg.setIndex(idx);
+  const pt = texOf(panelC(), [1, 1]); pt.wrapS = pt.wrapT = THREE.RepeatWrapping;
+  hall.add(new THREE.Mesh(vg, new THREE.MeshLambertMaterial({map:pt, side:THREE.DoubleSide})));
+  // three long skylights on the crown
+  for (const dt of [-.2, 0, .2]){ const t = Math.PI/2 + dt, g = new THREE.Group(); g.position.set(R*Math.cos(t)*.999, cy + (R - .08)*Math.sin(t), zc); g.rotation.z = t - Math.PI/2; hall.add(g); const p = new THREE.Mesh(new THREE.PlaneGeometry(3.6, D - 6), basic(0xf2f8ff)); p.rotation.x = Math.PI/2; g.add(p); }
+  // steel arch trusses (instanced cylinders) + purlins + wall columns
+  const segs = [];
+  const arcPt = (t, r) => V(r*Math.cos(t), cy + r*Math.sin(t), 0);
+  const M = 26, rO = R - .25, rI = R - 1.5;
+  for (let i=0;i<M;i++){ const ta = t0 + (t1 - t0)*i/M, tb = t0 + (t1 - t0)*(i + 1)/M; segs.push([arcPt(ta, rO), arcPt(tb, rO), .12], [arcPt(ta, rI), arcPt(tb, rI), .12], [arcPt(ta, rO), arcPt(tb, rI), .05], [arcPt(tb, rI), arcPt(tb, rO), .05]); }
+  const trussZ = []; for (let z = Z0 - 4; z > zb + 2; z -= 8) trussZ.push(z);
+  const cyl = new THREE.InstancedMesh(new THREE.CylinderGeometry(1, 1, 1, 8), lam(0xe9ecef), segs.length*trussZ.length + 7);
+  const dd = new THREE.Object3D(), up = V(0, 1, 0); let k = 0;
+  const putSeg = (a, b, r) => { const dir = b.clone().sub(a), len = dir.length(); dd.position.copy(a).add(b).multiplyScalar(.5); dd.quaternion.setFromUnitVectors(up, dir.normalize()); dd.scale.set(r, len, r); dd.updateMatrix(); cyl.setMatrixAt(k++, dd.matrix); };
+  for (const z of trussZ) for (const [a, b, r] of segs) putSeg(V(a.x, a.y, z), V(b.x, b.y, z), r);
+  for (let i=0;i<7;i++){ const t = t0 + (t1 - t0)*(i + .5)/7, p = arcPt(t, rI + .1); putSeg(V(p.x, p.y, Z0 - .2), V(p.x, p.y, zb + .2), .09); }
+  cyl.count = k; hall.add(cyl);
+  const cols = new THREE.InstancedMesh(new THREE.BoxGeometry(.5, WH, .7), lam(0xe9ecef), trussZ.length*2);
+  trussZ.forEach((z, i) => { for (const s of [-1, 1]){ dd.position.set(s*(half - .3), WH/2, z); dd.quaternion.identity(); dd.scale.set(1, 1, 1); dd.updateMatrix(); cols.setMatrixAt(i*2 + (s > 0), dd.matrix); } }); hall.add(cols);
+  // hanging linear lights under the trusses
+  for (const z of trussZ) for (const x of [-16, 0, 16]){ const y = ceilY(x) - 2.2; boxM(.12, .08, 6, ledMat(), x, y, z - 4); }
+  // end walls: glass at the far end (vault-shaped), concrete with a doorway at the entrance
+  glassWall(half, zb, -half, zb, 0, 4, [4, 8, 12, 16, 20], t => ceilY(half - t) - .05);
+  const sh = new THREE.Shape(); sh.moveTo(-half, 0); sh.lineTo(-2.5, 0); sh.lineTo(-2.5, 5.4); sh.lineTo(2.5, 5.4); sh.lineTo(2.5, 0); sh.lineTo(half, 0); sh.lineTo(half, WH); sh.absarc(0, cy, R, t0, t1, false); sh.lineTo(-half, 0);
+  const eg = new THREE.ShapeGeometry(sh, 48), uvA = eg.attributes.uv, pA = eg.attributes.position; for (let i=0;i<uvA.count;i++) uvA.setXY(i, pA.getX(i)/6, pA.getY(i)/6);
+  const ew = add(new THREE.Mesh(eg, new THREE.MeshStandardMaterial({map:texOf(boardConcreteC(), [1, 1]), roughness:.9, side:THREE.DoubleSide})), 0, 0, Z0); ew.rotation.y = Math.PI;
+  trims(half, Z0 - .01, -half, Z0 - .01, 4.3);
+  doorway(0, Z0, 5, 5.4, 0, -1, '#e8b04b');
+  banner(H.name, H.sub, 24, H.accent || '#7fb7e8', 0, 15, Z0 - .08, Math.PI);
+  for (const z of [-24, -50]) for (const x of [-26, 26]) bench(x, z, Math.PI/2, 3);
+  for (const [x, z] of [[-half + 2.5, Z0 - 3], [half - 2.5, Z0 - 3]]) planter(x, z, 1.2);
+  levels = [{y:0, x0:-half, x1:half, z0:zb, z1:Z0}];
+}
 
 function buildHall(H){
-  disposeTree(hall); hall.clear(); exhibits.length = 0; loadQueue.length = 0;
-  HW = H.w; HD = H.d; const W = HW, D = HD, zb = Z0 - D, zc = (Z0 + zb)/2, Ht = H.h;
-  const fl = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({map:stone(W, D)})); fl.rotation.x = -Math.PI/2; fl.position.set(0, 0, zc); hall.add(fl);
-  const ce = new THREE.Mesh(new THREE.PlaneGeometry(W, D), new THREE.MeshLambertMaterial({color:0x1c1e22})); ce.rotation.x = Math.PI/2; ce.position.set(0, Ht, zc); hall.add(ce);
-  const wallMat = new THREE.MeshLambertMaterial({color:new THREE.Color(H.wall || '#333')});
-  const wall = (w, x, z, ry) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, Ht), wallMat); m.position.set(x, Ht/2, z); m.rotation.y = ry; hall.add(m); };
-  wall(D, -W/2, zc, Math.PI/2); wall(D, W/2, zc, -Math.PI/2); wall(W, 0, zb, 0); wall(W, 0, Z0, Math.PI);
-  const sk = new THREE.MeshLambertMaterial({color:0x15161a});
-  [[D, -W/2 + .01, zc, Math.PI/2], [D, W/2 - .01, zc, -Math.PI/2], [W, 0, zb + .01, 0], [W, 0, Z0 - .01, Math.PI]].forEach(([w,x,z,r]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, .3), sk); m.position.set(x, .15, z); m.rotation.y = r; hall.add(m); });
-  const skyMat = new THREE.MeshBasicMaterial({color:0xf6f0e2});
-  for (let z = Z0 - 5; z > zb + 3; z -= 9){ const l = new THREE.Mesh(new THREE.PlaneGeometry(W*.7, 1.2), skyMat); l.rotation.x = Math.PI/2; l.position.set(0, Ht - .02, z); hall.add(l); }
-  // banner on the back wall + entrance sign
-  const ban = canvasTex(1024, 300, (x, w, h) => { x.fillStyle = 'rgba(0,0,0,0)'; x.clearRect(0,0,w,h); x.direction = 'rtl'; x.textAlign = 'center'; x.fillStyle = H.accent || '#e8b04b'; x.font = '400 120px Lalezar, Vazirmatn, Tahoma'; x.fillText(H.name, w/2, 140); x.fillStyle = '#e9ecef'; x.font = '600 52px Vazirmatn, Tahoma'; x.fillText(H.sub || '', w/2, 235); });
-  const bw = Math.min(W*.6, 22), bm = new THREE.Mesh(new THREE.PlaneGeometry(bw, bw*300/1024), new THREE.MeshBasicMaterial({map:ban, transparent:true})); bm.position.set(0, Ht*.72, zb + .05); hall.add(bm);
-  const b2 = new THREE.Mesh(new THREE.PlaneGeometry(6, 6*300/1024), new THREE.MeshBasicMaterial({map:ban, transparent:true})); b2.position.set(0, 4.2, Z0 - .05); b2.rotation.y = Math.PI; hall.add(b2);
+  disposeTree(hall); hall.clear(); exhibits.length = 0; loadQueue.length = 0; doors = []; lifts = []; pickables = []; ceilY = () => HT; closeViewer();
+  HW = H.w; HD = H.d; HT = H.h;
+  if (H.arch === 'lobby') buildLobby(H); else if (H.arch === 'hangar') buildHangar(H); else buildAtrium(H);
+  const W = HW;
   // exhibits
   const objs = DATA.objects.filter(o => o.hall === H.key);
   for (const o of objs){
-    const holder = new THREE.Group(); holder.position.set(o.pos[0], o.lift || 0, o.pos[1]); hall.add(holder);
+    const base = o.hang ? o.lift : (o.lift || (o.size <= 20 ? .3 : 0));
+    const holder = new THREE.Group(); holder.position.set(o.pos[0], base, o.pos[1]); hall.add(holder);
     const s = o.size;
     const ph = new THREE.Mesh(new THREE.BoxGeometry(s*.8, Math.min(s*.5, 4), s*.5), new THREE.MeshBasicMaterial({color:0x7fb7e8, wireframe:true, transparent:true, opacity:.25}));
     ph.position.y = Math.min(s*.5, 4)/2; ph.rotation.y = THREE.MathUtils.degToRad(o.rot || 0); holder.add(ph);
     const pick = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({visible:false})); pick.scale.set(s*.8, Math.min(s*.5, 4), s*.5); pick.position.y = pick.scale.y/2; pick.rotation.y = ph.rotation.y; holder.add(pick);
-    const ex = {o, holder, ph, pick, inner:null, state:'wait', pct:0, err:'', plaque:null, plaqueTex:null, box:null};
-    pick.userData.ex = ex;
-    makePlaque(ex); placePlaque(ex, o.pos[0], o.pos[1] + s*.35 + 1.2);
+    const ex = {o, base, holder, ph, pick, inner:null, state:'wait', pct:0, err:'', plaque:null, plaqueTex:null, box:null, photo:null, photoState:'search', accent:H.accent || '#c99a3c'};
+    pick.userData.ex = ex; pickables.push(pick);
+    makeStand(ex); placeStand(ex, o.pos[0], o.pos[1] + s*.35 + 1.4);
     exhibits.push(ex);
+    findPhoto(ex, opening);
   }
   // smaller objects first so something appears quickly
   loadQueue.push(...exhibits.slice().sort((a, b) => a.o.size - b.o.size));
-  rig.position.set(0, 0, 0); rig.rotation.set(0, 0, 0); deskLook.yaw = 0; deskLook.pitch = 0;
   pumpLoad();
 }
 
-/* ================= plaques ================= */
-function makePlaque(ex){
-  const g = new THREE.Group();
-  const post = new THREE.Mesh(new THREE.BoxGeometry(.12, .95, .12), new THREE.MeshLambertMaterial({color:0x2a2b30})); post.position.y = .475; g.add(post);
-  const c = document.createElement('canvas'); c.width = 1024; c.height = 680; const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 8;
-  const board = new THREE.Mesh(new THREE.PlaneGeometry(1.15, 1.15*680/1024), new THREE.MeshBasicMaterial({map:t})); board.position.set(0, 1.2, .06); board.rotation.x = -.5; g.add(board);
-  const back = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.2*680/1024 + .04, .03), new THREE.MeshLambertMaterial({color:0x1d1e22})); back.position.set(0, 1.2, .04); back.rotation.x = -.5; back.translateZ(-.02); g.add(back);
-  hall.add(g); ex.plaque = g; ex.plaqueC = c; ex.plaqueTex = t; ex.board = board; board.userData.ex = ex;
-  drawPlaque(ex);
+/* ================= info stand: text + photo ================= */
+const STAND_Y = 1.32, STAND_TILT = -.16, TXT_W = 1.12, PH_W = 1.0, PANEL_H = .75;
+function makeStand(ex){
+  const g = new THREE.Group(), st = steelMat();
+  // slim steel frame on two blade legs
+  const frame = new THREE.Group(); frame.position.y = STAND_Y; frame.rotation.x = STAND_TILT; g.add(frame);
+  boxM(TXT_W + PH_W + .2, PANEL_H + .1, .05, st, 0, 0, -.03, frame);
+  boxM(TXT_W + PH_W + .2, .02, .02, basic(new THREE.Color(ex.accent)), 0, PANEL_H/2 + .05, .0, frame);
+  for (const s of [-1, 1]) boxM(.04, STAND_Y - PANEL_H/2 + .02, .22, st, s*(TXT_W + PH_W)/2*.8, (STAND_Y - PANEL_H/2)/2, -.02, g);
+  boxM(TXT_W + PH_W + .4, .04, .5, st, 0, .02, -.02, g);
+  const tc = document.createElement('canvas'); tc.width = 1024; tc.height = 686; const tt = texOf(tc);
+  const board = new THREE.Mesh(new THREE.PlaneGeometry(TXT_W, PANEL_H), new THREE.MeshBasicMaterial({map:tt})); board.position.set((PH_W + .06)/2, 0, .002); frame.add(board);
+  const pc = document.createElement('canvas'); pc.width = 1024; pc.height = 768; const pt = texOf(pc);
+  const photo = new THREE.Mesh(new THREE.PlaneGeometry(PH_W, PANEL_H), new THREE.MeshBasicMaterial({map:pt})); photo.position.set(-(TXT_W + .06)/2, 0, .002); frame.add(photo);
+  // thin brass picture frame around the photo
+  const brass = VRDecor.material('bronze');
+  for (const s of [-1, 1]){ boxM(PH_W + .04, .02, .02, brass, photo.position.x, s*(PANEL_H/2 + .01), .01, frame); boxM(.02, PANEL_H + .04, .02, brass, photo.position.x + s*(PH_W/2 + .01), 0, .01, frame); }
+  hall.add(g); ex.plaque = g; ex.plaqueC = tc; ex.plaqueTex = tt; ex.board = board; ex.photoC = pc; ex.photoTex = pt; ex.photoBoard = photo;
+  board.userData.ex = ex; photo.userData.ex = ex; photo.userData.photo = true; pickables.push(board, photo);
+  drawPlaque(ex); drawPhoto(ex);
 }
 function drawPlaque(ex){
-  const o = ex.o, x = ex.plaqueC.getContext('2d'), W = 1024, H = 680;
-  x.fillStyle = '#f3efe6'; x.fillRect(0, 0, W, H); x.fillStyle = '#c99a3c'; x.fillRect(0, 0, W, 12);
-  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#17140f'; x.font = '800 54px Vazirmatn, Tahoma'; x.fillText(o.fa, W - 44, 92);
-  x.direction = 'ltr'; x.textAlign = 'left'; x.fillStyle = '#6b5a3e'; x.font = '400 28px Vazirmatn, Georgia, serif'; x.fillText(o.en.slice(0, 64), 44, 142);
-  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#2a241b'; x.font = '400 32px Vazirmatn, Tahoma';
-  const lines = wrapRTL(x, o.info, W - 88).slice(0, 8); lines.forEach((l, i) => x.fillText(l, W - 44, 206 + i*50));
-  x.fillStyle = '#6b5a3e'; x.font = '600 26px Vazirmatn, Tahoma'; x.fillText('محل نگهداری: ' + o.where, W - 44, H - 74);
-  let st = '', col = '#6b5a3e';
+  const o = ex.o, x = ex.plaqueC.getContext('2d'), W = 1024, H = 686;
+  x.fillStyle = '#f6f4ef'; x.fillRect(0, 0, W, H); x.fillStyle = ex.accent; x.fillRect(W - 14, 0, 14, H);
+  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#141518'; x.font = '800 54px Vazirmatn, Tahoma'; x.fillText(o.fa, W - 50, 88);
+  x.direction = 'ltr'; x.textAlign = 'left'; x.fillStyle = '#6a6d73'; x.font = '400 27px Vazirmatn, Georgia, serif'; x.fillText(o.en.slice(0, 66), 40, 136);
+  x.fillStyle = '#d5d2cb'; x.fillRect(40, 160, W - 90, 2);
+  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#26272b'; x.font = '400 31px Vazirmatn, Tahoma';
+  const lines = wrapRTL(x, o.info, W - 100).slice(0, 8); lines.forEach((l, i) => x.fillText(l, W - 50, 214 + i*49));
+  x.fillStyle = '#4b4e54'; x.font = '600 25px Vazirmatn, Tahoma'; x.fillText('محل نگهداری: ' + o.where, W - 50, H - 72);
+  let st = '', col = '#6a6d73';
   if (ex.state === 'wait') st = 'در صف بارگذاری…';
   else if (ex.state === 'load') st = 'در حال بارگذاری مدل سه‌بعدی ' + (ex.pct ? fa(ex.pct) + '٪' : '…');
   else if (ex.state === 'err'){ st = 'مدل بارگذاری نشد: ' + ex.err; col = '#b3261e'; }
   else st = 'اسکن سه‌بعدی اسمیتسونین (CC0)، بارگذاری ' + (ex.local ? 'از همین سایت' : 'از سرور اسمیتسونین');
-  x.fillStyle = col; x.font = '400 24px Vazirmatn, Tahoma'; x.fillText(st, W - 44, H - 32);
+  x.fillStyle = col; x.font = '400 23px Vazirmatn, Tahoma'; x.fillText(st, W - 50, H - 32);
   ex.plaqueTex.needsUpdate = true;
 }
-function placePlaque(ex, px, pz){
-  const W = HW/2 - 1, z1 = Z0 - 1, z2 = Z0 - HD + 1;
+function fitImage(x, img, X, Y, W, H, cover){
+  const iw = img.naturalWidth || img.width, ih = img.naturalHeight || img.height; if (!iw || !ih) return;
+  const s = cover ? Math.max(W/iw, H/ih) : Math.min(W/iw, H/ih), dw = iw*s, dh = ih*s;
+  x.save(); x.beginPath(); x.rect(X, Y, W, H); x.clip(); x.drawImage(img, X + (W - dw)/2, Y + (H - dh)/2, dw, dh); x.restore();
+}
+function photoCaption(ex){
+  const p = ex.photo; if (!p) return ['', ''];
+  if (p.kind === 'scan') return ['تصویر ساخته‌شده از خود اسکن سه‌بعدی', 'Smithsonian 3D scan · CC0'];
+  return ['عکس واقعی این شیء', ('Photo: ' + (p.artist || 'unknown')).slice(0, 48) + ' · ' + (p.license || '') + ' · Wikimedia Commons'];
+}
+function drawPhoto(ex){
+  const x = ex.photoC.getContext('2d'), W = 1024, H = 768, PH = 640;
+  x.fillStyle = '#121316'; x.fillRect(0, 0, W, H);
+  if (ex.photo && ex.photo.img){ fitImage(x, ex.photo.img, 0, 0, W, PH, true);
+    rr(x, 18, 18, 210, 50, 25); x.fillStyle = 'rgba(10,11,13,.6)'; x.fill(); x.direction = 'rtl'; x.textAlign = 'center'; x.fillStyle = '#fff'; x.font = '600 24px Vazirmatn, Tahoma'; x.fillText('⤢ بزرگ‌نمایی', 123, 52); }
+  else {
+    const g = x.createLinearGradient(0, 0, 0, PH); g.addColorStop(0, '#2a2d33'); g.addColorStop(1, '#17191d'); x.fillStyle = g; x.fillRect(0, 0, W, PH);
+    x.strokeStyle = 'rgba(255,255,255,.25)'; x.lineWidth = 3; x.strokeRect(W/2 - 70, PH/2 - 110, 140, 100); x.beginPath(); x.arc(W/2, PH/2 - 60, 26, 0, 7); x.stroke();
+    x.direction = 'rtl'; x.textAlign = 'center'; x.fillStyle = '#c9ced6'; x.font = '600 34px Vazirmatn, Tahoma';
+    const msg = ex.photoState === 'search' ? 'در حال یافتن عکس واقعی…' : ex.state === 'err' ? 'عکس و مدل در دسترس نیست' : 'عکس پیدا نشد؛ پس از بارگذاری مدل، تصویری از اسکن ساخته می‌شود';
+    wrapRTL(x, msg, W - 160).forEach((l, i) => x.fillText(l, W/2, PH/2 + 50 + i*46));
+  }
+  x.fillStyle = '#f6f4ef'; x.fillRect(0, PH, W, H - PH);
+  const [a, b] = photoCaption(ex);
+  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#141518'; x.font = '700 32px Vazirmatn, Tahoma'; x.fillText(a || ex.o.fa, W - 30, PH + 50);
+  x.direction = 'ltr'; x.textAlign = 'left'; x.fillStyle = '#6a6d73'; x.font = '400 22px Vazirmatn, Tahoma'; x.fillText(b, 30, PH + 98);
+  ex.photoTex.needsUpdate = true;
+}
+function placeStand(ex, px, pz){
+  const W = HW/2 - 1.8, z1 = Z0 - 1.5, z2 = Z0 - HD + 1.5;
   ex.plaque.position.set(clamp(px, -W, W), 0, clamp(pz, z2, z1));
   ex.plaque.rotation.y = 0;   // faces the entrance (+z)
 }
+
+/* ================= photos: local copy → Wikimedia Commons → snapshot of the scan ================= */
+function freeLic(l){ return /(^|\b)(cc0|cc[ -]by|public domain|pd[- ]|no restrictions|attribution)/i.test(l) && !/(-nc|-nd| nc| nd|noncommercial|noderiv|fair use)/i.test(l); }
+function stripHtml(s){ const d = document.createElement('div'); d.innerHTML = s || ''; return (d.textContent || '').replace(/\s+/g, ' ').trim(); }
+async function fetchT(url, ms){ const ac = new AbortController(), t = setTimeout(() => ac.abort(), ms); try { return await fetch(url, {signal:ac.signal}); } finally { clearTimeout(t); } }
+function loadImg(url, ms = 25000){ return new Promise((res, rej) => { const im = new Image(); im.crossOrigin = 'anonymous'; const t = setTimeout(() => rej(new Error('timeout')), ms); im.onload = () => { clearTimeout(t); res(im); }; im.onerror = () => { clearTimeout(t); rej(new Error('img')); }; im.src = url; }); }
+async function commonsPhoto(o){
+  const base = {action:'query', format:'json', formatversion:2, origin:'*', prop:'imageinfo', iiprop:'url|size|mime|extmetadata', iiurlwidth:1280, iiextmetadatafilter:'LicenseShortName|Artist'};
+  const tries = o.photo ? [{titles:o.photo}] : (o.photoQueries || [o.en]).map(q => ({generator:'search', gsrsearch:q + ' filetype:bitmap', gsrnamespace:6, gsrlimit:15}));
+  for (const q of tries){
+    const r = await fetchT(COMMONS + new URLSearchParams(Object.assign({}, base, q)), 12000); if (!r.ok) continue;
+    const j = await r.json(), pages = ((j.query && j.query.pages) || []).slice().sort((a, b) => (a.index || 0) - (b.index || 0));
+    for (const p of pages){
+      const ii = p.imageinfo && p.imageinfo[0]; if (!ii || !/jpeg|png/.test(ii.mime || '')) continue;
+      const ar = ii.width/ii.height; if (!o.photo && (ii.width < 900 || ar < .95 || ar > 2.4)) continue;
+      const m = ii.extmetadata || {}, lic = (m.LicenseShortName && m.LicenseShortName.value) || '';
+      if (!freeLic(lic)) continue;
+      return {url:ii.thumburl || ii.url, artist:stripHtml(m.Artist && m.Artist.value) || 'unknown', license:lic, page:ii.descriptionurl, title:p.title};
+    }
+  }
+  return null;
+}
+async function findPhoto(ex, tok){
+  const o = ex.o; let info = null, img = null;
+  try {
+    const L = PHOTOS && PHOTOS.objects && PHOTOS.objects[o.key];
+    if (L){ try { img = await loadImg(L.file, 15000); info = L; } catch(e){} }
+    if (!img){ info = await commonsPhoto(o); if (info) img = await loadImg(info.url); }
+  } catch(e){ console.warn('photo', o.key, e); img = null; }
+  if (tok !== opening) return;
+  if (img){ ex.photo = Object.assign({kind:'real', img}, info); ex.photoState = 'ok'; }
+  else { ex.photoState = 'fail'; if (ex.state === 'ok') snapQ.push(ex); }
+  drawPhoto(ex);
+}
+// studio snapshot of a loaded scan, rendered off-screen (also safe during an XR session)
+const snapQ = [], snapScene = new THREE.Scene(), snapCam = new THREE.PerspectiveCamera(30, 1024/640, .05, 500);
+let snapRT = null;
+snapScene.background = texOf(canv('studio', 64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#5d636c'); g.addColorStop(.7, '#2b2e33'); g.addColorStop(1, '#1b1d20'); x.fillStyle = g; x.fillRect(0, 0, w, h); }));
+snapScene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 1.1)); { const k = new THREE.DirectionalLight(0xfff3e0, 1.0); k.position.set(4, 6, 5); snapScene.add(k); const r = new THREE.DirectionalLight(0xcfe0ff, .5); r.position.set(-5, 3, -4); snapScene.add(r); }
+const GAMMA = new Uint8ClampedArray(256).map((_, i) => Math.round(255*Math.pow(i/255, 1/2.2)));
+function runSnap(){
+  const ex = snapQ.shift(); if (!ex || !ex.inner || ex.photoState === 'ok' || !exhibits.includes(ex)) return;
+  const W = 1024, H = 640; if (!snapRT) snapRT = new THREE.WebGLRenderTarget(W, H, {samples:4});
+  const parent = ex.inner.parent, keep = ex.inner.position.clone(); snapScene.add(ex.inner); ex.inner.position.set(0, 0, 0); ex.inner.updateMatrixWorld(true);
+  const b = new THREE.Box3().setFromObject(ex.inner), c = b.getCenter(V()), r = b.getSize(V()).length()/2;
+  const dir = V(.9, .42, 1.25).normalize(), dist = r/Math.sin(THREE.MathUtils.degToRad(15))*.92;
+  snapCam.position.copy(c).addScaledVector(dir, dist); snapCam.near = Math.max(.01, dist - r*2); snapCam.far = dist + r*3; snapCam.updateProjectionMatrix(); snapCam.lookAt(c);
+  const prevRT = renderer.getRenderTarget(), xr = renderer.xr.enabled; renderer.xr.enabled = false;
+  renderer.setRenderTarget(snapRT); renderer.clear(); renderer.render(snapScene, snapCam);
+  const px = new Uint8Array(W*H*4); renderer.readRenderTargetPixels(snapRT, 0, 0, W, H, px);
+  renderer.setRenderTarget(prevRT); renderer.xr.enabled = xr;
+  parent.add(ex.inner); ex.inner.position.copy(keep); ex.inner.updateMatrixWorld(true);
+  const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const cx = cv.getContext('2d'), id = cx.createImageData(W, H);
+  for (let y=0;y<H;y++){ const s = (H - 1 - y)*W*4, d = y*W*4; for (let i=0;i<W*4;i+=4){ id.data[d + i] = GAMMA[px[s + i]]; id.data[d + i + 1] = GAMMA[px[s + i + 1]]; id.data[d + i + 2] = GAMMA[px[s + i + 2]]; id.data[d + i + 3] = 255; } }
+  cx.putImageData(id, 0, 0);
+  ex.photo = {kind:'scan', img:cv}; ex.photoState = 'ok'; drawPhoto(ex);
+}
+
+/* ================= photo viewer (enlarged, in front of the eyes) ================= */
+const viewer = new THREE.Group(); viewer.visible = false; scene.add(viewer); let viewerOn = null;
+const vC = document.createElement('canvas'); vC.width = 1600; vC.height = 1200; const vT = texOf(vC);
+const vM = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.125), new THREE.MeshBasicMaterial({map:vT, depthTest:false, transparent:true})); vM.renderOrder = 40; viewer.add(vM);
+function openViewer(ex){
+  if (!ex.photo || !ex.photo.img) return false;
+  const x = vC.getContext('2d'), W = 1600, H = 1200, PH = 1040;
+  x.clearRect(0, 0, W, H); rr(x, 0, 0, W, H, 28); x.fillStyle = '#0f1013'; x.fill();
+  fitImage(x, ex.photo.img, 24, 24, W - 48, PH - 48, false);
+  const [a, b] = photoCaption(ex);
+  x.direction = 'rtl'; x.textAlign = 'right'; x.fillStyle = '#f2f2f2'; x.font = '800 44px Vazirmatn, Tahoma'; x.fillText(ex.o.fa + ' · ' + a, W - 40, PH + 60);
+  x.direction = 'ltr'; x.textAlign = 'left'; x.fillStyle = '#a6afba'; x.font = '400 28px Vazirmatn, Tahoma'; x.fillText(b, 40, PH + 120);
+  x.direction = 'rtl'; x.textAlign = 'left'; x.fillStyle = '#a6afba'; x.font = '600 28px Vazirmatn, Tahoma'; x.fillText('برای بستن بزن', 40, PH + 60);
+  vT.needsUpdate = true;
+  const head = V(), d = V(); camera.getWorldPosition(head); camera.getWorldDirection(d); d.y = 0; d.normalize();
+  camera.getWorldDirection(d); d.y = clamp(d.y, -.45, .45); d.normalize(); viewer.position.copy(head).addScaledVector(d, 1.25); viewer.lookAt(head);
+  viewer.visible = true; viewerOn = ex; return true;
+}
+function closeViewer(){ viewer.visible = false; viewerOn = null; }
 
 /* ================= loading Smithsonian Voyager packages ================= */
 function pickLive(M){
@@ -216,52 +619,95 @@ async function loadExhibit(ex, tok){
   }
   // tame very metallic scan materials (no environment map in this hall) and make them cheap to update
   root.traverse(n => { if (n.isMesh){ const ms = Array.isArray(n.material) ? n.material : [n.material]; for (const mt of ms){ if (mt.metalness !== undefined && mt.metalness > .35){ mt.metalness = .35; mt.roughness = Math.max(mt.roughness, .45); } } } });
-  // size: trust the scan's units if they look plausible, otherwise scale to the known real size
+  mountModel(ex, root);
+}
+// place a loaded model in its holder: real size, plinth or cables, soft shadow, stand position
+function mountModel(ex, root){
+  const o = ex.o;
   root.updateMatrixWorld(true);
   let box = new THREE.Box3().setFromObject(root); const sz = box.getSize(V()), dim = Math.max(sz.x, sz.y, sz.z);
   if (!(dim > 0)) throw new Error('مدل خالی است');
   const r = dim / o.size; const s = (r > .4 && r < 2.5) ? 1 : o.size / dim;
   const inner = new THREE.Group(); inner.add(root); root.scale.multiplyScalar(s);
-  inner.updateMatrixWorld(true); box = new THREE.Box3().setFromObject(root); const c = box.getCenter(V());
+  inner.updateMatrixWorld(true); box = new THREE.Box3().setFromObject(root); const c = box.getCenter(V()), ls = box.getSize(V());
   root.position.set(-c.x, -box.min.y, -c.z);
-  inner.rotation.y = THREE.MathUtils.degToRad(o.rot || 0);
+  const rot = THREE.MathUtils.degToRad(o.rot || 0); inner.rotation.y = rot;
   ex.holder.remove(ex.ph); disposeTree(ex.ph); ex.holder.add(inner); ex.inner = inner;
+  // hung objects: centre them vertically on the lift height so they hang from their middle
   ex.holder.updateMatrixWorld(true);
   const wb = new THREE.Box3().setFromObject(inner); ex.box = wb;
-  // invisible pick box matches the real extent (in holder space, no rotation)
   const ws = wb.getSize(V()), wc = wb.getCenter(V()); ex.pick.rotation.y = 0; ex.pick.scale.copy(ws); ex.pick.position.set(wc.x - ex.holder.position.x, wc.y - ex.holder.position.y, wc.z - ex.holder.position.z);
-  // base: low platform, or stands for objects shown in the air
-  const lift = o.lift || 0, padR = (lift > 0 && lift < 1) ? Math.max(ws.x, ws.z)*.6 + .3 : 0, foot = new THREE.MeshLambertMaterial({color:0x2a2c31});
-  if (lift > 0 && lift < 1){ const pl = new THREE.Mesh(new THREE.CylinderGeometry(Math.max(ws.x, ws.z)*.6 + .2, Math.max(ws.x, ws.z)*.6 + .3, lift, 40), foot); pl.position.set(wc.x, lift/2, wc.z); hall.add(pl); }
-  else if (lift >= 1){ for (const dx of [-.18, .18]){ const p = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, lift + ws.y*.25, 10), new THREE.MeshLambertMaterial({color:0x8a8f99})); p.position.set(wc.x + dx*ws.x*.3, (lift + ws.y*.25)/2, wc.z); hall.add(p); } const bs = new THREE.Mesh(new THREE.CylinderGeometry(.6, .7, .08, 24), foot); bs.position.set(wc.x, .04, wc.z); hall.add(bs); }
-  const ring = new THREE.Mesh(new THREE.RingGeometry(Math.max(ws.x, ws.z)*.55 + .4, Math.max(ws.x, ws.z)*.55 + .55, 64).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0xc99a3c, transparent:true, opacity:.5})); ring.position.set(wc.x, .012, wc.z); hall.add(ring);
-  placePlaque(ex, wc.x, Math.max(wb.max.z, wc.z + padR) + 1.0);
+  const blob = (w, d, y, op, parent, ry = 0) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({map:texOf(blobC()), transparent:true, opacity:op, depthWrite:false})); m.rotation.set(-Math.PI/2, 0, ry); m.position.y = y; m.renderOrder = 2; parent.add(m); return m; };
+  if (o.hang){
+    // steel cables from the top of the model up to the ceiling or trusses
+    const pts = [], top = wb.max.y - ws.y*.15;
+    for (const [fx, fz] of [[-.32, -.25], [.32, -.25], [-.32, .25], [.32, .25]]){ const x = wc.x + fx*ws.x, z = wc.z + fz*ws.z; pts.push(V(x, top, z), V(x, ceilY(x) - .3, z)); }
+    const cab = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({color:0x3a3d42})); hall.add(cab);
+    const sh = blob(ws.x*1.1, ws.z*1.1, .015, .45, hall); sh.position.x = wc.x; sh.position.z = wc.z;
+  } else if (ex.base > 0){
+    // modern white plinth, rotated with the object, LED reveal at its foot
+    const pw = ls.x + 1.2, pd = ls.z + 1.2, ph = ex.base, rad = Math.min(.35, pw/4, pd/4);
+    const shp = new THREE.Shape(); shp.moveTo(-pw/2 + rad, -pd/2); shp.lineTo(pw/2 - rad, -pd/2); shp.quadraticCurveTo(pw/2, -pd/2, pw/2, -pd/2 + rad); shp.lineTo(pw/2, pd/2 - rad); shp.quadraticCurveTo(pw/2, pd/2, pw/2 - rad, pd/2); shp.lineTo(-pw/2 + rad, pd/2); shp.quadraticCurveTo(-pw/2, pd/2, -pw/2, pd/2 - rad); shp.lineTo(-pw/2, -pd/2 + rad); shp.quadraticCurveTo(-pw/2, -pd/2, -pw/2 + rad, -pd/2);
+    const pg = new THREE.ExtrudeGeometry(shp, {depth:Math.max(.02, ph - .06), bevelEnabled:false, curveSegments:6}); pg.rotateX(-Math.PI/2);
+    const plinth = new THREE.Group(); plinth.rotation.y = rot; plinth.position.y = -ph; ex.holder.add(plinth);
+    const body = new THREE.Mesh(pg, new THREE.MeshStandardMaterial({color:0xf4f2ee, roughness:.7})); body.position.y = .06; plinth.add(body);
+    const foot = new THREE.Mesh(new THREE.BoxGeometry(pw - .16, .06, pd - .16), basic(0xffd9a6)); foot.position.y = .03; plinth.add(foot);
+    blob(ls.x*1.05, ls.z*1.05, .006, .5, ex.holder, 0).rotation.z = rot;
+    blob(pw + 1.4, pd + 1.4, .012, .28, plinth);
+  } else {
+    const sh = blob(ws.x*1.15, ws.z*1.15, .015, .5, hall); sh.position.x = wc.x; sh.position.z = wc.z;
+  }
+  placeStand(ex, wc.x, wb.max.z + (ex.base > 0 && !o.hang ? .9 : 0) + 1.2);
   ex.state = 'ok'; ex.pct = 100; drawPlaque(ex);
+  if (ex.photoState === 'fail') snapQ.push(ex); else drawPhoto(ex);
 }
 function pumpLoad(){
   if (loadingNow || !loadQueue.length) { status(); return; }
   const ex = loadQueue.shift(), tok = opening; loadingNow = ex;
-  loadExhibit(ex, tok).catch(e => { if (tok !== opening) return; ex.state = 'err'; if (ex.ph.parent){ ex.holder.remove(ex.ph); disposeTree(ex.ph); } ex.err = /fetch|network|HTTP|Failed/i.test(String(e && e.message)) ? 'سرور در دسترس نبود' : String(e && e.message || e).slice(0, 40); drawPlaque(ex); console.warn('model', ex.o.key, e); })
+  loadExhibit(ex, tok).catch(e => { if (tok !== opening) return; ex.state = 'err'; if (ex.ph.parent){ ex.holder.remove(ex.ph); disposeTree(ex.ph); } ex.err = /fetch|network|HTTP|Failed/i.test(String(e && e.message)) ? 'سرور در دسترس نبود' : String(e && e.message || e).slice(0, 40); drawPlaque(ex); drawPhoto(ex); console.warn('model', ex.o.key, e); })
     .finally(() => { if (loadingNow === ex) loadingNow = null; if (tok === opening) pumpLoad(); });
   status();
 }
 function status(){
   const s = $('#status'); if (curHall < 0){ s.hidden = true; return; } s.hidden = false;
-  const ok = exhibits.filter(e => e.state === 'ok').length, bad = exhibits.filter(e => e.state === 'err').length, H = DATA.halls[curHall];
+  const H = ALL[curHall]; if (H.key === 'lobby'){ s.textContent = 'سرسرای گنجینه، از درها وارد تالارها شو'; return; }
+  const ok = exhibits.filter(e => e.state === 'ok').length, bad = exhibits.filter(e => e.state === 'err').length;
   s.textContent = H.name + '، ' + (ok + bad < exhibits.length ? 'بارگذاری مدل‌ها ' + fa(ok) + ' از ' + fa(exhibits.length) : fa(ok) + ' شیء') + (bad ? '، ' + fa(bad) + ' مورد بارگذاری نشد' : '');
 }
-function openHall(i){
-  ++opening; curHall = i; loadingNow = null; renderChips(); menuOpen = false;
-  buildHall(DATA.halls[i]); status();
+let doorLock = 0;
+function openHall(i, from = -1){
+  ++opening; curHall = i; loadingNow = null; renderChips(); menuOpen = false; snapQ.length = 0;
+  buildHall(ALL[i]); status();
+  // arrive in front of the door we came through, or at the entrance
+  const back = from >= 0 ? doors.find(d => d.target === from) : null;
+  if (back) moveTo(back.x, 0, back.z + (ALL[i].key === 'lobby' ? 4 : -4), ALL[i].key === 'lobby' ? Math.PI : 0);
+  else moveTo(0, 0, 0, 0);
+  doorLock = 1.2;
+}
+function moveTo(x, y, z, yaw){
+  if (renderer.xr.isPresenting){ const head = V(); camera.getWorldPosition(head); const camYaw = Math.atan2(-camLocalDir().x, -camLocalDir().z); rig.rotation.y = yaw - camYaw; rig.updateMatrixWorld(true); camera.getWorldPosition(head); rig.position.x += x - head.x; rig.position.z += z - head.z; rig.position.y = y; }
+  else { rig.position.set(x, y, z); rig.rotation.set(0, 0, 0); deskLook.yaw = yaw; deskLook.pitch = -.06; }
 }
 function goTo(ex){
-  // stand next to the plaque, looking at the object
+  // stand in front of the info stand, looking at the object
   const p = ex.plaque.position, tgt = ex.box ? ex.box.getCenter(V()) : ex.holder.position.clone();
-  const stand = V(p.x + .9, 0, p.z + 1.4), yaw = Math.atan2(-(tgt.x - stand.x), -(tgt.z - stand.z));
-  if (renderer.xr.isPresenting){ const head = V(); camera.getWorldPosition(head); const camYaw = Math.atan2(-camLocalDir().x, -camLocalDir().z); rig.rotation.y = yaw - camYaw; rig.updateMatrixWorld(true); camera.getWorldPosition(head); rig.position.x += stand.x - head.x; rig.position.z += stand.z - head.z; }
-  else { rig.position.set(stand.x, 0, stand.z); rig.rotation.set(0, 0, 0); deskLook.yaw = yaw; deskLook.pitch = -.08; }
+  const stand = V(p.x + .25, 0, p.z + 1.75), yaw = Math.atan2(-(tgt.x - stand.x), -(tgt.z - stand.z));
+  moveTo(stand.x, 0, stand.z, yaw);
+  if (!renderer.xr.isPresenting){ const dy = (tgt.y - 1.6), dh = Math.hypot(tgt.x - stand.x, tgt.z - stand.z); deskLook.pitch = clamp(Math.atan2(dy, dh)*.6, -.3, .5); }
 }
 function camLocalDir(){ const d = V(0, 0, -1).applyQuaternion(camera.quaternion); d.y = 0; return d.normalize(); }
+function act(ud){
+  if (!ud) return;
+  if (viewerOn){ closeViewer(); return; }
+  if (ud.door !== undefined){ openHall(ud.door, curHall); return; }
+  if (ud.lift){ const L = ud.lift; moveTo(L.x, L.y, L.z, L.yaw); return; }
+  if (ud.ex){ if (ud.photo && openViewer(ud.ex)) return; goTo(ud.ex); }
+}
+function checkDoors(dt){
+  doorLock = Math.max(0, doorLock - dt); if (doorLock > 0 || rig.position.y > .1) return;
+  const head = V(); camera.getWorldPosition(head);
+  for (const d of doors){ if (Math.abs(head.x - d.x) < d.w/2 && Math.abs(head.z - d.z) < .95){ openHall(d.target, curHall); return; } }
+}
 
 /* ================= VR menu ================= */
 const menu = new THREE.Group(); menu.visible = false; scene.add(menu); let menuOpen = false, menuBtns = [];
@@ -274,8 +720,8 @@ function btnPanel(label, color, act, w = .5){
 function buildMenu(){
   disposeTree(menu); menu.clear(); menuBtns = [];
   const title = btnPanel('تالارهای گنجینه', '#e8b04b', null, .62); title.m.position.set(0, .34, 0); menu.add(title.m);
-  DATA.halls.forEach((h, i) => { const b = btnPanel(h.name, i === curHall ? '#7fb7e8' : '#e8b04b', () => openHall(i), .56); b.m.position.set(0, .2 - i*.14, 0); menu.add(b.m); menuBtns.push(b); });
-  const hub = btnPanel('→ فهرست بازی‌ها', '#ff8a8a', () => { location.href = HUB; }, .5); hub.m.position.set(0, .2 - DATA.halls.length*.14 - .04, 0); menu.add(hub.m); menuBtns.push(hub);
+  ALL.forEach((h, i) => { const b = btnPanel(h.key === 'lobby' ? 'سرسرا' : h.name, i === curHall ? '#7fb7e8' : '#e8b04b', () => openHall(i), .56); b.m.position.set(0, .2 - i*.14, 0); menu.add(b.m); menuBtns.push(b); });
+  const hub = btnPanel('→ فهرست بازی‌ها', '#ff8a8a', () => { location.href = HUB; }, .5); hub.m.position.set(0, .2 - ALL.length*.14 - .04, 0); menu.add(hub.m); menuBtns.push(hub);
 }
 function placeMenu(){ const head = V(); camera.getWorldPosition(head); const d = V(); camera.getWorldDirection(d); d.y = 0; d.normalize(); menu.position.copy(head).addScaledVector(d, 1.3); menu.position.y = head.y - .15; menu.lookAt(head.x, menu.position.y, head.z); }
 
@@ -288,13 +734,13 @@ for (let i=0;i<2;i++){ const c = renderer.xr.getController(i); rig.add(c); const
 const arc = new THREE.Line(new THREE.BufferGeometry().setFromPoints(new Array(48).fill(0).map(() => V())), new THREE.LineBasicMaterial({color:0x7fb7e8})); arc.visible = false; arc.frustumCulled = false; scene.add(arc);
 const tpMark = new THREE.Mesh(new THREE.RingGeometry(.22, .3, 32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0x7fb7e8})); tpMark.visible = false; scene.add(tpMark);
 const ray = new THREE.Raycaster(), _q = new THREE.Quaternion();
-function pick(o, d, far = 60){ ray.set(o, d); ray.far = far; const hit = ray.intersectObjects(exhibits.flatMap(e => [e.pick, e.board]), false)[0]; return hit ? hit.object.userData.ex : null; }
-function inHall(x, z){ return Math.abs(x) < HW/2 - .5 && z < Z0 - .5 && z > Z0 - HD + .5; }
+function pick(o, d, far = 60){ ray.set(o, d); ray.far = far; const hit = ray.intersectObjects(pickables, false)[0]; return hit ? hit.object.userData : null; }
 function vrStep(dt){
   for (const H of hands){ const prev = H.btn; if (H.ctrl && H.src && H.src.gamepad){ const b = H.src.gamepad.buttons, a = H.src.gamepad.axes; H.btn = {trigger:!!(b[0] && b[0].pressed), grip:!!(b[1] && b[1].pressed), b:!!(b[5] && b[5].pressed)}; H.axes = [a[2]||0, a[3]||0]; H.ctrl.getWorldPosition(H.pos); H.ctrl.getWorldQuaternion(_q); H.dir.set(0,0,-1).applyQuaternion(_q); } else H.btn = {}; for (const k of ['trigger','grip','b']){ H.down[k] = H.btn[k] && !prev[k]; H.up[k] = !H.btn[k] && prev[k]; } }
   const hs = hands.filter(H => H.ctrl && H.src);
-  if (hs.some(H => H.down.b)){ menuOpen = !menuOpen; if (menuOpen){ buildMenu(); placeMenu(); } }
+  if (hs.some(H => H.down.b)){ if (viewerOn) closeViewer(); else { menuOpen = !menuOpen; if (menuOpen){ buildMenu(); placeMenu(); } } }
   menu.visible = menuOpen;
+  if (viewerOn){ arc.visible = tpMark.visible = false; if (hs.some(H => H.down.trigger)) closeViewer(); return; }
   if (menuOpen){
     arc.visible = tpMark.visible = false;
     let hov = null, by = null;
@@ -304,22 +750,26 @@ function vrStep(dt){
     return;
   }
   const head = V(); camera.getWorldPosition(head); const fw = V(); camera.getWorldDirection(fw); fw.y = 0; fw.normalize(); const side = V(-fw.z, 0, fw.x);
-  const L = hands[0], R = hands[1];
-  if (L.ctrl && (Math.abs(L.axes[0]) > .15 || Math.abs(L.axes[1]) > .15)){ const sp = 2.2*dt; const dx = (fw.x*-L.axes[1] + side.x*L.axes[0])*sp, dz = (fw.z*-L.axes[1] + side.z*L.axes[0])*sp; if (inHall(head.x + dx, head.z + dz)){ rig.position.x += dx; rig.position.z += dz; } }
-  if (R.ctrl){ if (Math.abs(R.axes[0]) > .7 && R.snap){ R.snap = false; const a = -Math.sign(R.axes[0])*Math.PI/6; const off = rig.position.clone().sub(head); off.y = 0; off.applyAxisAngle(V(0,1,0), a); rig.position.set(head.x + off.x, 0, head.z + off.z); rig.rotation.y += a; } if (Math.abs(R.axes[0]) < .3) R.snap = true; }
+  const L = hands[0], R = hands[1], ly = rig.position.y;
+  if (L.ctrl && (Math.abs(L.axes[0]) > .15 || Math.abs(L.axes[1]) > .15)){ const sp = 2.2*dt; const dx = (fw.x*-L.axes[1] + side.x*L.axes[0])*sp, dz = (fw.z*-L.axes[1] + side.z*L.axes[0])*sp; if (inZone(head.x + dx, head.z + dz, ly) || nearDoor(head.x + dx, head.z + dz, ly)){ rig.position.x += dx; rig.position.z += dz; } }
+  if (R.ctrl){ if (Math.abs(R.axes[0]) > .7 && R.snap){ R.snap = false; const a = -Math.sign(R.axes[0])*Math.PI/6; const off = rig.position.clone().sub(head); off.y = 0; off.applyAxisAngle(V(0,1,0), a); rig.position.set(head.x + off.x, ly, head.z + off.z); rig.rotation.y += a; } if (Math.abs(R.axes[0]) < .3) R.snap = true; }
   let arcShown = false;
   for (const H of hs){
-    if (H.down.trigger && !H.aiming){ const ex = pick(H.pos, H.dir); if (ex){ goTo(ex); continue; } H.aiming = true; }
+    if (H.down.trigger && !H.aiming){ const ud = pick(H.pos, H.dir); if (ud && (ud.ex || ud.door !== undefined || ud.lift)){ act(ud); continue; } H.aiming = true; }
     if (H.aiming){
       if (H.btn.trigger){
         const pts = arc.geometry.attributes.position; let p = H.pos.clone(), v = H.dir.clone().multiplyScalar(10), hit = null;
-        for (let i=0;i<48;i++){ pts.setXYZ(i, p.x, p.y, p.z); if (!hit){ const np = p.clone().addScaledVector(v, .05); v.y -= 9.8*.05; if (np.y <= 0){ hit = p.clone().lerp(np, p.y/(p.y - np.y)); p = hit.clone(); } else p = np; } }
-        pts.needsUpdate = true; arcShown = true; H.hit = hit && inHall(hit.x, hit.z) ? hit : null; tpMark.visible = !!H.hit; if (H.hit) tpMark.position.copy(H.hit).add(V(0,.02,0));
-      } else { H.aiming = false; if (H.hit){ rig.position.x += H.hit.x - head.x; rig.position.z += H.hit.z - head.z; } H.hit = null; tpMark.visible = false; }
+        for (let i=0;i<48;i++){ pts.setXYZ(i, p.x, p.y, p.z); if (!hit){ const np = p.clone().addScaledVector(v, .05); v.y -= 9.8*.05;
+          for (const Lv of levels){ if (p.y >= Lv.y && np.y < Lv.y){ const q = p.clone().lerp(np, (p.y - Lv.y)/(p.y - np.y)); if (inZone(q.x, q.z, Lv.y)){ hit = q; break; } } }
+          p = hit ? hit.clone() : np; } }
+        pts.needsUpdate = true; arcShown = true; H.hit = hit; tpMark.visible = !!H.hit; if (H.hit) tpMark.position.copy(H.hit).add(V(0,.02,0));
+      } else { H.aiming = false; if (H.hit){ rig.position.x += H.hit.x - head.x; rig.position.z += H.hit.z - head.z; rig.position.y = H.hit.y; } H.hit = null; tpMark.visible = false; }
     }
   }
   arc.visible = arcShown;
+  checkDoors(dt);
 }
+function nearDoor(x, z, y){ return y < .1 && doors.some(d => Math.abs(x - d.x) < d.w/2 - .3 && Math.abs(z - d.z) < 1.0); }
 // desktop
 const deskLook = {yaw:0, pitch:0}, keys = {};
 let desk = false, drag = null;
@@ -327,19 +777,21 @@ const el = renderer.domElement;
 el.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY, m:0}; el.setPointerCapture(e.pointerId); });
 el.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag.m += Math.abs(dx) + Math.abs(dy); drag.x = e.clientX; drag.y = e.clientY; deskLook.yaw -= dx*.004; deskLook.pitch = clamp(deskLook.pitch - dy*.004, -1.2, 1.2); });
 el.addEventListener('pointerup', e => { const click = drag && drag.m < 6; drag = null; if (!click || !desk) return;
-  const r = el.getBoundingClientRect(), m = new THREE.Vector2(((e.clientX - r.left)/r.width)*2-1, -((e.clientY - r.top)/r.height)*2+1); ray.setFromCamera(m, camera); ray.far = 80; const hit = ray.intersectObjects(exhibits.flatMap(x => [x.pick, x.board]), false)[0]; if (hit) goTo(hit.object.userData.ex); });
-addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape') showLobby(); });
+  if (viewerOn){ closeViewer(); return; }
+  const r = el.getBoundingClientRect(), m = new THREE.Vector2(((e.clientX - r.left)/r.width)*2-1, -((e.clientY - r.top)/r.height)*2+1); ray.setFromCamera(m, camera); ray.far = 90; const hit = ray.intersectObjects(pickables, false)[0]; if (hit) act(hit.object.userData); });
+addEventListener('keydown', e => { keys[e.code] = true; if (e.code === 'Escape'){ if (viewerOn) closeViewer(); else showLobby(); } });
 addEventListener('keyup', e => { keys[e.code] = false; });
 function deskStep(dt){
   camera.position.set(0, 1.6, 0); camera.rotation.set(deskLook.pitch, deskLook.yaw, 0, 'YXZ');
   const sp = (keys.ShiftLeft || keys.ShiftRight ? 7 : 2.4)*dt, fw = V(-Math.sin(deskLook.yaw), 0, -Math.cos(deskLook.yaw)), side = V(-fw.z, 0, fw.x), mv = V();
   if (keys.KeyW || keys.ArrowUp) mv.add(fw); if (keys.KeyS || keys.ArrowDown) mv.sub(fw); if (keys.KeyA || keys.ArrowLeft) mv.sub(side); if (keys.KeyD || keys.ArrowRight) mv.add(side);
-  if (mv.lengthSq()){ mv.normalize().multiplyScalar(sp); if (inHall(rig.position.x + mv.x, rig.position.z + mv.z)) rig.position.add(mv); }
+  if (mv.lengthSq()){ mv.normalize().multiplyScalar(sp); const nx = rig.position.x + mv.x, nz = rig.position.z + mv.z, y = rig.position.y; if (inZone(nx, nz, y) || nearDoor(nx, nz, y)){ rig.position.x = nx; rig.position.z = nz; } else if (inZone(nx, rig.position.z, y)) rig.position.x = nx; else if (inZone(rig.position.x, nz, y)) rig.position.z = nz; }
+  checkDoors(dt);
 }
 addEventListener('resize', () => { if (renderer.xr.isPresenting) return; renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); });
 
 /* ================= flow ================= */
-function startDesk(){ desk = true; $('#ov').hidden = true; $('#bar').hidden = false; if (curHall < 0) openHall(0); }
+function startDesk(){ desk = true; $('#ov').hidden = true; $('#bar').hidden = false; if (curHall < 0 && DATA.halls.length) openHall(0); }
 function showLobby(){ desk = false; $('#ov').hidden = false; $('#bar').hidden = true; }
 $('#bDesk').onclick = startDesk; $('#bMenu').onclick = showLobby;
 async function enterVR(){
@@ -348,7 +800,7 @@ async function enterVR(){
     desk = false; $('#ov').hidden = true; $('#bar').hidden = true; camera.position.set(0,0,0); camera.rotation.set(0,0,0);
     if (curHall < 0) openHall(0);
     menuOpen = true; buildMenu(); setTimeout(placeMenu, 300);
-    s.addEventListener('end', () => { renderer.setSize(innerWidth, innerHeight); showLobby(); });
+    s.addEventListener('end', () => { renderer.setSize(innerWidth, innerHeight); rig.position.y = 0; showLobby(); });
   } catch(e){ $('#srcNote').textContent = 'ورود به VR انجام نشد: ' + (e && e.message || e); }
 }
 (async () => { let ok = false; try { ok = !!(navigator.xr && await navigator.xr.isSessionSupported('immersive-vr')); } catch(e){} $('#bVR').disabled = !ok; })();
@@ -358,12 +810,14 @@ if (navigator.xr) navigator.xr.addEventListener('sessiongranted', enterVR);
 const clock = new THREE.Clock();
 renderer.setAnimationLoop(() => {
   const dt = Math.min(clock.getDelta(), .05);
-  if (renderer.xr.isPresenting) vrStep(dt); else { for (const H of hands) if (H.ctrl) H.ctrl.userData.line.visible = false; if (desk) deskStep(dt); else { deskLook.yaw += dt*.05; camera.position.set(0,1.6,0); camera.rotation.set(-.05, deskLook.yaw, 0, 'YXZ'); } }
+  if (snapQ.length) runSnap();
+  if (renderer.xr.isPresenting) vrStep(dt); else { for (const H of hands) if (H.ctrl) H.ctrl.userData.line.visible = false; if (desk) deskStep(dt); else { deskLook.yaw += dt*.05; camera.position.set(0,1.6,0); camera.rotation.set(-.02, deskLook.yaw, 0, 'YXZ'); } }
   renderer.render(scene, camera);
 });
-loadData().then(() => { if (DATA.halls.length) openHall(0); });
-Promise.all([document.fonts.load('600 40px Vazirmatn', 'گنجینه ۱۲۳'), document.fonts.load('400 40px Lalezar', 'گنجینه')]).catch(() => {}).then(() => { for (const ex of exhibits) drawPlaque(ex); if (menuOpen) buildMenu(); });
-window.__m3d = {openHall, exhibits, goTo, get hall(){ return curHall; }, get man(){ return MAN; }};
+const fontsReady = Promise.all([document.fonts.load('600 40px Vazirmatn', 'گنجینه ۱۲۳'), document.fonts.load('800 40px Vazirmatn', 'گنجینه'), document.fonts.load('400 40px Lalezar', 'گنجینه')]).catch(() => {});
+Promise.all([loadData(), Promise.race([fontsReady, new Promise(r => setTimeout(r, 3000))])]).then(() => { if (curHall < 0) openHall(0); });
+fontsReady.then(() => { for (const ex of exhibits){ drawPlaque(ex); drawPhoto(ex); } if (menuOpen) buildMenu(); });
+window.__m3d = {openHall, exhibits, goTo, act, moveTo, mountModel, openViewer, closeViewer, startDesk, deskLook, rig, camera, renderer, scene, snapQ, get hall(){ return curHall; }, get man(){ return MAN; }, get viewerOn(){ return viewerOn; }, get levels(){ return levels; }, get doors(){ return doors; }};
 </script>
 </body>
 </html>

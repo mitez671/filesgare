@@ -7,7 +7,9 @@
 <meta name="description" content="عکس‌های واقعی ناسا از کهکشان‌ها، سحابی‌ها، مریخ و ماه، در یک تالار دایره‌ای.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/models.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +310,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -321,9 +326,17 @@ A.init = function(cfg){
 // @desc عکس‌های واقعی ناسا از کهکشان‌ها، سحابی‌ها، مریخ و ماه، در یک تالار دایره‌ای.
 (function(){
 const TOPICS = [['کهکشان‌ها', 'galaxy hubble'], ['سحابی‌ها', 'nebula'], ['مریخ', 'mars surface rover'], ['ماه و آپولو', 'apollo moon surface'], ['زمین از فضا', 'earth from space iss'], ['خورشید', 'solar flare sdo'], ['جیمز وب', 'james webb telescope image'], ['زحل و مشتری', 'saturn jupiter cassini juno'], ['فضانوردان', 'astronaut spacewalk']];
-let Gy, topic = 0;
+let Gy, topic = 0, show = null, showModel = null, showLabel = null, showTok = 0;
+// a real NASA 3D model on a turntable for each topic (works offline too)
+const MODELS = [['hubble', 'تلسکوپ فضایی هابل'], ['hubble', 'تلسکوپ فضایی هابل'], ['perseverance', 'مریخ‌نورد پشتکار'], ['apollo-lm', 'ماه‌نشین آپولو'], ['shuttle', 'شاتل فضایی'], ['voyager', 'کاوشگر وویجر'], ['jwst', 'تلسکوپ جیمز وب'], ['saturn-v', 'موشک ساترن ۵'], ['astronaut', 'فضانورد']];
+function showcase(i){
+  if (!window.VRModels || !show) return; const tok = ++showTok, [file, name] = MODELS[i] || MODELS[0];
+  A.card(showLabel, name, 'مدل سه‌بعدی ناسا · NASA 3D Resources', {size:26, titleSize:44});
+  VRModels.place('../_shared/models/' + file + '.glb', {size:file === 'saturn-v' ? 1.25 : .85, metal:.35}).then(m => { if (tok !== showTok){ A.dispose(m); return; }
+    if (showModel){ show.remove(showModel); A.dispose(showModel); } if (file === 'astronaut') VRModels.relaxPose(m, 70); showModel = m; m.position.y = .8; show.add(m); }).catch(e => console.warn('model', e));
+}
 async function load(i){
-  topic = i; A.status('در حال دریافت عکس‌های ' + TOPICS[i][0] + '…');
+  topic = i; showcase(i); A.status('در حال دریافت عکس‌های ' + TOPICS[i][0] + '…');
   try { const js = await A.json('https://images-api.nasa.gov/search?media_type=image&q=' + encodeURIComponent(TOPICS[i][1]) + '&page_size=60', 20000);
     const items = js.collection.items.filter(x => x.links && x.links[0] && x.data && x.data[0]).sort(() => Math.random() - .5).slice(0, 16).map(x => { const d = x.data[0], th = x.links[0].href;
       return {src:th, big:th.replace('~thumb', '~medium'), title:(d.title || '').slice(0, 70), sub:(d.date_created || '').slice(0, 10) + ' · ' + (d.center || 'NASA'), desc:(d.description || '').replace(/<[^>]+>/g, '').slice(0, 420)}; });
@@ -335,13 +348,20 @@ A.init({
   tagline:'وسط یک تالار گرد ایستاده‌ای و دورتادورت عکس‌های واقعی ناسا آویزان است: کهکشان‌های هابل، غروب مریخ، ردپای آپولو روی ماه. موضوع را از منو عوض کن.',
   rules:['دور خودت بچرخ؛ عکس‌ها دورتادورت هستند. استیک راست هم می‌چرخاند.','دسته را روی یک عکس بگیر و ماشه را بزن تا بزرگ شود و توضیحش را بخوانی.'],
   deskRules:'کشیدن موس نگاه می‌کند و کلیک روی عکس بزرگش می‌کند.',
-  note:'عکس‌ها از کتابخانهٔ تصاویر ناسا (images.nasa.gov) می‌آیند و معمولاً مالکیت عمومی هستند. توضیحات انگلیسی‌اند.',
+  note:'عکس‌ها از کتابخانهٔ تصاویر ناسا (images.nasa.gov) می‌آیند و معمولاً مالکیت عمومی هستند. توضیحات انگلیسی‌اند. مدل وسط تالار از مجموعهٔ آزاد NASA 3D Resources است و بدون اینترنت هم دیده می‌شود.',
   menu: () => TOPICS.map((t, i) => ({label:t[0], on:i === topic, act:() => load(i)})),
   setup(A){ A.hemi.intensity = .6;
     const fl = new THREE.Mesh(new THREE.CircleGeometry(4.5, 48), new THREE.MeshLambertMaterial({color:0x14161f})); fl.rotation.x = -Math.PI/2; A.scene.add(fl);
     const wall = new THREE.Mesh(new THREE.CylinderGeometry(3.45, 3.45, 3.6, 64, 1, true), new THREE.MeshLambertMaterial({color:0x0e1018, side:THREE.BackSide})); wall.position.y = 1.8; A.scene.add(wall);
     const n = 1500, pos = new Float32Array(n*3); for (let i=0;i<n;i++){ const a = Math.random()*6.28, r = Math.sqrt(Math.random())*3.4; pos.set([Math.cos(a)*r, 3.59, Math.sin(a)*r], i*3); } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); A.scene.add(new THREE.Points(g, new THREE.PointsMaterial({color:0xffffff, size:.02})));
+    // turntable pedestal with a glowing rim
+    show = new THREE.Group(); show.position.set(0, 0, -1.75); A.scene.add(show);
+    const ped = new THREE.Mesh(new THREE.CylinderGeometry(.42, .5, .8, 40), new THREE.MeshStandardMaterial({color:0x1b1f2b, roughness:.4, metalness:.5})); ped.position.y = .4; show.add(ped);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(.43, .012, 8, 64), new THREE.MeshBasicMaterial({color:0x7fb2ff})); rim.rotation.x = Math.PI/2; rim.position.y = .8; show.add(rim);
+    const spot = new THREE.PointLight(0xdfe8ff, 1.2, 4); spot.position.set(.6, 2.2, .6); show.add(spot);
+    showLabel = A.panel(1024, 180, .9); showLabel.m.position.set(0, .3, -1.24); showLabel.m.rotation.x = -.35;
     Gy = A.makeGallery({radius:3.3}); load(0); },
+  update(dt){ if (showModel) showModel.rotation.y += dt*.35; },
 });
 })();
 

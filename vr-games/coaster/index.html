@@ -7,7 +7,8 @@
 <meta name="description" content="سوار ترن هوایی شو: سربالایی‌های بلند، سقوط‌های تند و پیچ‌های دیوانه‌وار بالای یک شهربازی.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +309,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -333,7 +337,7 @@ function setup(A){
   for (let i=0;i<40;i++){ const tr = new THREE.Mesh(new THREE.ConeGeometry(rand(2, 4), rand(6, 10), 7), new THREE.MeshLambertMaterial({color:0x2f6a32})); tr.position.set(rand(-120, 120), 4, rand(-150, 100)); if (tr.position.distanceTo(V(15, 4, -30)) > 60) s.add(tr); }
   const wheel = new THREE.Group(); wheel.position.set(-45, 30, -50); s.add(wheel); const rim = new THREE.Mesh(new THREE.TorusGeometry(26, .5, 8, 60), new THREE.MeshStandardMaterial({color:0xffd23f})); wheel.add(rim); for (let i=0;i<16;i++){ const sp = new THREE.Mesh(new THREE.CylinderGeometry(.2, .2, 52), new THREE.MeshStandardMaterial({color:0xffffff})); sp.rotation.z = i/16*Math.PI; wheel.add(sp); const cab = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 2), new THREE.MeshLambertMaterial({color:A.pick([0xff3c5a, 0x3cb0ff, 0x7aff7a, 0xffa03c])})); const a = i/16*Math.PI*2; cab.position.set(Math.cos(a)*26, Math.sin(a)*26, 1); wheel.add(cab); } A.wheel = wheel;
   const tent = new THREE.Mesh(new THREE.ConeGeometry(12, 10, 16), new THREE.MeshLambertMaterial({map:A.cv(256, 64, (x, w, h) => { for (let i=0;i<16;i++){ x.fillStyle = i % 2 ? '#fff' : '#d02030'; x.fillRect(i*w/16, 0, w/16, h); } })})); tent.position.set(70, 5, -60); s.add(tent);
-  cart = new THREE.Group(); s.add(cart); const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, .7, 2.4), new THREE.MeshStandardMaterial({color:0x3c6aff, metalness:.3})); body.position.y = .35; cart.add(body); const seat = new THREE.Mesh(new THREE.BoxGeometry(1.4, .2, 1.4), new THREE.MeshLambertMaterial({color:0x222})); seat.position.set(0, .75, .2); cart.add(seat); const bar = new THREE.Mesh(new THREE.TorusGeometry(.5, .04, 8, 20, Math.PI), new THREE.MeshStandardMaterial({color:0xffd23f, metalness:.6})); bar.position.set(0, 1.05, -.45); bar.rotation.x = -.3; cart.add(bar);
+  cart = new THREE.Group(); s.add(cart); const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, .7, 2.4), new THREE.MeshStandardMaterial({color:0x3c6aff, metalness:.3})); body.position.y = .35; cart.add(body); const seat = new THREE.Mesh(new THREE.BoxGeometry(1.4, .2, 1.4), new THREE.MeshLambertMaterial({color:0x222222})); seat.position.set(0, .75, .2); cart.add(seat); const bar = new THREE.Mesh(new THREE.TorusGeometry(.5, .04, 8, 20, Math.PI), new THREE.MeshStandardMaterial({color:0xffd23f, metalness:.6})); bar.position.set(0, 1.05, -.45); bar.rotation.x = -.3; cart.add(bar);
   cart.add(A.rig); A.rig.position.set(0, .2, .2);
   place(); A.status('از منو «حرکت!» را بزن. بهتر است بنشینی.', 8);
 }

@@ -7,7 +7,9 @@
 <meta name="description" content="دفاع از قلعه: از بالای دیوار سنگ پرتاب کن و نگذار دشمن به دروازه برسد.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/figure.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +381,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +422,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -442,9 +447,9 @@ function env(K){
   const s = K.scene;
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(200,200), K.lambert(0x5b7a3a)); ground.rotation.x = -Math.PI/2; ground.position.y = GROUND; s.add(ground);
   const road = new THREE.Mesh(new THREE.PlaneGeometry(6,60), K.lambert(0x8a7350)); road.rotation.x = -Math.PI/2; road.position.set(0,GROUND+.01,-30); s.add(road);
-  const stone = K.lambert(0x9a9182), stoneD = K.lambert(0x7d7568);
+  const stone = VRDecor.material('masonry',[4,2]), stoneD = VRDecor.material('masonry',[10,3]);
   const wall = new THREE.Mesh(new THREE.BoxGeometry(40,6,3), stoneD); wall.position.set(0,-3,0); s.add(wall);
-  const walk = new THREE.Mesh(new THREE.BoxGeometry(40,.05,3), K.lambert(0x6e6458)); walk.position.y = .0; s.add(walk);
+  const walk = new THREE.Mesh(new THREE.BoxGeometry(40,.05,3), VRDecor.material('travertine',[12,2])); walk.position.y = .0; s.add(walk);
   const par = new THREE.Mesh(new THREE.BoxGeometry(40,.9,.4), stone); par.position.set(0,.45,-1.3); s.add(par);
   for (let x=-19.5;x<=19.5;x+=1.2){ if (Math.abs(x) < .7) continue; const m = new THREE.Mesh(new THREE.BoxGeometry(.6,.5,.4), stone); m.position.set(x,1.15,-1.3); s.add(m); }
   [-7,7].forEach(x => { const t = new THREE.Mesh(new THREE.CylinderGeometry(2,2.2,10,12), stoneD); t.position.set(x,-1,-.5); s.add(t); const r = new THREE.Mesh(new THREE.ConeGeometry(2.4,3,12), K.lambert(0x2f4f8f)); r.position.set(x,5.5,-.5); s.add(r); });
@@ -466,6 +471,19 @@ const ENEMY = {
 };
 function makeEnemy(type){
   const d = ENEMY[type], g = new THREE.Group(), body = K.lambert(d.col), skin = K.lambert(0xc68b59), metal = K.lambert(0x9aa0aa);
+  if (window.VRFigure){ // proportioned soldier: tunic, leather legs, iron helmet with nasal guard, spear or round shield
+    const f = VRFigure.make({shirt:d.col, shorts:0x4a3420, socks:0x4a3420, shoes:0x2a1a10, skin:0xc68b59, hair:0x2a1d14}), iron = new THREE.MeshStandardMaterial({color:0x9aa0aa, metalness:.7, roughness:.35});
+    const helm = new THREE.Mesh(new THREE.SphereGeometry(.118, 18, 12, 0, Math.PI*2, 0, Math.PI*.55), iron); helm.position.y = .1; f.head.add(helm);
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(.04, .1, 10), iron); spike.position.y = .2; f.head.add(spike);
+    const nasal = new THREE.Mesh(new THREE.BoxGeometry(.018, .07, .012), iron); nasal.position.set(0, .06, .112); f.head.add(nasal);
+    const belt = new THREE.Mesh(new THREE.TorusGeometry(.17, .018, 6, 24), new THREE.MeshStandardMaterial({color:0x3a2614, roughness:.8})); belt.rotation.x = Math.PI/2; belt.scale.y = .7; belt.position.y = 1.0; f.group.add(belt);
+    if (type === 'brute'){ const sh = new THREE.Mesh(new THREE.CylinderGeometry(.33,.33,.05,24), new THREE.MeshStandardMaterial({color:0x7a4a28, roughness:.7})); sh.rotation.x = Math.PI/2; sh.position.set(-.1,1.1,.28); f.group.add(sh);
+      const boss = new THREE.Mesh(new THREE.SphereGeometry(.07, 12, 8), iron); boss.position.set(-.1,1.1,.31); f.group.add(boss); f.arms[0].rotation.x = -1.1; }
+    else { const sp = new THREE.Mesh(new THREE.CylinderGeometry(.018,.018,1.9,8), new THREE.MeshStandardMaterial({color:0x6b4a2c, roughness:.8})); sp.position.set(.3,1.15,.12); f.group.add(sp);
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(.04, .2, 8), iron); tip.position.set(.3, 2.18, .12); f.group.add(tip); f.arms[1].rotation.x = -.5; }
+    f.group.scale.setScalar(d.scale);
+    return {g:f.group, legs:f.legs, type, d, hp:d.hp, alive:true, dying:0, ph:rand(0,6)};
+  }
   const torso = new THREE.Mesh(new THREE.BoxGeometry(.5,.7,.3), body); torso.position.y = 1.1; g.add(torso);
   const head = new THREE.Mesh(new THREE.SphereGeometry(.16,10,8), skin); head.position.y = 1.62; g.add(head);
   const helm = new THREE.Mesh(new THREE.ConeGeometry(.19,.25,8), metal); helm.position.y = 1.8; g.add(helm);

@@ -7,7 +7,9 @@
 <meta name="description" content="از ایستگاه فضایی در برابر باران شهاب‌سنگ‌ها دفاع کن.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/figure.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +381,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +422,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -436,7 +441,7 @@ let rocks = [], shots = [], score = 0, hp = 100, wave = 1, spawnT = 0, mode = 'd
 const rockGeo = new THREE.IcosahedronGeometry(1, 1); { const p = rockGeo.attributes.position; for (let i=0;i<p.count;i++){ const v = V(p.getX(i), p.getY(i), p.getZ(i)); v.multiplyScalar(1 + .16*Math.sin(v.x*5.1 + 1)*Math.cos(v.y*4.3) + .1*Math.sin(v.z*7.7)); p.setXYZ(i, v.x, v.y, v.z); } rockGeo.computeVertexNormals(); }
 const rockMat = new THREE.MeshStandardMaterial({color:0x7a6a5a, roughness:.95, flatShading:true}), hotMat = new THREE.MeshStandardMaterial({color:0xff7a2a, emissive:0xff4a10, emissiveIntensity:.8, flatShading:true});
 const boltGeo = new THREE.CylinderGeometry(.012,.012,.5,6); boltGeo.rotateX(Math.PI/2);
-function blaster(h){ const g = new THREE.Group(); const c = h ? 0x4dd0ff : 0xff4dd0;
+function blaster(h){ if (window.VRProps) return VRProps.blaster(0x2a2f44, h ? 0x4dd0ff : 0xff4dd0, h ? 0x4dd0ff : 0xff4dd0); const g = new THREE.Group(); const c = h ? 0x4dd0ff : 0xff4dd0;
   const b = new THREE.Mesh(new THREE.BoxGeometry(.05,.06,.22), K.std(0x2a2f44,.1,{metalness:.6})); b.position.z = -.07; g.add(b);
   const r = new THREE.Mesh(new THREE.TorusGeometry(.03,.008,8,20), K.std(c,.9)); r.position.z = -.19; g.add(r);
   const gr = new THREE.Mesh(new THREE.BoxGeometry(.035,.1,.04), K.std(0x1a1d2a,.05)); gr.position.set(0,-.06,.02); gr.rotation.x = -.3; g.add(gr); return g; }

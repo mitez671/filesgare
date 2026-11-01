@@ -7,7 +7,8 @@
 <meta name="description" content="تنیس روی میز در برابر ربات: راکت در دست، توپ‌ها را برگردان.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +380,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +421,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -444,7 +448,7 @@ function env(K){
   const lines = K.cv(256, 512, (x,w,h) => { x.strokeStyle = '#fff'; x.lineWidth = 6; x.strokeRect(3,3,w-6,h-6); x.beginPath(); x.moveTo(w/2,0); x.lineTo(w/2,h); x.lineWidth = 2; x.stroke(); });
   const top = new THREE.Mesh(new THREE.PlaneGeometry(TW, TL), new THREE.MeshBasicMaterial({map:lines, transparent:true})); top.rotation.x = -Math.PI/2; top.position.set(0, TY + .001, Z0 - TL/2); s.add(top);
   const net = new THREE.Mesh(new THREE.PlaneGeometry(TW + .3, .1525), K.basic(0xffffff, {transparent:true, opacity:.5, side:THREE.DoubleSide})); net.position.set(0, TY + .076, NETZ); s.add(net);
-  for (const sx of [-1,1]) for (const sz of [0,1]){ const leg = new THREE.Mesh(new THREE.BoxGeometry(.05, TY, .05), K.lambert(0x222)); leg.position.set(sx*(TW/2 - .1), TY/2, Z0 - .2 - sz*(TL - .4)); s.add(leg); }
+  for (const sx of [-1,1]) for (const sz of [0,1]){ const leg = new THREE.Mesh(new THREE.BoxGeometry(.05, TY, .05), K.lambert(0x222222)); leg.position.set(sx*(TW/2 - .1), TY/2, Z0 - .2 - sz*(TL - .4)); s.add(leg); }
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 14), K.lambert(0x6a2f2f)); floor.rotation.x = -Math.PI/2; floor.position.z = -2; s.add(floor);
   ball = new THREE.Mesh(new THREE.SphereGeometry(BR, 14, 10), K.std(0xffa030, .5)); s.add(ball);
   ai = new THREE.Group(); const body = new THREE.Mesh(new THREE.CapsuleGeometry(.22,.6,6,12), K.std(0x7c5cff,.2)); body.position.y = 1.1; ai.add(body); const head = new THREE.Mesh(new THREE.SphereGeometry(.17,16,12), K.std(0xdcd8ff,.1)); head.position.y = 1.7; ai.add(head);

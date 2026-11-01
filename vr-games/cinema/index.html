@@ -7,7 +7,8 @@
 <meta name="description" content="یک سالن سینمای واقعی با پردهٔ بزرگ: فیلم‌های کلاسیک آزاد آرشیو اینترنت یا فیلم خودت را ببین.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +309,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -346,11 +350,11 @@ function setup(A){
   screen.userData.onClick = toggle; A.pickables.push(screen);
   const frame = new THREE.Mesh(new THREE.PlaneGeometry(W + .6, H + .6), new THREE.MeshLambertMaterial({color:0x0a0a0a})); frame.position.set(0, 3.3, -9.02); s.add(frame);
   const curtainT = A.cv(64, 256, (x, w, h) => { const g = x.createLinearGradient(0, 0, w, 0); g.addColorStop(0, '#5a0a10'); g.addColorStop(.5, '#a01820'); g.addColorStop(1, '#5a0a10'); x.fillStyle = g; x.fillRect(0, 0, w, h); }, [12, 1]);
-  for (const sx of [-1, 1]){ const c = new THREE.Mesh(new THREE.PlaneGeometry(3, 7), new THREE.MeshLambertMaterial({map:curtainT})); c.position.set(sx*6.2, 3.5, -8.9); s.add(c); }
+  for (const sx of [-1, 1]){ const c = new THREE.Mesh(new THREE.PlaneGeometry(3, 7), new THREE.MeshLambertMaterial({map:curtainT})); c.position.set(sx*6.2, 3.5, -8.9); c.visible = false; s.add(c); }
   const room = new THREE.Mesh(new THREE.BoxGeometry(16, 8, 22), new THREE.MeshLambertMaterial({color:0x2a1418, side:THREE.BackSide})); room.position.set(0, 3.9, -1); s.add(room);
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 22), new THREE.MeshLambertMaterial({color:0x3a1a20})); floor.rotation.x = -Math.PI/2; floor.position.set(0, .01, -1); s.add(floor);
-  const seatM = new THREE.MeshLambertMaterial({color:0x8a1420});
-  for (let r=0;r<7;r++) for (let c=0;c<10;c++){ const x = (c - 4.5)*.75, z = -5 + r*1.2 + (r >= 3 ? .0 : 0), y = r*.18; const g = new THREE.Group(); g.position.set(x, y, z); s.add(g); const b = new THREE.Mesh(new THREE.BoxGeometry(.6, .45, .5), seatM); b.position.y = .23; g.add(b); const back = new THREE.Mesh(new THREE.BoxGeometry(.6, .6, .1), seatM); back.position.set(0, .6, .25); g.add(back);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(16, 22), VRDecor.material('velvet',[8,12])); floor.rotation.x = -Math.PI/2; floor.position.set(0, .01, -1); s.add(floor);
+  const seatM = VRDecor.material('velvet');
+  for (let r=0;r<7;r++) for (let c=0;c<10;c++){ if (r === 3 && (c === 4 || c === 5)) continue; const x = (c - 4.5)*.75, z = -5 + r*1.2 + (r >= 3 ? .0 : 0), y = r*.18; const g = new THREE.Group(); g.position.set(x, y, z); s.add(g); const b = new THREE.Mesh(new THREE.BoxGeometry(.6, .45, .5), seatM); b.position.y = .23; g.add(b); const back = new THREE.Mesh(new THREE.BoxGeometry(.6, .6, .1), seatM); back.position.set(0, .6, .25); g.add(back);
     if (r === 3 && (c === 4 || c === 5)) continue; }
   for (let i=0;i<8;i++){ const l = new THREE.PointLight(0xffc890, .35, 7); l.userData.base = .35; l.position.set(i % 2 ? -7.5 : 7.5, 3, -7 + Math.floor(i/2)*4); s.add(l); lights.push(l); const sc = new THREE.Mesh(new THREE.SphereGeometry(.12, 8, 6), new THREE.MeshBasicMaterial({color:0xffc890})); sc.position.copy(l.position); s.add(sc); }
   info = A.panel(1024, 260, 1.2); info.m.position.set(-2.4, 1.6, -2.8); info.m.rotation.y = .5; A.card(info, 'سینما', 'از منو یک فیلم انتخاب کن.', {size:30});

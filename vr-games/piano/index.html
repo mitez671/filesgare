@@ -7,7 +7,8 @@
 <meta name="description" content="یک پیانوی بزرگ جلوی تو؛ آزاد بنواز یا آهنگ‌ها را با راهنمای نورانی یاد بگیر.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -224,7 +225,7 @@ K.init = function(cfg){
   const modeBtns = cfg.modes.map(md => makeButton(md.label, md.color || '#7c5cff', () => K.start(md.key)));
   const exitBtn = makeButton('→ فهرست بازی‌ها', '#8a8aa0', () => { location.href = cfg.hubUrl || '../index.html'; }, .62);
   const all = modeBtns.length;
-  modeBtns.forEach((b,i) => b.p.m.position.set(mp[0] + ((all-1)/2 - i)*.7, mp[1]-.55, mp[2]+.05));
+  const perRow = all > 5 ? 5 : all; modeBtns.forEach((b,i) => { const r = Math.floor(i/perRow), c = i%perRow, inRow = Math.min(perRow, all - r*perRow); b.p.m.position.set(mp[0] + ((inRow-1)/2 - c)*.62, mp[1]-.5 - r*.22, mp[2]+.05); });
   exitBtn.p.m.position.set(mp[0], mp[1]-.95, mp[2]+.05);
   function showButtons(v){ modeBtns.forEach(b => b.p.m.visible = v); exitBtn.p.m.visible = v && cfg.hub !== false; }
 
@@ -379,6 +380,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +421,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -433,7 +437,15 @@ K.init = function(cfg){
 (function(){
 const {V, fa} = K;
 const LOW = 60 - 12, N = 25, KW = .085, KY = .9, KZ = -.55;  // two octaves from C3
-const SONGS = { ode:[64,64,65,67,67,65,64,62,60,60,62,64,64,62,62, 64,64,65,67,67,65,64,62,60,60,62,64,62,60,60], twinkle:[60,60,67,67,69,69,67,65,65,64,64,62,62,60,67,67,65,65,64,64,62,67,67,65,65,64,64,62,60,60,67,67,69,69,67,65,65,64,64,62,62,60] };
+const SONGS = {
+  birthday:[55,55,57,55,60,59, 55,55,57,55,62,60, 55,55,67,64,60,59,57, 65,65,64,60,62,60],
+  jingle:[64,64,64, 64,64,64, 64,67,60,62,64, 65,65,65,65,65,64,64,64,64,62,62,64,62,67, 64,64,64, 64,64,64, 64,67,60,62,64, 65,65,65,65,65,64,64,64,67,67,65,62,60],
+  elise:[64,63,64,63,64,59,62,60,57, 48,52,57,59, 52,56,59,60, 52,64,63,64,63,64,59,62,60,57, 48,52,57,59, 52,60,59,57],
+  mary:[64,62,60,62,64,64,64, 62,62,62, 64,67,67, 64,62,60,62,64,64,64,64,62,62,64,62,60],
+  lullaby:[64,64,67, 64,64,67, 64,67,72,71,69,69,67, 62,64,65,62,62,64,65, 62,65,71,69,67,71,72],
+  london:[67,69,67,65,64,65,67, 62,64,65, 64,65,67, 67,69,67,65,64,65,67, 62,67,64,60],
+  jacques:[60,62,64,60, 60,62,64,60, 64,65,67, 64,65,67, 67,69,67,65,64,60, 67,69,67,65,64,60, 60,55,60, 60,55,60],
+  ode:[64,64,65,67,67,65,64,62,60,60,62,64,64,62,62, 64,64,65,67,67,65,64,62,60,60,62,64,62,60,60], twinkle:[60,60,67,67,69,69,67,65,65,64,64,62,62,60,67,67,65,65,64,64,62,67,67,65,65,64,64,62,60,60,67,67,69,69,67,65,65,64,64,62,62,60] };
 let keys = [], mode = 'free', song = [], si = 0, played = 0, errors = 0, hits = 0;
 const isBlack = m => [1,3,6,8,10].includes(m % 12);
 function env(K){
@@ -456,7 +468,9 @@ function piano(m, v=1){ if (!K.ac) return; const f = K.mtof(m), t = K.ac.current
   for (const [mul, pk, dec, type] of [[1, .22, 1.6, 'triangle'], [2, .06, .8, 'sine'], [3, .03, .4, 'sine']]) K.tone({type, f:f*mul, dec:dec*(m < 60 ? 1.3 : 1), peak:pk*v, t}); K.noise({freq:2000, dec:.02, peak:.05*v, t}); }
 function press(k, v){ k.down = .12; piano(k.m, v); K.emit(V(k.x, KY + .05, k.z), k.black ? 0x7a7aff : 0xffd8a0, 6, .8, .4, -.2);
   if (mode !== 'free'){ if (k.m === song[si]){ si++; hits++; if (si >= song.length){ setTimeout(() => K.state === 'play' && K.over({title:'آهنگ تمام شد!', value:Math.max(0, Math.round(100*hits/(hits + errors))), label:'دقت ٪', stats:[['نت درست', fa(hits)], ['نت اشتباه', fa(errors)]]}), 800); } } else errors++; } else played++; }
-function start(key){ mode = key; si = played = errors = hits = 0; song = key === 'free' ? [] : SONGS[key]; }
+function start(key){ mode = key; si = played = errors = hits = 0; song = key === 'free' ? [] : SONGS[key]; if (K.mode === 'desk') K.resetCamera(); }
+// with the mouse, look up at the song menu while it is open (the play camera looks down at the keys)
+function onMenu(K){ if (K.mode === 'desk'){ K.camera.position.set(0, 1.55, .45); K.camera.quaternion.identity(); K.camera.lookAt(0, 1.75, -2); } }
 function update(dt){
   for (const k of keys){ k.cool -= dt; if (k.down > 0) k.down -= dt; k.k.position.y = k.baseY - (k.down > 0 ? .012 : 0); const tgt = mode !== 'free' && song[si] === k.m; k.k.material.color.setHex(tgt ? (K.t % .6 < .4 ? 0x3c7aff : 0x8fb4ff) : k.down > 0 ? 0xffc870 : k.black ? 0x111111 : 0xf6f2ea); }
   for (const H of K.activeHands()){
@@ -471,9 +485,10 @@ K.init({
   tagline:'یک پیانوی مشکی براق با دو اکتاو کلید جلوی تو. با نوک دسته‌ها مثل انگشت روی کلیدها بزن؛ هرچه محکم‌تر بزنی، صدا بلندتر است. یا یک آهنگ را با راهنمای نورانی یاد بگیر.',
   rules:['دست‌ها را بالای کلیدها نگه دار و نوک دسته را رو به پایین روی کلید بزن.','در حالت آموزش، کلیدی که باید بزنی آبی چشمک می‌زند.','آهنگ‌ها: «سرود شادی» بتهوون و «چشمک بزن ستاره‌ی کوچک».'],
   deskRules:'روی کلیدها کلیک کن.',
-  modes:[{key:'free', label:'آزاد', color:'#ffd8a0'}, {key:'ode', label:'سرود شادی', color:'#3c7aff'}, {key:'twinkle', label:'ستارهٔ کوچک', color:'#ff7a3c'}],
-  tip:() => [0,0,-.06], hand, env, start, update, desk:(K) => { K.R.holder.visible = false; },
-  deskCam:{pos:[0,1.35,.15], look:[0,.85,-.6]}, menuPos:[0,1.95,-2], hudPos:[-1.1,1.7,-1.6],
+  modes:[{key:'free', label:'آزاد', color:'#ffd8a0'}, {key:'birthday', label:'تولدت مبارک', color:'#ff5c8a'}, {key:'twinkle', label:'ستارهٔ کوچک', color:'#ff7a3c'}, {key:'ode', label:'سرود شادی', color:'#3c7aff'}, {key:'jingle', label:'زنگوله‌ها', color:'#3ee08f'},
+    {key:'mary', label:'بره کوچولو', color:'#ffd23f'}, {key:'jacques', label:'برادر ژاک', color:'#c86aff'}, {key:'london', label:'پل لندن', color:'#4dd0ff'}, {key:'lullaby', label:'لالایی برامس', color:'#a0b4ff'}, {key:'elise', label:'برای الیزه', color:'#ff9a5c'}],
+  tip:() => [0,0,-.06], hand, env, start, update, onMenu, onEnter:onMenu, desk:(K) => { K.R.holder.visible = false; },
+  deskCam:{pos:[0,1.35,.15], look:[0,.85,-.6]}, menuPos:[0,2.45,-2], hudPos:[-1.1,1.7,-1.6],
 });
 })();
 

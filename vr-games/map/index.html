@@ -47,31 +47,43 @@ select{max-width:200px}
 .attrib a{color:var(--muted)}
 @media (max-width:700px){.brand{display:none}#help{display:none}}
 </style>
+<link rel="stylesheet" href="atlas.css?v=20261101">
 </head>
 <body>
 <div id="stage"></div>
-<div class="bar" dir="rtl">
-  <a class="hub" href="../index.html">→ همهٔ بازی‌ها</a>
-  <span class="brand">زمین‌نما</span>
-  <form class="search" id="searchForm" role="search">
-    <input id="q" type="search" placeholder="جستجوی مکان، مثلاً: میدان نقش جهان" autocomplete="off" aria-label="جستجوی مکان">
-    <div id="results" hidden></div>
-  </form>
-  <select id="preset" aria-label="مکان‌های آماده"><option value="">مکان‌های آماده…</option></select>
-  <button class="btn" id="bLoc" type="button">موقعیت من</button>
-  <div class="seg" role="group" aria-label="حالت نمایش">
-    <button class="btn on" id="mEarth" type="button">زمین</button>
-    <button class="btn" id="mStreet" type="button">خیابان</button>
+<header class="bar" dir="rtl">
+  <div class="atlas-brand"><svg viewBox="0 0 36 42" aria-hidden="true"><circle cx="18" cy="18" r="14"/><ellipse cx="18" cy="18" rx="6" ry="14"/><path d="M4 18h28M7 10q11 6 22 0M7 26q11-6 22 0M18 32v6m-8 1h16"/></svg><span class="brand">زمین‌نما<small>THE ATLAS ROOM</small></span></div>
+  <div class="header-meta"><span class="edition">EXPLORER’S EDITION · 01</span><span class="connection" id="connection" data-state="loading"><i></i><span id="connectionText">کرهٔ زمین آماده است</span></span><a class="hub" href="../index.html">بازگشت به مجموعه ←</a></div>
+</header>
+<aside class="atlas-panel" dir="rtl" aria-label="کنترل‌های کاوش زمین">
+  <div class="kicker">اتاق اطلس · سفر اول</div>
+  <h1>از اینجا،<br>همه‌جا نزدیک است.</h1>
+  <p class="intro">کره را بچرخان، جایی را پیدا کن و آرام‌آرام تا خیابان‌هایش پیش برو.</p>
+  <label class="field-label" for="q">کجا را می‌خواهی ببینی؟</label>
+  <form class="search" id="searchForm" role="search"><input id="q" type="search" placeholder="نام شهر یا یک جای دیدنی…" autocomplete="off" aria-label="جستجوی مکان"><div id="results" hidden></div></form>
+  <div class="quick-label"><span>یک نقطه برای شروع</span><span>PLACES TO GO</span></div>
+  <div class="destinations">
+    <button type="button" class="destination" data-trip="0"><span class="destination-index">01</span><span class="place-name"><strong>تهران</strong><small>میدان آزادی · ایران</small></span><span class="arrow">↖</span></button>
+    <button type="button" class="destination" data-trip="2"><span class="destination-index">02</span><span class="place-name"><strong>اصفهان</strong><small>میدان نقش جهان · ایران</small></span><span class="arrow">↖</span></button>
+    <button type="button" class="destination" data-trip="7"><span class="destination-index">03</span><span class="place-name"><strong>پاریس</strong><small>برج ایفل · فرانسه</small></span><span class="arrow">↖</span></button>
   </div>
-  <button class="btn on" id="bLabels" type="button" aria-pressed="true">نام‌ها</button>
-  <button class="btn vr" id="bVR" type="button" disabled>ورود به VR</button>
-</div>
-<div id="status" dir="rtl">در حال اتصال به سرور نقشه…</div>
+  <div class="section-rule"></div>
+  <div class="mobile-row"><select id="preset" aria-label="مقصدهای بیشتر"><option value="">مقصدهای بیشتر…</option></select><button class="btn vr" id="bVR" type="button" disabled>ورود به واقعیت مجازی ↗</button></div>
+  <div class="seg" role="group" aria-label="حالت نمایش"><button class="btn on" id="mEarth" type="button">کرهٔ زمین</button><button class="btn" id="mStreet" type="button">گشت در خیابان</button></div>
+  <div class="atlas-actions"><button class="btn on" id="bLabels" type="button" aria-pressed="true">نام مکان‌ها</button><button class="btn" id="bLoc" type="button">موقعیت من ⌖</button></div>
+  <p class="atlas-caption">کرهٔ تصویری همیشه همراه توست.<br>جست‌وجو و جزئیات شهرها به اینترنت نیاز دارند.</p>
+</aside>
+<nav class="view-tools" aria-label="کنترل دید"><button id="zoomIn" type="button" aria-label="نزدیک‌تر">+</button><button id="zoomOut" type="button" aria-label="دورتر">−</button><button id="resetView" type="button" aria-label="بازگشت به نمای کره">⌂</button><button id="toggleSurface" type="button" aria-label="تغییر بین کرهٔ تصویری و نقشه" title="کرهٔ تصویری / نقشه">◎</button></nav>
+<div class="compass-badge" aria-hidden="true"><svg viewBox="0 0 50 50" fill="none" stroke="currentColor" stroke-width=".7"><circle cx="25" cy="25" r="17"/><path d="M25 2v46M2 25h46M25 8l5 17-5 17-5-17z"/><path d="M25 8l5 17h-10z" fill="currentColor"/><text x="25" y="6" text-anchor="middle" font-family="Georgia" font-size="5" fill="currentColor" stroke="none">N</text></svg></div>
+<section class="scene-note" dir="rtl"><div class="note-en">A WORLD WITHIN REACH</div><div class="note-rule"></div><h2>جهان، روی میز تو.</h2><p>بکش و بچرخان.<br>با چرخ موس، سفرت را نزدیک‌تر کن.</p></section>
+<div id="status" dir="rtl">کرهٔ تصویری محلی · در حال بررسی اتصال نقشه…</div>
 <div id="help" dir="rtl"></div>
 <div class="attrib"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">© OpenStreetMap contributors</a> · <a href="https://openmaptiles.org/" target="_blank" rel="noopener">© OpenMapTiles</a> · <a href="https://openfreemap.org/" target="_blank" rel="noopener">OpenFreeMap</a> · Search: Nominatim</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
+<script src="earcut-2.2.4.js?v=20261101"></script>
+<script src="atlas-room.js?v=20261101"></script>
 <script id="core" type="text/plain">
 'use strict';
 var EARTH = 40075016.686;
@@ -224,7 +236,7 @@ const V = (x=0,y=0,z=0) => new THREE.Vector3(x,y,z);
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const fa = n => Math.round(n).toLocaleString('fa-IR');
 const TILEJSON = 'https://tiles.openfreemap.org/planet';
-const EARCUT_URL = 'https://cdn.jsdelivr.net/npm/earcut@2.2.4/dist/earcut.min.js';
+const EARCUT_URL = new URL('earcut-2.2.4.js', location.href).href;
 const NOMINATIM = 'https://nominatim.openstreetmap.org/';
 const HUB = '../index.html';
 const EARTH = 40075016.686, RE = 6378137, D2R = Math.PI/180;
@@ -240,24 +252,18 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2)); renderer.setSize(innerWid
 renderer.xr.enabled = true; renderer.xr.setReferenceSpaceType('local-floor');
 $('#stage').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
-const SPACE_BG = new THREE.Color(0x0b1220), SKY_BG = new THREE.Color(0xbcd6ec);
+const SPACE_BG = new THREE.Color(0x0c1a17), SKY_BG = new THREE.Color(0xbcd6ec);
 scene.background = SPACE_BG.clone();
 const rig = new THREE.Group(); scene.add(rig);
 const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, .02, 8000); rig.add(camera);
-scene.add(new THREE.HemisphereLight(0xeaf2ff, 0x4a4438, .95));
-const sun = new THREE.DirectionalLight(0xffffff, .7); sun.position.set(.6, 1, .4); scene.add(sun);
+scene.add(new THREE.HemisphereLight(0xf0e9d4, 0x283c2c, 1.05));
+const sun = new THREE.DirectionalLight(0xffe9c3, 1.15); sun.position.set(-2, 3, 4); scene.add(sun);
 const GLOBE_C = V(0, 1.3, -1.0), MAP_F = V(0, .9, -.8);
 
 /* ---------- space room ---------- */
 const room = new THREE.Group(); scene.add(room);
 const floorG = new THREE.Group(); room.add(floorG);
-(function(){
-  const fl = new THREE.Mesh(new THREE.CircleGeometry(8,64), new THREE.MeshLambertMaterial({color:0x101a2c})); fl.rotation.x = -Math.PI/2; floorG.add(fl);
-  const ring = new THREE.Mesh(new THREE.RingGeometry(1.9,1.94,96), new THREE.MeshBasicMaterial({color:0x3fb6ff})); ring.rotation.x = -Math.PI/2; ring.position.y = .002; floorG.add(ring);
-  const n = 1200, p = new Float32Array(n*3); for (let i=0;i<n;i++){ const u = Math.random()*2-1, a = Math.random()*Math.PI*2, r = 400; const s = Math.sqrt(1-u*u); p[i*3] = Math.cos(a)*s*r; p[i*3+1] = u*r; p[i*3+2] = Math.sin(a)*s*r; }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(p,3));
-  room.add(new THREE.Points(g, new THREE.PointsMaterial({color:0xcfe0ff, size:1.2, sizeAttenuation:true, fog:false})));
-})();
+const atlasRoom = buildAtlasRoom(THREE,room,floorG,renderer);
 const sky = new THREE.Group(); sky.visible = false; scene.add(sky);
 (function(){
   const c = document.createElement('canvas'); c.width = 8; c.height = 256; const x = c.getContext('2d');
@@ -312,7 +318,8 @@ function buildingMesh(b){
 
 /* ================= EARTH (continuous zoom) ================= */
 const earth = new THREE.Group(); scene.add(earth);
-const E = {lat:30, lon:52, head:0, R:.34};
+const E = {lat:30, lon:52, head:0, R:.38};
+let surfaceView = 'satellite';
 const R_MIN = .22, R_MAX = RE/150;
 const ll2v = (lat, lon, r=RE) => { const la = lat*D2R, lo = lon*D2R; return V(r*Math.cos(la)*Math.sin(lo), r*Math.sin(la), r*Math.cos(la)*Math.cos(lo)); };
 function tangentBasis(lat, lon){ const la = lat*D2R, lo = lon*D2R; const up = V(Math.cos(la)*Math.sin(lo), Math.sin(la), Math.cos(la)*Math.cos(lo)); const east = V(Math.cos(lo), 0, -Math.sin(lo)); const north = V().crossVectors(up, east); return {up, east, north}; }
@@ -335,7 +342,7 @@ function updateEarthFrame(){
 }
 // base globe (z3)
 const GZ = 3, GN = 2**GZ;
-const oceanMat = new THREE.MeshBasicMaterial({color:0x6aa9d4, polygonOffset:true, polygonOffsetFactor:4, polygonOffsetUnits:40});
+const oceanMat = new THREE.MeshBasicMaterial({color:0x6aa9d4,transparent:true,opacity:0, polygonOffset:true, polygonOffsetFactor:4, polygonOffsetUnits:40});
 function patchGeo(z, x, y, seg){
   const latc = y2lat((y+.5)*256, z), lonc = x2lon((x+.5)*256, z), c = ll2v(latc, lonc);
   const pos = [], uv = [], idx = [];
@@ -350,6 +357,9 @@ const capT = 85.0511*D2R, iceMat = new THREE.MeshBasicMaterial({color:0xeef4f8, 
 earth.add(new THREE.Mesh(new THREE.SphereGeometry(RE*.9995,32,4,0,Math.PI*2,0,Math.PI/2-capT), iceMat));
 earth.add(new THREE.Mesh(new THREE.SphereGeometry(RE*.9995,32,4,0,Math.PI*2,Math.PI/2+capT,Math.PI/2-capT), iceMat));
 const atmo = new THREE.Mesh(new THREE.SphereGeometry(RE*1.05,48,24), new THREE.MeshBasicMaterial({color:0x5cc8ff, transparent:true, opacity:.15, side:THREE.BackSide, blending:THREE.AdditiveBlending, depthWrite:false, fog:false})); earth.add(atmo);
+// Geographic fallback: the existing equirectangular Earth image is local, not invented map data.
+const earthPhoto = new THREE.TextureLoader().load('../_shared/earth.jpg'); earthPhoto.encoding=THREE.sRGBEncoding;earthPhoto.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+const photoGlobe = new THREE.Mesh(new THREE.SphereGeometry(RE*.9993,96,64),new THREE.MeshPhongMaterial({map:earthPhoto,shininess:9,specular:0x34515a}));photoGlobe.rotation.y=-Math.PI/2;earth.add(photoGlobe);
 const baseLabels = [];
 async function loadBase(){
   for (const p of basePatches){
@@ -538,6 +548,7 @@ function setMode(m){
   scene.background = (m === 'street' ? SKY_BG : SPACE_BG).clone();
   camera.near = m === 'street' ? .15 : .02; camera.updateProjectionMatrix();
   if (m === 'earth'){ rig.position.set(0,0,0); rig.rotation.set(0,0,0); }
+  document.body.dataset.view = m;
   $('#mEarth').classList.toggle('on', m === 'earth'); $('#mStreet').classList.toggle('on', m === 'street');
   board.visible = m === 'earth';
   updateHelp(); updateStatus(); hintDirty = true;
@@ -699,7 +710,7 @@ function updateHelp(){
 }
 function updateStatus(){
   const s = $('#status'); if (!TILE_URL) return;
-  let t = placeName ? '<b>' + placeName + '</b> · ' : '';
+  let t = placeName ? '<b>' + placeName.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) + '</b> · ' : '';
   if (mode === 'earth') t += frame.k > 2e6 ? 'کره را بچرخان یا زوم کن' : 'مقیاس ۱:' + fa(frame.k) + ' · بزرگنمایی ' + fa(eZ);
   else t += 'ارتفاع دید ' + fa(rig.position.y + 1.7) + ' متر';
   if (inflight) t += ' · بارگذاری ' + fa(inflight); if (tileErr) t += ' · ' + fa(tileErr) + ' خطا';
@@ -756,7 +767,13 @@ renderer.setAnimationLoop(() => {
     if (!renderer.xr.isPresenting && !drag && !fly && E.R < .6) E.lon = ((E.lon - dt*1.5 + 540) % 360) - 180;
     updateEarthFrame();
     if (!renderer.xr.isPresenting) deskEarthCam();
-    floorG.visible = frame.t < .15; atmo.visible = frame.t < .6;
+    floorG.visible = frame.t < .15; atmo.visible = frame.t < .6; atlasRoom.update(frame.t);
+    const useMap=surfaceView==='map'||frame.t>.08;
+    for(const p of basePatches)p.m.visible=useMap;
+    for(const t of eTiles.values())if(t.obj)t.obj.visible=useMap;
+    photoGlobe.visible=frame.t<.6;
+    board.visible=renderer.xr.isPresenting;
+
     scene.fog = frame.t > .55 ? (scene.fog && scene.fog.near === 2.6 ? scene.fog : new THREE.Fog(0x0b1220, 2.6, 5.2)) : null;
     nameP.m.visible = frame.t > .4;
   } else { scene.fog = scene.fog && scene.fog.near === 700 ? scene.fog : new THREE.Fog(0xd8e6f1, 700, 3200); nameP.m.visible = false; }
@@ -768,19 +785,27 @@ renderer.setAnimationLoop(() => {
   renderer.render(scene, camera);
 });
 
+$('#zoomIn').onclick=()=>{if(mode==='earth')E.R=clamp(E.R*1.65,R_MIN,R_MAX);else rig.position.y=Math.max(0,rig.position.y-12);fly=null;};
+$('#zoomOut').onclick=()=>{if(mode==='earth')E.R=clamp(E.R/1.65,R_MIN,R_MAX);else rig.position.y+=12;fly=null;};
+$('#resetView').onclick=()=>{fly=null;E.R=.38;E.lat=30;E.lon=52;E.head=0;setMode('earth');deskCamReset();};
+$('#toggleSurface').onclick=()=>{surfaceView=surfaceView==='satellite'?'map':'satellite';$('#toggleSurface').setAttribute('aria-pressed',surfaceView==='map');};
+for(const b of document.querySelectorAll('[data-trip]'))b.onclick=()=>{const p=PRESETS[+b.dataset.trip];if(!TILE_URL){flyTo(p[1],p[2],.38,p[0]);$('#status').textContent='مقصد روی کره انتخاب شد؛ برای جزئیات خیابان، اتصال نقشه لازم است.';return;}if(mode!=='earth')setMode('earth');flyTo(p[1],p[2],RE/2500,p[0]);};
 /* ================= start ================= */
 updateHelp(); setMode('earth'); updateEarthFrame(); drawName();
-(async () => {
+async function connectMap(){
+  $('#connection').dataset.state='loading'; $('#connectionText').textContent='اتصال جزئیات نقشه…';
   try {
     const r = await fetch(TILEJSON); if (!r.ok) throw new Error('HTTP ' + r.status); const tj = await r.json();
-    TILE_URL = tj.tiles[0]; updateStatus(); loadBase();
+    TILE_URL = tj.tiles[0]; $('#connection').dataset.state='ready';$('#connectionText').textContent='نقشهٔ آنلاین متصل'; updateStatus(); loadBase();
     const hash = location.hash.slice(1).split(','); if (hash.length >= 2 && !isNaN(+hash[0])) flyTo(+hash[0], +hash[1], RE/2500, decodeURIComponent(hash[2] || ''));
   } catch(e){
-    $('#status').innerHTML = '<b>اتصال به سرور نقشه ممکن نشد.</b> اینترنت را بررسی کن؛ اگر tiles.openfreemap.org فیلتر است، این برنامه بدون آن داده‌ای نشان نمی‌دهد.';
+    $('#connection').dataset.state='offline';$('#connectionText').textContent='نمای تصویری محلی';
+    $('#status').innerHTML = 'کره آماده است؛ جزئیات آنلاین نقشه متصل نشد. <button type="button" id="retryMap" class="retry">تلاش دوباره</button>';$('#retryMap').onclick=connectMap;
   }
-})();
+}
+connectMap();
 Promise.all([document.fonts.load('600 40px Vazirmatn', 'تهران ۱۲۳'), document.fonts.load('400 40px Lalezar', 'زمین')]).catch(() => {}).then(() => { hintKey = ''; hintDirty = true; drawName(); boardBtns.forEach(m => m.userData.btn.b.draw(false)); for (const s of labelCache.values()){ s.material.map.dispose(); s.material.dispose(); } labelCache.clear(); });
-window.__map = {E, frame, setMode, enterStreet, flyTo, eTiles, sTiles, labelGroup, get mode(){ return mode; }};
+window.__map = {E, frame, setMode, enterStreet, flyTo, eTiles, sTiles, labelGroup, get mode(){ return mode; },renderer,scene,camera,atlasRoom,photoGlobe, get surfaceView(){return surfaceView;}};
 })();
 </script>
 </body>

@@ -5,11 +5,12 @@
    "key": "nature",
    "name": "تالار تاریخ طبیعی",
    "sub": "دایناسورها و عصر یخبندان",
-   "w": 36,
-   "d": 52,
-   "h": 13,
-   "wall": "#3a3b2f",
-   "accent": "#d9a441"
+   "w": 40,
+   "d": 56,
+   "h": 14,
+   "wall": "#e9e4da",
+   "accent": "#d9a441",
+   "arch": "atrium"
   },
   {
    "key": "space",
@@ -18,8 +19,10 @@
    "w": 64,
    "d": 96,
    "h": 24,
-   "wall": "#232a36",
-   "accent": "#7fb7e8"
+   "wall": "#c9ced6",
+   "accent": "#7fb7e8",
+   "wallH": 12,
+   "arch": "hangar"
   }
  ],
  "objects": [
@@ -37,7 +40,12 @@
    "fa": "تیرانوسورس رکس و تریسراتوپس",
    "en": "Tyrannosaurus rex & Triceratops (USNM PAL 555000)",
    "info": "«تی‌رکس ملت» حدود ۶۶ میلیون سال پیش در مونتانای آمریکا زندگی می‌کرد و اسکلتش سال ۱۹۸۸ پیدا شد. در تالار «زمان ژرف» موزهٔ ملی تاریخ طبیعی واشنگتن، او را در حال حمله به یک تریسراتوپس سوار کرده‌اند. طولش حدود ۱۲ متر است.",
-   "where": "موزهٔ ملی تاریخ طبیعی اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی تاریخ طبیعی اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "Nation's T. rex Smithsonian",
+    "Tyrannosaurus Triceratops National Museum of Natural History Deep Time",
+    "Tyrannosaurus rex National Museum of Natural History"
+   ]
   },
   {
    "key": "triceratops",
@@ -53,7 +61,12 @@
    "fa": "تریسراتوپس",
    "en": "Triceratops horridus Marsh, 1889",
    "info": "دایناسوری گیاه‌خوار با سه شاخ و یک یقهٔ استخوانی بزرگ پشت سر، که در پایان دورهٔ کرتاسه در آمریکای شمالی زندگی می‌کرد. این اسکلت کامل در وایومینگ پیدا شده است.",
-   "where": "موزهٔ ملی تاریخ طبیعی اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی تاریخ طبیعی اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "Triceratops National Museum of Natural History",
+    "Triceratops Hatcher Smithsonian",
+    "Triceratops skeleton Smithsonian"
+   ]
   },
   {
    "key": "mammoth",
@@ -69,7 +82,12 @@
    "fa": "ماموت پشمالو",
    "en": "Mammuthus primigenius (Blumbach) — USNM V23792",
    "info": "خویشاوند فیل‌ها که در عصر یخبندان در دشت‌های سرد اوراسیا و آمریکای شمالی می‌چرید. آخرین ماموت‌ها حدود ۴۰۰۰ سال پیش از بین رفتند. این اسکلت سال ۱۹۵۲ در آلاسکا پیدا شد.",
-   "where": "موزهٔ ملی تاریخ طبیعی اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی تاریخ طبیعی اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "woolly mammoth National Museum of Natural History",
+    "Mammuthus primigenius Smithsonian",
+    "mammoth skeleton Smithsonian"
+   ]
   },
   {
    "key": "whale",
@@ -85,7 +103,12 @@
    "fa": "گورستان نهنگ‌های فسیلی",
    "en": "Fossil whale excavation site MPC 677 — Cerro Ballena, Chile",
    "info": "در کویر آتاکامای شیلی، هنگام ساختن جاده بیش از ۴۰ اسکلت نهنگ ۶ تا ۹ میلیون ساله پیدا شد. پژوهشگران اسمیتسونین پیش از جابه‌جایی فسیل‌ها، کل محل حفاری را سه‌بعدی اسکن کردند.",
-   "where": "سرو بایینا، کویر آتاکاما، شیلی"
+   "where": "سرو بایینا، کویر آتاکاما، شیلی",
+   "photoQueries": [
+    "Cerro Ballena",
+    "Cerro Ballena fossil whales",
+    "fossil whale Smithsonian"
+   ]
   },
   {
    "key": "wright",
@@ -97,11 +120,17 @@
     -14
    ],
    "rot": 30,
-   "lift": 1.2,
+   "lift": 6.5,
    "fa": "هواپیمای برادران رایت (۱۹۰۳)",
    "en": "1903 Wright Flyer",
    "info": "اولین هواپیمای موتوردار که با سرنشین و تحت کنترل پرواز کرد: ۱۷ دسامبر ۱۹۰۳ در کیتی‌هاوک. اولین پرواز ۱۲ ثانیه طول کشید و ۳۶ متر پیش رفت. دهانهٔ بال‌ها ۱۲ متر است.",
-   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "Wright Flyer National Air and Space Museum",
+    "1903 Wright Flyer Smithsonian",
+    "Wright Flyer Smithsonian"
+   ],
+   "hang": true
   },
   {
    "key": "x1",
@@ -113,11 +142,17 @@
     -14
    ],
    "rot": -30,
-   "lift": 3,
+   "lift": 9,
    "fa": "بل ایکس-۱",
    "en": "Bell X-1 \"Glamorous Glennis\"",
    "info": "اولین هواپیمایی که از دیوار صوتی گذشت: ۱۴ اکتبر ۱۹۴۷، با خلبانی چاک ییگر و سرعت ۱٫۰۶ ماخ. شکلش را از روی گلولهٔ تفنگ گرفته‌اند.",
-   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "Glamorous Glennis",
+    "Bell X-1 National Air and Space Museum",
+    "Bell X-1 Smithsonian"
+   ],
+   "hang": true
   },
   {
    "key": "suit",
@@ -133,7 +168,12 @@
    "fa": "لباس فضایی نیل آرمسترانگ",
    "en": "Armstrong Space Suit (A7-L), Apollo 11",
    "info": "لباسی که نیل آرمسترانگ در ۲۰ ژوئیهٔ ۱۹۶۹ با آن روی ماه راه رفت. پیش از نمایش دوباره، موزه آن را با دقت بالا اسکن کرد تا همه بتوانند از نزدیک ببینندش.",
-   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "Neil Armstrong spacesuit National Air and Space Museum",
+    "Armstrong A7L spacesuit",
+    "A7L spacesuit Smithsonian"
+   ]
   },
   {
    "key": "shepard",
@@ -149,7 +189,12 @@
    "fa": "لباس فضایی آلن شپرد",
    "en": "Pressure Suit, Mercury, Shepard, MR-3",
    "info": "آلن شپرد این لباس را ۵ مه ۱۹۶۱ پوشید و با کپسول «فریدم ۷» اولین آمریکایی شد که به فضا رفت. پرواز او ۱۵ دقیقه طول کشید.",
-   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "Alan Shepard Mercury spacesuit",
+    "Mercury pressure suit National Air and Space Museum",
+    "Mercury spacesuit Smithsonian"
+   ]
   },
   {
    "key": "apollo",
@@ -165,7 +210,12 @@
    "fa": "کپسول آپولو ۱۱ «کلمبیا»",
    "en": "Command Module, Apollo 11 \"Columbia\"",
    "info": "سه فضانورد آپولو ۱۱ (آرمسترانگ، آلدرین و کالینز) در ژوئیهٔ ۱۹۶۹ با این کپسول به ماه رفتند و برگشتند. این تنها بخش فضاپیماست که به زمین بازگشت. قطرش ۳٫۹ متر است.",
-   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "Apollo 11 Columbia command module National Air and Space Museum",
+    "Columbia Apollo 11 command module",
+    "Apollo 11 command module Smithsonian"
+   ]
   },
   {
    "key": "ss1",
@@ -177,11 +227,17 @@
     -34
    ],
    "rot": -35,
-   "lift": 2.5,
+   "lift": 7.5,
    "fa": "اسپیس‌شیپ‌وان",
    "en": "SpaceShipOne",
    "info": "اولین فضاپیمای سرنشین‌دار خصوصی که به فضا رسید. سال ۲۰۰۴ دو بار در دو هفته تا ارتفاع بیش از ۱۰۰ کیلومتر رفت و جایزهٔ ۱۰ میلیون دلاری «انصاری ایکس» را برد.",
-   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن"
+   "where": "موزهٔ ملی هوا و فضای اسمیتسونین، واشنگتن",
+   "photoQueries": [
+    "SpaceShipOne National Air and Space Museum",
+    "SpaceShipOne Smithsonian",
+    "SpaceShipOne"
+   ],
+   "hang": true
   },
   {
    "key": "discovery",
@@ -197,7 +253,12 @@
    "fa": "شاتل فضایی دیسکاوری",
    "en": "Orbiter, Space Shuttle, OV-103, Discovery",
    "info": "پرکارترین شاتل تاریخ: ۳۹ مأموریت بین ۱۹۸۴ تا ۲۰۱۱ و نزدیک ۲۴۰ میلیون کیلومتر سفر. تلسکوپ فضایی هابل را همین شاتل به فضا برد. طولش ۳۷ متر است.",
-   "where": "مرکز اودوار-هازی اسمیتسونین، ویرجینیا"
+   "where": "مرکز اودوار-هازی اسمیتسونین، ویرجینیا",
+   "photoQueries": [
+    "Space Shuttle Discovery Udvar-Hazy",
+    "Discovery orbiter Udvar-Hazy Center",
+    "Space Shuttle Discovery Smithsonian"
+   ]
   }
  ]
 }

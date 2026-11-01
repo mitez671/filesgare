@@ -7,7 +7,8 @@
 <meta name="description" content="در یک جنگل آرام قدم بزن؛ صدای پرنده‌ها، باران یا برف و شب پرستاره با کرم‌های شب‌تاب.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +309,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -324,7 +328,7 @@ const {V, rand, fa, clamp} = A;
 let time = 'day', weather = 'clear', rain, fireflies, stars, birds = [], amb = {}, chirpT = 0, stream, leaves = [];
 function setup(A){
   const s = A.scene; s.fog = new THREE.Fog(0xa8d8f0, 20, 80);
-  const g = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 60, 60), new THREE.MeshLambertMaterial({color:0x4a7a3a})); g.rotation.x = -Math.PI/2; const p = g.geometry.attributes.position; for (let i=0;i<p.count;i++){ const x = p.getX(i), y = p.getY(i); p.setZ(i, Math.max(0, Math.hypot(x, y) - 12)*.04*Math.sin(x*.1)*Math.cos(y*.08)*3); } g.geometry.computeVertexNormals(); s.add(g);
+  const g = new THREE.Mesh(new THREE.PlaneGeometry(200, 200, 60, 60), new THREE.MeshLambertMaterial({color:0x4a7a3a})); g.rotation.x = -Math.PI/2; const p = g.geometry.attributes.position; for (let i=0;i<p.count;i++){ const x = p.getX(i), y = p.getY(i); p.setZ(i, Math.max(0, Math.hypot(x, y) - 12)*.04*Math.sin(x*.1)*Math.cos(y*.08)*3); } g.geometry.computeVertexNormals(); s.add(g); s.userData.forestGround = g;
   for (let i=0;i<220;i++){ const x = rand(-70, 70), z = rand(-70, 70); if (Math.hypot(x, z) < 5 || Math.abs(x - 6) < 2.5) continue; const t = new THREE.Group(); const h = rand(5, 11), pine = Math.random() < .55;
     const tr = new THREE.Mesh(new THREE.CylinderGeometry(.15, .3, h*.5, 6), new THREE.MeshLambertMaterial({color:0x5a3a22})); tr.position.y = h*.25; t.add(tr);
     if (pine){ for (let k=0;k<3;k++){ const c = new THREE.Mesh(new THREE.ConeGeometry(h*.25 - k*.4, h*.35, 8), new THREE.MeshLambertMaterial({color:A.pick([0x2a5a2a, 0x2f6a32, 0x245026])})); c.position.y = h*.45 + k*h*.18; t.add(c); } }
@@ -336,14 +340,14 @@ function setup(A){
   const n = 3000, rp = new Float32Array(n*3); for (let i=0;i<n;i++) rp.set([rand(-15, 15), rand(0, 15), rand(-15, 15)], i*3); const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(rp, 3)); rain = new THREE.Points(rg, new THREE.PointsMaterial({color:0xaac8ff, size:.05, transparent:true, opacity:.6})); rain.visible = false; s.add(rain);
   const fn = 120, fp = new Float32Array(fn*3); for (let i=0;i<fn;i++) fp.set([rand(-15, 15), rand(.3, 3), rand(-15, 15)], i*3); const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.BufferAttribute(fp, 3)); fireflies = new THREE.Points(fg, new THREE.PointsMaterial({color:0xd8ff60, size:.12, transparent:true, opacity:.9})); fireflies.visible = false; s.add(fireflies);
   const sn = 2000, sp = new Float32Array(sn*3); for (let i=0;i<sn;i++){ const v = V(rand(-1, 1), rand(.05, 1), rand(-1, 1)).normalize().multiplyScalar(150); sp.set([v.x, v.y, v.z], i*3); } const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); stars = new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff, size:1.5, sizeAttenuation:false, fog:false})); s.add(stars);
-  for (let i=0;i<6;i++){ const b = new THREE.Group(); for (const sx of [-1, 1]){ const w = new THREE.Mesh(new THREE.PlaneGeometry(.35, .1), new THREE.MeshBasicMaterial({color:0x222, side:THREE.DoubleSide})); w.position.x = sx*.17; b.add(w); } b.userData = {r:rand(8, 20), h:rand(8, 14), a:rand(0, 6), sp:rand(.1, .25)}; s.add(b); birds.push(b); }
+  for (let i=0;i<6;i++){ const b = new THREE.Group(); for (const sx of [-1, 1]){ const w = new THREE.Mesh(new THREE.PlaneGeometry(.35, .1), new THREE.MeshBasicMaterial({color:0x222222, side:THREE.DoubleSide})); w.position.x = sx*.17; b.add(w); } b.userData = {r:rand(8, 20), h:rand(8, 14), a:rand(0, 6), sp:rand(.1, .25)}; s.add(b); birds.push(b); }
   for (let i=0;i<40;i++){ const l = new THREE.Mesh(new THREE.PlaneGeometry(.08, .06), new THREE.MeshLambertMaterial({color:A.pick([0xd8a040, 0xc86a2a, 0x8aa040]), side:THREE.DoubleSide})); l.position.set(rand(-10, 10), rand(0, 8), rand(-10, 10)); s.add(l); leaves.push(l); }
   apply();
 }
 function sound(){ if (!A.ac || amb.wind) return; const mk = (freq, type, gain) => { const n = A.ac.createBufferSource(); n.buffer = A.noiseBuf; n.loop = true; const f = A.ac.createBiquadFilter(); f.type = type; f.frequency.value = freq; const g = A.ac.createGain(); g.gain.value = gain; n.connect(f); f.connect(g); g.connect(A.out); n.start(); return g; };
   amb.wind = mk(400, 'lowpass', .05); amb.rain = mk(3000, 'highpass', 0); amb.stream = mk(1200, 'bandpass', .04); }
-function apply(){ const night = time === 'night', s = A.scene; const sky = night ? 0x0a1028 : weather === 'rain' ? 0x7a8a9a : weather === 'snow' ? 0xd8e0e8 : 0xa8d8f0;
-  s.background = new THREE.Color(sky); s.fog.color.setHex(sky); s.fog.far = weather === 'clear' ? 80 : 40; A.hemi.intensity = night ? .25 : weather === 'clear' ? .9 : .6; A.sun.intensity = night ? .05 : weather === 'clear' ? .8 : .2; stars.visible = night && weather === 'clear'; fireflies.visible = night && weather === 'clear';
+function apply(){ const night = time === 'night', s = A.scene; if (s.userData.natureDecor) { const d = s.userData.natureDecor; d.panorama.visible = !night && weather === 'clear'; d.panorama.material.color.setHex(0xffffff); } const sky = night ? 0x0a1028 : weather === 'rain' ? 0x7a8a9a : weather === 'snow' ? 0xd8e0e8 : 0xa8d8f0;
+  if(s.userData.forestGround) VRDecor.surface(s.userData.forestGround, weather === 'snow' ? 'snow' : 'moss', [85,85]); s.background = new THREE.Color(sky); s.fog.color.setHex(sky); s.fog.far = weather === 'clear' ? 80 : 40; A.hemi.intensity = night ? .25 : weather === 'clear' ? .9 : .6; A.sun.intensity = night ? .05 : weather === 'clear' ? .8 : .2; stars.visible = night && weather === 'clear'; fireflies.visible = night && weather === 'clear';
   rain.visible = weather !== 'clear'; rain.material.color.setHex(weather === 'snow' ? 0xffffff : 0xaac8ff); rain.material.size = weather === 'snow' ? .1 : .05; if (amb.rain) amb.rain.gain.value = weather === 'rain' ? .12 : 0; A.refreshDeskUI(); }
 function chirp(){ if (!A.ac) return; const f = rand(2500, 4200), n = Math.floor(rand(2, 5)); for (let i=0;i<n;i++) setTimeout(() => A.tone(f*rand(.9, 1.15), .08, 'sine', .04, f*rand(1.1, 1.4)), i*rand(90, 140)); }
 function cricket(){ if (!A.ac) return; for (let i=0;i<3;i++) setTimeout(() => A.tone(4600, .03, 'square', .012), i*45); }

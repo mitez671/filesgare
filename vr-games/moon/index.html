@@ -7,7 +7,9 @@
 <meta name="description" content="کنار ماه‌نشین آپولو ۱۱ روی ماه راه برو، با جاذبهٔ یک‌ششم بپر و زمین را در آسمان سیاه ببین.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/models.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +310,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -333,14 +338,27 @@ function setup(A){
   const s = A.scene; A.hemi.intensity = .25; A.sun.intensity = 1.6; A.sun.position.set(-40, 25, 30);
   const n = 4000, pos = new Float32Array(n*3); for (let i=0;i<n;i++){ const v = V(rand(-1,1), rand(.02,1), rand(-1,1)).normalize().multiplyScalar(rand(900, 1400)); pos.set([v.x, v.y, v.z], i*3); } const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); s.add(new THREE.Points(sg, new THREE.PointsMaterial({color:0xffffff, size:1.4, sizeAttenuation:false})));
   const geo = new THREE.PlaneGeometry(400, 400, 160, 160); geo.rotateX(-Math.PI/2); const p = geo.attributes.position; for (let i=0;i<p.count;i++) p.setY(i, hgt(p.getX(i), p.getZ(i))); geo.computeVertexNormals();
-  const mat = new THREE.MeshStandardMaterial({color:0xb8b4ac, roughness:1}); A.tex('../_shared/moon.jpg').then(t => { t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(10, 10); mat.map = t; mat.needsUpdate = true; }).catch(() => {});
+  const mat = VRDecor.material('lunar',[100,100]);
   ground = new THREE.Mesh(geo, mat); s.add(ground);
-  for (let i=0;i<120;i++){ const r = new THREE.Mesh(new THREE.DodecahedronGeometry(rand(.1, .7), 0), new THREE.MeshStandardMaterial({color:0x8a8680, roughness:1, flatShading:true})); const x = rand(-80, 80), z = rand(-80, 80); r.position.set(x, hgt(x, z), z); s.add(r); }
+  // lunar rocks: lumpy, regolith-textured, half buried
+  const rockMat = VRDecor.material('lunar', [1, 1], {color:0xb9b4ac, roughness:1});
+  const rockGeo = []; for (let k=0;k<6;k++){ const g = new THREE.IcosahedronGeometry(1, 3), q = g.attributes.position, ph = rand(0, 9);
+    for (let i=0;i<q.count;i++){ const v = V(q.getX(i), q.getY(i), q.getZ(i)), n = 1 + .22*Math.sin(v.x*3.1 + ph)*Math.cos(v.y*2.7 + ph*.7) + .12*Math.sin(v.z*5.3 + ph*1.3) + .05*Math.sin((v.x + v.y)*11); v.multiplyScalar(n); q.setXYZ(i, v.x, v.y*.62, v.z); }
+    g.computeVertexNormals(); rockGeo.push(g); }
+  for (let i=0;i<160;i++){ const sz = Math.pow(Math.random(), 2.2)*.9 + .06, r = new THREE.Mesh(rockGeo[i%6], rockMat); const x = rand(-90, 90), z = rand(-90, 90);
+    r.scale.set(sz*rand(.8, 1.3), sz, sz*rand(.8, 1.3)); r.rotation.set(rand(-.3, .3), rand(0, 6.3), rand(-.3, .3)); r.position.set(x, hgt(x, z) - sz*.25, z); s.add(r); }
   const lm = lander(); lm.position.set(0, hgt(0, -8), -8); s.add(lm);
+  if (window.VRModels){
+    VRModels.place('../_shared/models/apollo-lm.glb', {height:7.0, metal:.45}).then(m => { m.position.copy(lm.position); m.rotation.y = Math.PI*.15; s.add(m); s.remove(lm); }).catch(e => console.warn('LM model', e));
+    VRModels.place('../_shared/models/astronaut.glb', {height:1.9, metal:.2}).then(m => { VRModels.relaxPose(m, 70); const x = 2.6, z = -3.2; m.position.set(x, hgt(x, z), z); m.rotation.y = -.5; s.add(m); }).catch(e => console.warn('astronaut model', e));
+  }
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, 2.2), new THREE.MeshStandardMaterial({color:0xdddddd})); pole.position.set(4, hgt(4, -4) + 1.1, -4); s.add(pole);
   const flagT = A.cv(256, 160, (x, w, h) => { for (let i=0;i<13;i++){ x.fillStyle = i%2 ? '#fff' : '#b22234'; x.fillRect(0, i*h/13, w, h/13); } x.fillStyle = '#3c3b6e'; x.fillRect(0, 0, w*.4, h*7/13); });
-  const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .75), new THREE.MeshStandardMaterial({map:flagT, side:THREE.DoubleSide})); flag.position.set(4.6, hgt(4, -4) + 1.8, -4); s.add(flag);
-  for (let i=0;i<30;i++){ const f = new THREE.Mesh(new THREE.PlaneGeometry(.13, .3), new THREE.MeshBasicMaterial({color:0x55524c, transparent:true, opacity:.6})); const x = 1 + i*.12 + (i%2)*.15, z = -4.5 + i*.18; f.rotation.x = -Math.PI/2; f.position.set(x, hgt(x, z) + .02, z); s.add(f); }
+  const flag = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .75), new THREE.MeshStandardMaterial({map:flagT, side:THREE.DoubleSide})); flag.position.set(4.6, hgt(4, -4) + 1.8, -4); s.add(flag); const bar = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1.25), pole.material); bar.rotation.z = Math.PI/2; bar.position.set(4.6, hgt(4, -4) + 2.17, -4); s.add(bar);
+  const bootT = A.cv(128, 256, (x, w, h) => { x.clearRect(0, 0, w, h); x.fillStyle = 'rgba(40,38,34,.55)'; x.beginPath(); x.ellipse(w/2, h*.3, w*.42, h*.27, 0, 0, 7); x.fill(); x.beginPath(); x.ellipse(w/2, h*.78, w*.36, h*.2, 0, 0, 7); x.fill();
+    x.strokeStyle = 'rgba(20,19,17,.6)'; x.lineWidth = 7; for (let k=0;k<11;k++){ const y = h*.08 + k*h*.085; x.beginPath(); x.moveTo(w*.14, y); x.lineTo(w*.86, y); x.stroke(); } });
+  const bootM = new THREE.MeshBasicMaterial({map:bootT, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-2});
+  for (let i=0;i<36;i++){ const f = new THREE.Mesh(new THREE.PlaneGeometry(.16, .33), bootM); const x = 1.2 + i*.1 + (i%2)*.2, z = -4.6 + i*.2; f.rotation.set(-Math.PI/2, 0, -.45 + (i%2)*.08); f.position.set(x, hgt(x, z) + .015, z); s.add(f); }
   earth = new THREE.Mesh(new THREE.SphereGeometry(40, 48, 32), new THREE.MeshPhongMaterial({color:0xffffff})); A.tex('../_shared/earth.jpg').then(t => { earth.material.map = t; earth.material.needsUpdate = true; }).catch(() => earth.material.color.setHex(0x3a7ad8)); earth.position.set(300, 380, -900); s.add(earth);
   info = A.panel(1024, 460, 1.3); info.m.position.set(-2.2, 1.6, -5); info.m.rotation.y = .4;
   A.card(info, 'دریای آرامش، ۲۰ ژوئیهٔ ۱۹۶۹', 'اینجا نیل آرمسترانگ و باز آلدرین اولین بار روی ماه قدم گذاشتند. جاذبهٔ ماه یک‌ششم زمین است: اگر روی زمین ۶۰ کیلو باشی، اینجا ۱۰ کیلو هستی! ماه هوا ندارد، برای همین آسمانش حتی در روز سیاه است و ردپای فضانوردان میلیون‌ها سال می‌ماند.\nدکمهٔ A (یا Space) را بزن تا بپری.', {size:30});
@@ -359,7 +377,7 @@ A.init({
   tagline:'روی خاک خاکستری ماه ایستاده‌ای، کنار ماه‌نشین آپولو ۱۱ و پرچمی که فضانوردان کاشتند. آسمان سیاه است و زمینِ آبی بالای سرت می‌درخشد. با جاذبهٔ یک‌ششم بپر و ببین چقدر آرام پایین می‌آیی.',
   rules:['ماشه روی زمین جای پرش را نشان می‌دهد؛ رها کن تا بروی. استیک چپ راه می‌برد.','دکمهٔ A یا X: پریدن با جاذبهٔ ماه.','زمین را در آسمان پیدا کن!'],
   deskRules:'W/A/S/D راه رفتن، Space پریدن، کشیدن موس نگاه.',
-  note:'بافت سطح ماه از مجموعهٔ نمونه‌های three.js (بر پایهٔ داده‌های ناسا). ماه‌نشین و صحنه ساده‌سازی شده‌اند.',
+  note:'مدل سه‌بعدی ماه‌نشین آپولو و فضانورد از مجموعهٔ آزاد NASA 3D Resources است. صحنهٔ اطراف ساده‌سازی شده است.',
   menu: () => [{label:'پریدن', act:jump}, {label:'برگشت کنار ماه‌نشین', act:() => A.home()}],
   setup, update, vr: (dt, A, hs) => { for (const h of hs) if (h.down.a) jump(); },
 });

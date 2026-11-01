@@ -7,7 +7,9 @@
 <meta name="description" content="دروازه‌بان: شوت‌ها را با دستکش بگیر و دفع کن.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/figure.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +381,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +422,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -436,11 +441,14 @@ const GOAL_Z = .25, HALF_W = 1.83, BAR_Y = 2.2, SPOT_Z = -11, GRAV = 9.8, R = .1
 let ball, kicker, kickerLegs, net, shot = null, phase = 'idle', phaseT = 0, saves = 0, shots = 0, goals = 0, streak = 0, bestStreak = 0, maxShots = 20, mode = 'pen';
 
 function gloveModel(h){
-  const g = new THREE.Group(), lime = K.std(0xc8ff3c,.25), dark = K.std(0x1d2b10,.1);
-  const palm = new THREE.Mesh(new THREE.BoxGeometry(.11,.12,.04), lime); palm.position.set(0,.04,-.02); g.add(palm);
-  for (let i=0;i<4;i++){ const f = new THREE.Mesh(new THREE.BoxGeometry(.024,.08,.035), lime); f.position.set(-.039 + i*.026, .135, -.02); g.add(f); }
-  const th = new THREE.Mesh(new THREE.BoxGeometry(.028,.065,.035), lime); th.position.set(h ? -.07 : .07, .05, -.02); th.rotation.z = h ? .6 : -.6; g.add(th);
-  const cuff = new THREE.Mesh(new THREE.BoxGeometry(.1,.06,.06), dark); cuff.position.set(0,-.045,0); g.add(cuff);
+  const g = new THREE.Group(), lime = K.std(0xc8ff3c,.25), dark = K.std(0x1d2b10,.1), latex = K.std(0xe8f7d0,.15);
+  const capG = (r, l) => new THREE.CapsuleGeometry(r, l, 4, 10);
+  const palm = new THREE.Mesh(new THREE.SphereGeometry(.07, 18, 14), lime); palm.scale.set(.85, 1.05, .38); palm.position.set(0,.045,-.02); g.add(palm);
+  const pad = new THREE.Mesh(new THREE.SphereGeometry(.066, 18, 14), latex); pad.scale.set(.8, .98, .2); pad.position.set(0,.045,-.002); g.add(pad);
+  for (let i=0;i<4;i++){ const len = [.055,.068,.064,.05][i], f = new THREE.Mesh(capG(.0135, len), lime); f.position.set(-.039 + i*.026, .12 + len*.45, -.02); f.rotation.z = (i - 1.5)*.06; g.add(f); }
+  const th = new THREE.Mesh(capG(.015, .05), lime); th.position.set(h ? -.068 : .068, .05, -.012); th.rotation.z = h ? .7 : -.7; g.add(th);
+  const cuff = new THREE.Mesh(new THREE.CylinderGeometry(.045, .05, .07, 18), dark); cuff.scale.z = .7; cuff.position.set(0,-.04,-.01); g.add(cuff);
+  const strap = new THREE.Mesh(new THREE.TorusGeometry(.047, .007, 6, 20), lime); strap.rotation.x = Math.PI/2; strap.scale.y = .7; strap.position.set(0,-.02,-.01); g.add(strap);
   g.rotation.x = -.35;
   return g;
 }
@@ -449,7 +457,9 @@ function env(K){
   const s = K.scene;
   const grass = K.cv(512,512,(x,w,h) => { for (let i=0;i<8;i++){ x.fillStyle = i%2 ? '#2f8a3a' : '#2a7d34'; x.fillRect(0,i*h/8,w,h/8); } });
   grass.wrapS = grass.wrapT = THREE.RepeatWrapping; grass.repeat.set(6,6);
-  const pitch = new THREE.Mesh(new THREE.PlaneGeometry(60,60), new THREE.MeshLambertMaterial({map:grass})); pitch.rotation.x = -Math.PI/2; pitch.position.z = -20; s.add(pitch);
+  const pitch = new THREE.Mesh(new THREE.PlaneGeometry(60,60), window.VRDecor ? VRDecor.material('grass', [30,30], {color:0x9cc48a}) : new THREE.MeshLambertMaterial({map:grass})); pitch.rotation.x = -Math.PI/2; pitch.position.z = -20; pitch.userData.realism = true; s.add(pitch);
+  const mow = K.cv(64,512,(x,w,h) => { for (let i=0;i<8;i++){ x.fillStyle = i%2 ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.09)'; x.fillRect(0,i*h/8,w,h/8); } });
+  const stripes = new THREE.Mesh(new THREE.PlaneGeometry(60,60), new THREE.MeshBasicMaterial({map:mow, transparent:true, depthWrite:false})); stripes.rotation.x = -Math.PI/2; stripes.position.set(0,.002,-20); s.add(stripes);
   const lineM = K.basic(0xf2f2f2);
   const line = (w,d,x,z) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(w,d), lineM); m.rotation.x = -Math.PI/2; m.position.set(x,.005,z); s.add(m); };
   line(40.3,.1,0,GOAL_Z); line(.1,16.5,-20.15,GOAL_Z-8.25); line(.1,16.5,20.15,GOAL_Z-8.25); line(40.3,.1,0,GOAL_Z-16.5);
@@ -467,9 +477,13 @@ function env(K){
   const top = new THREE.Mesh(new THREE.PlaneGeometry(HALF_W*2,1.4), netM); top.rotation.x = Math.PI/2; top.position.set(0,BAR_Y,GOAL_Z+.7); s.add(top);
   [-1,1].forEach(sd => { const sn = new THREE.Mesh(new THREE.PlaneGeometry(1.4,BAR_Y), netM); sn.rotation.y = Math.PI/2; sn.position.set(sd*HALF_W,BAR_Y/2,GOAL_Z+.7); s.add(sn); });
   // stands + floodlights
-  const standM = K.lambert(0x1c2233);
+  const crowdT = K.cv(1024,128,(x,w,h) => { x.fillStyle = '#1a1f2c'; x.fillRect(0,0,w,h); const cols = ['#d7263d','#f2f2f2','#2a6fdb','#ffd23f','#1b1b1f','#3fa34d','#e0e0e0','#d7263d','#7b2cbf'];
+    for (let r=0;r<3;r++) for (let i=0;i<64;i++){ const cx = i*16 + 8 + (r%2)*4 + (Math.random()-.5)*3, cy = 26 + r*40; x.fillStyle = cols[(Math.random()*cols.length)|0]; x.fillRect(cx-6, cy, 12, 16); x.fillStyle = ['#e2b48f','#c68b59','#8d5a3b','#f1c9a5'][(Math.random()*4)|0]; x.beginPath(); x.arc(cx, cy-4, 4.5, 0, 7); x.fill(); } });
+  crowdT.wrapS = THREE.RepeatWrapping; crowdT.repeat.set(5,1);
+  const crowdS = K.cv(1024,128,(x,w,h) => { x.drawImage(crowdT.image,0,0); }); crowdS.wrapS = THREE.RepeatWrapping; crowdS.repeat.set(4,1); crowdS.rotation = 0;
+  const standM = new THREE.MeshLambertMaterial({map:crowdT}), standSide = new THREE.MeshLambertMaterial({map:crowdS});
   for (let i=0;i<4;i++){ const st = new THREE.Mesh(new THREE.BoxGeometry(70,2,4), standM); st.position.set(0,1+i*1.6,-42-i*3); s.add(st); }
-  [-1,1].forEach(sd => { for (let i=0;i<4;i++){ const st = new THREE.Mesh(new THREE.BoxGeometry(4,2,50), standM); st.position.set(sd*(26+i*3),1+i*1.6,-18); s.add(st); } });
+  [-1,1].forEach(sd => { for (let i=0;i<4;i++){ const st = new THREE.Mesh(new THREE.BoxGeometry(4,2,50), standSide); st.position.set(sd*(26+i*3),1+i*1.6,-18); s.add(st); } });
   const crowd = new Float32Array(900*3); for (let i=0;i<900;i++){ const side = i%3; if (side === 0){ crowd[i*3] = rand(-34,34); crowd[i*3+1] = rand(2,8); crowd[i*3+2] = rand(-50,-43); } else { const sd = side === 1 ? -1 : 1; crowd[i*3] = sd*rand(27,36); crowd[i*3+1] = rand(2,8); crowd[i*3+2] = rand(-40,4); } }
   const cg = new THREE.BufferGeometry(); cg.setAttribute('position', new THREE.BufferAttribute(crowd,3));
   K.crowd = new THREE.Points(cg, new THREE.PointsMaterial({size:.35, vertexColors:false, color:0xd0d6ff})); s.add(K.crowd);
@@ -483,6 +497,7 @@ function env(K){
   const head = new THREE.Mesh(new THREE.SphereGeometry(.13,14,10), skin); head.position.y = 1.7; kicker.add(head);
   const hips = new THREE.Mesh(new THREE.BoxGeometry(.4,.22,.24), shorts); hips.position.y = .88; kicker.add(hips);
   kickerLegs = [-1,1].map(sd => { const pv = new THREE.Group(); pv.position.set(sd*.11,.8,0); const leg = new THREE.Mesh(new THREE.BoxGeometry(.13,.8,.14), skin); leg.position.y = -.4; pv.add(leg); kicker.add(pv); return pv; });
+  if (window.VRFigure){ const f = VRFigure.make({shirt:0xd7263d, shorts:0xffffff, socks:0xd7263d, number:9, skin:0xb07a52}); kicker = f.group; kickerLegs = f.legs; f.arms[0].rotation.z = -.35; f.arms[1].rotation.z = .35; }
   kicker.position.set(.6,0,SPOT_Z-2.2); kicker.rotation.y = Math.PI; s.add(kicker);
 }
 

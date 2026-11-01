@@ -7,7 +7,8 @@
 <meta name="description" content="در یک باغ ایرانی قدم بزن و فال حافظ بگیر یا شعر سعدی، مولانا و خیام بخوان.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -308,9 +309,12 @@ A.init = function(cfg){
     camera.getWorldPosition(A.head); camera.getWorldDirection(A.headDir);
     if (statusT > 0){ statusT -= dt; if (statusT <= 0) A.status(''); }
     cfg.update && cfg.update(dt, A);
+    A.realismUpdate && A.realismUpdate(dt);
     renderer.render(scene, camera);
   });
+  VRDecor.configure(THREE, A.renderer);
   cfg.setup && cfg.setup(A);
+  VRDecor.apply(A, cfg.id);
   Promise.all([document.fonts.load('600 38px Vazirmatn', 'آزمون ۱۲۳'), document.fonts.load('400 60px Lalezar', 'آزمون')]).catch(() => {}).then(() => { cfg.onFonts && cfg.onFonts(A); if (A.menuOpen) buildMenu(); });
 };
 })();
@@ -359,19 +363,19 @@ function setup(A){
   link(); const s = A.scene; s.background = new THREE.Color(0xa9d8f0); s.fog = new THREE.Fog(0xa9d8f0, 20, 60); A.sun.intensity = .9;
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), new THREE.MeshLambertMaterial({color:0x7a9a4a})); ground.rotation.x = -Math.PI/2; s.add(ground);
   const tileT = A.cv(256, 256, (x, w) => { x.fillStyle = '#d8c09a'; x.fillRect(0,0,w,w); x.strokeStyle = '#b89a6a'; x.lineWidth = 4; for (let i=0;i<=4;i++){ x.beginPath(); x.moveTo(i*64, 0); x.lineTo(i*64, w); x.moveTo(0, i*64); x.lineTo(w, i*64); x.stroke(); } }, [2, 20]);
-  for (const [w, d, px, pz] of [[3, 40, 0, -8], [40, 3, 0, -8]]){ const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshLambertMaterial({map:tileT})); p.rotation.x = -Math.PI/2; p.position.set(px, .01, pz); s.add(p); }
+  for (const [w, d, px, pz] of [[3, 40, 0, -8], [40, 3, 0, -8]]){ const p = new THREE.Mesh(new THREE.PlaneGeometry(w, d), VRDecor.material('marble',[w/2,d/2])); p.rotation.x = -Math.PI/2; p.position.set(px, .01, pz); s.add(p); }
   const pool = new THREE.Mesh(new THREE.BoxGeometry(1.6, .25, 14), new THREE.MeshLambertMaterial({color:0x2e7fae})); pool.position.set(0, .05, -16); s.add(pool);
-  const rim = new THREE.Mesh(new THREE.BoxGeometry(1.9, .3, 14.3), new THREE.MeshLambertMaterial({color:0xe8dcc0})); rim.position.set(0, .0, -16); s.add(rim); pool.position.y = .07;
+  const rim = new THREE.Mesh(new THREE.BoxGeometry(1.9, .3, 14.3), VRDecor.material('travertine',[2,1])); rim.position.set(0, .0, -16); s.add(rim); pool.position.y = .07;
   const water = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 14), new THREE.MeshPhongMaterial({color:0x3fa0d8, shininess:90, transparent:true, opacity:.85})); water.rotation.x = -Math.PI/2; water.position.set(0, .19, -16); s.add(water);
   for (let z = -10; z > -24; z -= 2.2){ cypress(-2.4, z, 3.5); cypress(2.4, z, 3.5); }
   for (let i=0;i<60;i++){ const f = new THREE.Mesh(new THREE.SphereGeometry(.08, 6, 4), new THREE.MeshLambertMaterial({color:A.pick([0xd8203a, 0xff7ab6, 0xffd23f, 0xffffff])})); f.position.set(A.pick([-1, 1])*rand(3.2, 8), .15, rand(-20, -2)); s.add(f); }
   // pavilion (kooshk) at the end
   const kooshk = new THREE.Group(); kooshk.position.set(0, 0, -27); s.add(kooshk);
-  const base = new THREE.Mesh(new THREE.BoxGeometry(9, .6, 4), new THREE.MeshLambertMaterial({color:0xe8dcc0})); base.position.y = .3; kooshk.add(base);
+  const base = new THREE.Mesh(new THREE.BoxGeometry(9, .6, 4), VRDecor.material('travertine',[2,1])); base.position.y = .3; kooshk.add(base);
   const wallT = A.cv(512, 256, (x, w, h) => { x.fillStyle = '#e8dcc0'; x.fillRect(0,0,w,h); for (let i=0;i<5;i++){ const cx = 51 + i*102; x.fillStyle = '#1f5f8a'; x.beginPath(); x.moveTo(cx - 34, h); x.lineTo(cx - 34, 110); x.quadraticCurveTo(cx - 34, 40, cx, 26); x.quadraticCurveTo(cx + 34, 40, cx + 34, 110); x.lineTo(cx + 34, h); x.fill(); x.fillStyle = '#123a5a'; x.fillRect(cx - 24, 120, 48, h - 120); } x.fillStyle = '#2a7fb0'; x.fillRect(0, 0, w, 16); });
   const fac = new THREE.Mesh(new THREE.PlaneGeometry(9, 4.5), new THREE.MeshLambertMaterial({map:wallT})); fac.position.set(0, 2.85, 2.01); kooshk.add(fac);
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.6, 24, 12, 0, Math.PI*2, 0, Math.PI/2), new THREE.MeshPhongMaterial({color:0x2a8fc0, shininess:60})); dome.position.set(0, 5.1, 0); kooshk.add(dome);
-  const body = new THREE.Mesh(new THREE.BoxGeometry(9, 4.5, 4), new THREE.MeshLambertMaterial({color:0xd9ccae})); body.position.y = 2.85; kooshk.add(body);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(1.6, 24, 12, 0, Math.PI*2, 0, Math.PI/2), VRDecor.material('persian-tile',[4,2])); dome.position.set(0, 5.1, 0); kooshk.add(dome);
+  const body = new THREE.Mesh(new THREE.BoxGeometry(9, 4.5, 4), VRDecor.material('travertine',[4,2])); body.position.y = 2.85; kooshk.add(body);
   // poem scroll on a stand, title sign
   poemP = A.panel(2048, 1300, 2.6); poemP.m.position.set(0, 1.75, -3.2);
   const stand = new THREE.Mesh(new THREE.BoxGeometry(2.8, .1, .1), new THREE.MeshLambertMaterial({color:0x6b3f1c})); stand.position.set(0, 3.4, -3.21); s.add(stand);

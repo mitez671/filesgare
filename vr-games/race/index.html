@@ -7,7 +7,8 @@
 <meta name="description" content="فرمان را با دو دست بگیر، گاز بده و در یک پیست سه دور با ماشین‌های دیگر مسابقه بده.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lalezar&family=Vazirmatn:wght@400;600;800&display=swap">
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 </head>
 <body>
 <script>
@@ -379,6 +380,7 @@ K.init = function(cfg){
     for (const p of popups){ if (p.life <= 0) continue; p.life -= dt; if (p.life <= 0){ p.m.visible = false; continue; } p.m.position.y += dt*.45; p.m.material.opacity = Math.min(1, p.life/.35); }
     if (flashT > 0){ flashT -= dt; flash.material.opacity = Math.max(0, flashT/flashMax)*flashStr; if (flashT <= 0) flash.visible = false; }
     K.mouse.dragDX = 0; K.mouse.dragDY = 0;
+    K.realismUpdate && K.realismUpdate(dt);
     renderer.render(scene, camera);
   });
 
@@ -419,7 +421,9 @@ K.init = function(cfg){
   document.addEventListener('visibilitychange', () => { if (!K.ac || K.mode === 'vr') return; document.hidden ? K.ac.suspend() : K.ac.resume(); });
 
   K.R.holder.visible = K.L.holder.visible = false;
+  VRDecor.configure(THREE, K.renderer);
   cfg.env && cfg.env(K);
+  VRDecor.apply(K, cfg.id);
   drawTitle(); K.toMenu(); showButtons(false);
   const redraw = () => { drawTitle(); K.buttons.forEach(b => b.draw()); hudKeyL = hudKeyR = ''; cfg.onFonts && cfg.onFonts(K); };
   Promise.all([document.fonts.load(`400 100px Lalezar`, cfg.title + ' ۱۲۳ امتیاز'), document.fonts.load(`600 30px Vazirmatn`, 'امتیاز ۱۲۳'), document.fonts.load(`800 40px Vazirmatn`, 'رکورد ۱۲۳')]).catch(() => {}).then(redraw);
@@ -446,12 +450,31 @@ function env(K){ const s = K.scene; s.background = new THREE.Color(0x9ad0f5); s.
   for (let i=0;i<120;i++){ const t = Math.random(), p = curve.getPointAt(t), tg = curve.getTangentAt(t), n = V(-tg.z, 0, tg.x).normalize(); const off = (Math.random() < .5 ? -1 : 1)*rand(W/2 + 4, W/2 + 30); const tr = new THREE.Mesh(new THREE.ConeGeometry(rand(1.5, 3), rand(5, 9), 7), K.lambert(0x2f6a32)); tr.position.copy(p).addScaledVector(n, off).setY(3); s.add(tr); }
   for (let i=0;i<10;i++){ const m = new THREE.Mesh(new THREE.ConeGeometry(rand(30, 60), rand(25, 60), 6), K.lambert(0x7a8aa0)); const a = rand(0, 6.28); m.position.set(Math.cos(a)*240, 10, Math.sin(a)*200); s.add(m); }
   car = new THREE.Group(); s.add(car); car.add(K.rig); K.hudPanels.forEach(p => car.add(p.m));
-  const body = new THREE.Mesh(new THREE.BoxGeometry(1.7, .5, 3.6), K.std(0xd02030, .1, {metalness:.4, roughness:.4})); body.position.set(0, .45, -.6); car.add(body);
-  const hood = new THREE.Mesh(new THREE.BoxGeometry(1.6, .12, 1.6), K.std(0xd02030, .1, {metalness:.4})); hood.position.set(0, .75, -1.6); car.add(hood);
+  const body = carModel(0xd02030, true); body.position.set(0, 0, -.6); car.add(body);
   const dash = new THREE.Mesh(new THREE.BoxGeometry(1.5, .25, .4), K.lambert(0x1a1a1e)); dash.position.set(0, .8, -.75); car.add(dash);
-  wheel = new THREE.Group(); wheel.position.set(-.35, .95, -.5); wheel.rotation.x = -1.1; car.add(wheel); const rim = new THREE.Mesh(new THREE.TorusGeometry(.18, .02, 8, 28), K.lambert(0x222)); wheel.add(rim); const sp = new THREE.Mesh(new THREE.BoxGeometry(.36, .03, .02), K.lambert(0x333)); wheel.add(sp); const top = new THREE.Mesh(new THREE.BoxGeometry(.04, .03, .03), K.basic(0xffd23f)); top.position.y = .18; wheel.add(top);
+  wheel = new THREE.Group(); wheel.position.set(-.35, .95, -.5); wheel.rotation.x = -1.1; car.add(wheel); const rim = new THREE.Mesh(new THREE.TorusGeometry(.18, .02, 8, 28), K.lambert(0x222222)); wheel.add(rim); const sp = new THREE.Mesh(new THREE.BoxGeometry(.36, .03, .02), K.lambert(0x333333)); wheel.add(sp); const top = new THREE.Mesh(new THREE.BoxGeometry(.04, .03, .03), K.basic(0xffd23f)); top.position.y = .18; wheel.add(top);
   K.speedo = K.panel(256, 128, .26, car); K.speedo.m.position.set(.3, .96, -.72); K.speedo.m.rotation.x = -.6;
-  for (let i=0;i<5;i++){ const o = new THREE.Group(); const b = new THREE.Mesh(new THREE.BoxGeometry(1.7, .7, 3.6), K.std([0x2050d0, 0x20a050, 0xffb020, 0x9040c0, 0xf0f0f0][i], .1, {metalness:.4})); b.position.y = .45; o.add(b); const cab = new THREE.Mesh(new THREE.BoxGeometry(1.4, .45, 1.6), K.lambert(0x203040)); cab.position.set(0, .95, .2); o.add(cab); s.add(o); opp.push({o, pos:0, side:0, sp:0, max:0, lap:0}); } }
+  for (let i=0;i<5;i++){ const o = new THREE.Group(); o.add(carModel([0x2050d0, 0x20a050, 0xffb020, 0x9040c0, 0xf0f0f0][i], false)); s.add(o); opp.push({o, pos:0, side:0, sp:0, max:0, lap:0}); } }
+
+// sports-car body from a side profile (rounded extrusion), glass cabin, tyres, rims and lights
+function carModel(col, open){
+  const g = new THREE.Group(), paint = K.std(col, .1, {metalness:.55, roughness:.28}), dark = K.std(0x14171c, .05, {metalness:.6, roughness:.15}), rub = K.lambert(0x1a1a1a), alloy = K.std(0xc8ccd2, .1, {metalness:.8, roughness:.25});
+  const pr = [[-2.05,.28],[-2.12,.46],[-2.0,.6],[-1.2,.74],[-.7,.82],[1.3,.86],[2.0,.8],[2.1,.55],[2.02,.3]];
+  const sh = new THREE.Shape(); sh.moveTo(pr[0][0], pr[0][1]); for (let i=1;i<pr.length;i++) sh.lineTo(pr[i][0], pr[i][1]); sh.lineTo(pr[0][0], pr[0][1]);
+  const bg = new THREE.ExtrudeGeometry(sh, {depth:1.62, bevelEnabled:true, bevelSize:.09, bevelThickness:.09, bevelSegments:3, curveSegments:8}); bg.translate(0, 0, -.81); bg.rotateY(-Math.PI/2);
+  g.add(new THREE.Mesh(bg, paint));
+  if (!open){ const cs = new THREE.Shape(); cs.moveTo(-.72, .82); cs.lineTo(-.12, 1.24); cs.lineTo(.8, 1.27); cs.lineTo(1.32, .86); cs.lineTo(-.72, .82);
+    const cg = new THREE.ExtrudeGeometry(cs, {depth:1.36, bevelEnabled:true, bevelSize:.05, bevelThickness:.05, bevelSegments:2}); cg.translate(0, 0, -.68); cg.rotateY(-Math.PI/2); g.add(new THREE.Mesh(cg, dark)); }
+  else { const ws = new THREE.Mesh(new THREE.PlaneGeometry(1.45, .5), new THREE.MeshStandardMaterial({color:0x9fc6e0, transparent:true, opacity:.18, roughness:.05, metalness:.5, side:THREE.DoubleSide})); ws.position.set(0, 1.05, .72); ws.rotation.x = -.85; g.add(ws);
+    for (const sx of [-.74, .74]){ const pl = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .55, 8), paint); pl.position.set(sx, 1.05, .72); pl.rotation.x = -.85; g.add(pl); } }
+  for (const [x, z] of [[-.84, -1.35], [.84, -1.35], [-.84, 1.4], [.84, 1.4]]){
+    const t = new THREE.Mesh(new THREE.CylinderGeometry(.34, .34, .26, 28), rub); t.rotation.z = Math.PI/2; t.position.set(x, .34, z); g.add(t);
+    const r = new THREE.Mesh(new THREE.CylinderGeometry(.21, .21, .27, 20), alloy); r.rotation.z = Math.PI/2; r.position.set(x*1.005, .34, z); g.add(r); }
+  for (const sx of [-.6, .6]){ const hl = new THREE.Mesh(new THREE.SphereGeometry(.12, 14, 10), K.basic(0xfff6dc)); hl.scale.set(1.4, .6, .5); hl.position.set(sx, .62, -2.18); g.add(hl);
+    const tl = new THREE.Mesh(new THREE.BoxGeometry(.4, .09, .04), K.basic(0xe01a24)); tl.position.set(sx, .72, 2.18); g.add(tl); }
+  const grille = new THREE.Mesh(new THREE.BoxGeometry(.9, .14, .05), dark); grille.position.set(0, .42, -2.2); g.add(grille);
+  return g;
+}
 function start(key){ mode = key; pos = -.0005*LEN; side = 1.8; speed = 0; lap = 0; time = 0; cd = 3; started = 0; lastS = pos;
   opp.forEach((o, i) => { o.pos = -(i + 1)*7; o.side = i % 2 ? 2 : -2; o.sp = 0; o.max = (key === 'race' ? 30 : 0) + i*1.2 + rand(0, 2); o.lap = 0; o.o.visible = key === 'race'; }); place(); }
 function stop(){ car.position.set(0, 0, 0); car.rotation.set(0, 0, 0); speed = 0; }

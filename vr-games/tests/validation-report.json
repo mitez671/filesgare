@@ -1,0 +1,559 @@
+{
+  "boundary": "Mocked DOM/WebGL; actual Three.js geometries and game update functions. This does not verify GPU output or headset support.",
+  "results": [
+    {
+      "id": "anarshekan",
+      "nodes": 190,
+      "meshes": 142,
+      "triangles": 17639,
+      "textures": 0
+    },
+    {
+      "id": "aquarium",
+      "nodes": 492,
+      "meshes": 426,
+      "triangles": 48186,
+      "textures": 1
+    },
+    {
+      "id": "archery",
+      "nodes": 130,
+      "meshes": 107,
+      "triangles": 3388,
+      "textures": 1
+    },
+    {
+      "id": "balloons",
+      "nodes": 35,
+      "meshes": 23,
+      "triangles": 394,
+      "textures": 1
+    },
+    {
+      "id": "basket",
+      "nodes": 40,
+      "meshes": 29,
+      "triangles": 964,
+      "textures": 1
+    },
+    {
+      "id": "bowling",
+      "nodes": 73,
+      "meshes": 47,
+      "triangles": 3494,
+      "textures": 1
+    },
+    {
+      "id": "boxing",
+      "nodes": 51,
+      "meshes": 40,
+      "triangles": 942,
+      "textures": 2
+    },
+    {
+      "id": "breaker",
+      "nodes": 65,
+      "meshes": 53,
+      "triangles": 1070,
+      "textures": 1
+    },
+    {
+      "id": "bubbles",
+      "nodes": 113,
+      "meshes": 89,
+      "triangles": 9506,
+      "textures": 1
+    },
+    {
+      "id": "build",
+      "nodes": 61,
+      "meshes": 50,
+      "triangles": 4472,
+      "textures": 1
+    },
+    {
+      "id": "castle",
+      "nodes": 130,
+      "meshes": 120,
+      "triangles": 4120,
+      "textures": 2
+    },
+    {
+      "id": "cinema",
+      "nodes": 322,
+      "meshes": 222,
+      "triangles": 25418,
+      "textures": 0
+    },
+    {
+      "id": "clay",
+      "nodes": 63,
+      "meshes": 53,
+      "triangles": 782,
+      "textures": 1
+    },
+    {
+      "id": "cleveland",
+      "nodes": 20,
+      "meshes": 7,
+      "triangles": 966,
+      "textures": 1
+    },
+    {
+      "id": "coaster",
+      "nodes": 357,
+      "meshes": 344,
+      "triangles": 34464,
+      "textures": 1
+    },
+    {
+      "id": "connect4",
+      "nodes": 42,
+      "meshes": 32,
+      "triangles": 468,
+      "textures": 1
+    },
+    {
+      "id": "darts",
+      "nodes": 36,
+      "meshes": 24,
+      "triangles": 296,
+      "textures": 1
+    },
+    {
+      "id": "daynight",
+      "nodes": 44,
+      "meshes": 17,
+      "triangles": 10244,
+      "textures": 0
+    },
+    {
+      "id": "deepsea",
+      "nodes": 182,
+      "meshes": 146,
+      "triangles": 10492,
+      "textures": 2
+    },
+    {
+      "id": "dodge",
+      "nodes": 50,
+      "meshes": 34,
+      "triangles": 2450,
+      "textures": 1
+    },
+    {
+      "id": "dooz",
+      "nodes": 41,
+      "meshes": 31,
+      "triangles": 640,
+      "textures": 1
+    },
+    {
+      "id": "drone",
+      "nodes": 244,
+      "meshes": 173,
+      "triangles": 16468,
+      "textures": 1
+    },
+    {
+      "id": "drums",
+      "nodes": 96,
+      "meshes": 79,
+      "triangles": 4524,
+      "textures": 1
+    },
+    {
+      "id": "english",
+      "nodes": 102,
+      "meshes": 77,
+      "triangles": 7116,
+      "textures": 1
+    },
+    {
+      "id": "fishing",
+      "nodes": 66,
+      "meshes": 53,
+      "triangles": 2644,
+      "textures": 1
+    },
+    {
+      "id": "flights",
+      "nodes": 19,
+      "meshes": 5,
+      "triangles": 9812,
+      "textures": 0
+    },
+    {
+      "id": "forest",
+      "nodes": 402,
+      "meshes": 381,
+      "triangles": 68036,
+      "textures": 0
+    },
+    {
+      "id": "galaxy",
+      "nodes": 26,
+      "meshes": 9,
+      "triangles": 1732,
+      "textures": 0
+    },
+    {
+      "id": "goalkeeper",
+      "nodes": 74,
+      "meshes": 60,
+      "triangles": 1836,
+      "textures": 3
+    },
+    {
+      "id": "golf",
+      "nodes": 66,
+      "meshes": 54,
+      "triangles": 4300,
+      "textures": 1
+    },
+    {
+      "id": "hockey",
+      "nodes": 40,
+      "meshes": 30,
+      "triangles": 616,
+      "textures": 1
+    },
+    {
+      "id": "iss",
+      "nodes": 33,
+      "meshes": 16,
+      "triangles": 12944,
+      "textures": 0
+    },
+    {
+      "id": "juggle",
+      "nodes": 43,
+      "meshes": 33,
+      "triangles": 1818,
+      "textures": 1
+    },
+    {
+      "id": "map",
+      "nodes": 328,
+      "meshes": 303,
+      "triangles": 53931,
+      "textures": 0
+    },
+    {
+      "id": "mars",
+      "nodes": 387,
+      "meshes": 373,
+      "triangles": 57532,
+      "textures": 0
+    },
+    {
+      "id": "maze",
+      "nodes": 72,
+      "meshes": 61,
+      "triangles": 1362,
+      "textures": 1
+    },
+    {
+      "id": "memory",
+      "nodes": 78,
+      "meshes": 52,
+      "triangles": 308,
+      "textures": 1
+    },
+    {
+      "id": "meteor",
+      "nodes": 33,
+      "meshes": 22,
+      "triangles": 5290,
+      "textures": 0
+    },
+    {
+      "id": "molecules",
+      "nodes": 19,
+      "meshes": 5,
+      "triangles": 236,
+      "textures": 1
+    },
+    {
+      "id": "moon",
+      "nodes": 181,
+      "meshes": 168,
+      "triangles": 59538,
+      "textures": 0
+    },
+    {
+      "id": "museum",
+      "nodes": 170,
+      "meshes": 146,
+      "triangles": 20312,
+      "textures": 0
+    },
+    {
+      "id": "museum3d",
+      "nodes": 206,
+      "meshes": 150,
+      "triangles": 1642,
+      "textures": 0
+    },
+    {
+      "id": "nasa",
+      "nodes": 21,
+      "meshes": 7,
+      "triangles": 966,
+      "textures": 1
+    },
+    {
+      "id": "paint",
+      "nodes": 31,
+      "meshes": 19,
+      "triangles": 250,
+      "textures": 1
+    },
+    {
+      "id": "periodic",
+      "nodes": 163,
+      "meshes": 148,
+      "triangles": 3808,
+      "textures": 1
+    },
+    {
+      "id": "piano",
+      "nodes": 58,
+      "meshes": 47,
+      "triangles": 568,
+      "textures": 1
+    },
+    {
+      "id": "pingpong",
+      "nodes": 45,
+      "meshes": 33,
+      "triangles": 1784,
+      "textures": 2
+    },
+    {
+      "id": "plank",
+      "nodes": 106,
+      "meshes": 94,
+      "triangles": 6716,
+      "textures": 51
+    },
+    {
+      "id": "poetry",
+      "nodes": 172,
+      "meshes": 146,
+      "triangles": 5402,
+      "textures": 1
+    },
+    {
+      "id": "potd",
+      "nodes": 20,
+      "meshes": 7,
+      "triangles": 966,
+      "textures": 1
+    },
+    {
+      "id": "quakes",
+      "nodes": 20,
+      "meshes": 6,
+      "triangles": 12788,
+      "textures": 0
+    },
+    {
+      "id": "race",
+      "nodes": 185,
+      "meshes": 168,
+      "triangles": 4736,
+      "textures": 1
+    },
+    {
+      "id": "radio",
+      "nodes": 20,
+      "meshes": 6,
+      "triangles": 12788,
+      "textures": 0
+    },
+    {
+      "id": "reflex",
+      "nodes": 69,
+      "meshes": 58,
+      "triangles": 8090,
+      "textures": 1
+    },
+    {
+      "id": "robot",
+      "nodes": 67,
+      "meshes": 55,
+      "triangles": 1342,
+      "textures": 0
+    },
+    {
+      "id": "rubik",
+      "nodes": 143,
+      "meshes": 132,
+      "triangles": 2116,
+      "textures": 1
+    },
+    {
+      "id": "santur",
+      "nodes": 108,
+      "meshes": 97,
+      "triangles": 1246,
+      "textures": 2
+    },
+    {
+      "id": "scale",
+      "nodes": 105,
+      "meshes": 62,
+      "triangles": 14568,
+      "textures": 0
+    },
+    {
+      "id": "seasons",
+      "nodes": 28,
+      "meshes": 8,
+      "triangles": 4726,
+      "textures": 0
+    },
+    {
+      "id": "shapes",
+      "nodes": 21,
+      "meshes": 5,
+      "triangles": 128,
+      "textures": 1
+    },
+    {
+      "id": "shield",
+      "nodes": 89,
+      "meshes": 71,
+      "triangles": 5668,
+      "textures": 1
+    },
+    {
+      "id": "simon",
+      "nodes": 36,
+      "meshes": 26,
+      "triangles": 1154,
+      "textures": 2
+    },
+    {
+      "id": "sky",
+      "nodes": 20,
+      "meshes": 5,
+      "triangles": 1106,
+      "textures": 1
+    },
+    {
+      "id": "slingshot",
+      "nodes": 63,
+      "meshes": 52,
+      "triangles": 4768,
+      "textures": 1
+    },
+    {
+      "id": "snake",
+      "nodes": 34,
+      "meshes": 24,
+      "triangles": 508,
+      "textures": 1
+    },
+    {
+      "id": "snowball",
+      "nodes": 320,
+      "meshes": 269,
+      "triangles": 7882,
+      "textures": 1
+    },
+    {
+      "id": "solar",
+      "nodes": 45,
+      "meshes": 14,
+      "triangles": 20972,
+      "textures": 0
+    },
+    {
+      "id": "stacker",
+      "nodes": 33,
+      "meshes": 22,
+      "triangles": 278,
+      "textures": 1
+    },
+    {
+      "id": "tour",
+      "nodes": 37,
+      "meshes": 29,
+      "triangles": 5048,
+      "textures": 0
+    },
+    {
+      "id": "tower",
+      "nodes": 57,
+      "meshes": 40,
+      "triangles": 376,
+      "textures": 1
+    },
+    {
+      "id": "towers",
+      "nodes": 133,
+      "meshes": 92,
+      "triangles": 6816,
+      "textures": 2
+    },
+    {
+      "id": "visualizer",
+      "nodes": 81,
+      "meshes": 68,
+      "triangles": 2434,
+      "textures": 1
+    },
+    {
+      "id": "wall",
+      "nodes": 80,
+      "meshes": 70,
+      "triangles": 868,
+      "textures": 1
+    },
+    {
+      "id": "weather",
+      "nodes": 20,
+      "meshes": 6,
+      "triangles": 12788,
+      "textures": 0
+    },
+    {
+      "id": "whack",
+      "nodes": 79,
+      "meshes": 60,
+      "triangles": 1850,
+      "textures": 1
+    },
+    {
+      "id": "wiki",
+      "nodes": 21,
+      "meshes": 7,
+      "triangles": 12812,
+      "textures": 0
+    },
+    {
+      "id": "wizard",
+      "nodes": 77,
+      "meshes": 49,
+      "triangles": 2378,
+      "textures": 1
+    },
+    {
+      "id": "zarb-shamshir",
+      "nodes": 201,
+      "meshes": 145,
+      "triangles": 1648,
+      "textures": 0
+    },
+    {
+      "id": "zen",
+      "nodes": 96,
+      "meshes": 79,
+      "triangles": 21560,
+      "textures": 1
+    }
+  ],
+  "failed": 0
+}

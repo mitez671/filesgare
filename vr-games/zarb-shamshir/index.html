@@ -93,7 +93,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);over
 <button id="btnMenu" hidden>منو</button>
 <div id="deskHint" hidden>موس یا انگشت را سریع بکش تا ضربه بزنی · کلیدهای ۱، ۲ و ۳ شروع سریع</div>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
+<script src="../_shared/three-r149.js?v=20261101"></script>
+<script src="../_shared/realism.js?v=20261101"></script>
 <script>
 (() => {
 'use strict';
@@ -127,6 +128,7 @@ renderer.xr.enabled = true;
 renderer.xr.setReferenceSpaceType('local-floor');
 $('#stage').appendChild(renderer.domElement);
 
+VRDecor.configure(THREE, renderer);
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(BG);
 scene.fog = new THREE.Fog(BG, 9, 52);
@@ -148,7 +150,7 @@ track.rotation.x = -Math.PI/2; track.position.set(0,0.004,-35); scene.add(track)
 [[-1.12,LEFT],[1.12,RIGHT]].forEach(([x,c]) => {
   const r = new THREE.Mesh(new THREE.BoxGeometry(0.035,0.02,72), basic(c)); r.position.set(x,0.01,-35); scene.add(r);
 });
-const plat = new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6), basic(0x18133f));
+const plat = new THREE.Mesh(new THREE.PlaneGeometry(1.6,1.6), VRDecor.material('rubber',[2,2],{color:0x746c98}));
 plat.rotation.x = -Math.PI/2; plat.position.y = 0.006; scene.add(plat);
 const platEdge = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(1.6,1.6)), new THREE.LineBasicMaterial({color:VIOLET}));
 platEdge.rotation.x = -Math.PI/2; platEdge.position.y = 0.008; scene.add(platEdge);
