@@ -1,5 +1,13 @@
 {
   "boundary": "Mocked DOM/WebGL; actual Three.js geometries and game update functions. This does not verify GPU output or headset support.",
-  "results": [],
-  "failed": 1
+  "results": [
+    {
+      "id": "escape-vr",
+      "nodes": 260,
+      "meshes": 221,
+      "triangles": 14102,
+      "textures": 0
+    }
+  ],
+  "failed": 0
 }
