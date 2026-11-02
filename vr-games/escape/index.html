@@ -11,7 +11,7 @@ button.primary{background:#1f7a5a;font-weight:bold}button.off{opacity:.45}button
 <div id="ui">
 <h1>خانهٔ رمزها</h1>
 <p id="about">اتاق فرار واقعیت ترکیبی در خانهٔ خودت. پازل‌ها روی میز و دیوار واقعی می‌نشینند و با راه رفتن بین اتاق‌ها حلشان می‌کنی. داستانی در انتظار توست و معماها واقعاً فکر می‌خواهند.</p>
-<div id="startBtns"><button id="ar" class="primary">ورود به AR (هدست)</button><button id="demo">آزمایش روی صفحه</button></div>
+<div id="startBtns"><button id="ar" class="primary">ورود به AR (هدست)</button><button id="demo">آزمایش روی صفحه</button><br><button id="pack">افزودن سناریوی تازه (فایل JSON)</button><input id="packFile" type="file" accept=".json,application/json" hidden><p id="packInfo" class="small"></p></div>
 <h2 id="cardTitle"></h2><p id="cardBody"></p><p id="notice"></p><div id="cardBtns"></div>
 <div id="keyhint" style="display:none;position:absolute;bottom:12px;left:12px;background:#14263aee;border:1px solid #4ddac0;border-radius:12px;padding:8px 14px;font-size:14px">M = منو و دفترچه · کلیک موس = انتخاب</div>
 <p class="small" id="foot">این بازی تصویر دوربین را نمی‌خواند و جایی ذخیره نمی‌کند. در حالت صفحه: با کشیدن موس بچرخ، با کلیدهای جهت یا WASD راه برو، با کلیک دکمه‌ها را بزن.</p>
@@ -127,29 +127,65 @@ function placeAt(hit,s,viewer){
  return new THREE.Matrix4().compose(pos,new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0,1,0),yawA),new THREE.Vector3(1,1,1));
 }
 
+/* ------------------------------------------------------------------ ambience + tension (all synthesized, offline) */
+let tension=0,nextOmen=0,flickerUntil=0,dragState=null,pendingStory=null;
+const amb={g:null,drG:null,nodes:[],tick:null};
+function noiseBuf(a,sec){const len=Math.floor(a.sampleRate*sec),b=a.createBuffer(1,len,a.sampleRate),d=b.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;return b;}
+function ambStart(mood){const a=ac();if(!a||amb.g)return;try{
+ const g=a.createGain();g.gain.value=0;g.gain.linearRampToValueAtTime(.5,a.currentTime+3);g.connect(a.destination);
+ const M={rain:['bandpass',2600,.7,.11],wind:['lowpass',420,.5,.18],hum:['lowpass',180,.4,.08],clock:['lowpass',300,.4,.05]}[mood]||['lowpass',300,.5,.08];
+ const n=a.createBufferSource();n.buffer=noiseBuf(a,2);n.loop=true;const f=a.createBiquadFilter(),ng=a.createGain();f.type=M[0];f.frequency.value=M[1];f.Q.value=M[2];ng.gain.value=M[3];n.connect(f);f.connect(ng);ng.connect(g);n.start();
+ const lfo=a.createOscillator(),lg=a.createGain();lfo.frequency.value=.15;lg.gain.value=M[1]*.3;lfo.connect(lg);lg.connect(f.frequency);lfo.start();
+ const dr=a.createOscillator(),drg=a.createGain();dr.type='sine';dr.frequency.value=mood==='hum'?50:46;drg.gain.value=.04;dr.connect(drg);drg.connect(g);dr.start();
+ amb.g=g;amb.drG=drg;amb.nodes=[n,lfo,dr];if(mood==='clock')amb.tick=setInterval(()=>beep(1800,.03,'square',.025),1000);}catch(e){}}
+function ambStop(){try{amb.nodes.forEach(n=>n.stop());amb.g&&amb.g.disconnect();}catch(e){}clearInterval(amb.tick);amb.g=null;amb.nodes=[];}
+function ambGain(v,t=.5){if(amb.g&&audio)amb.g.gain.setTargetAtTime(v,audio.currentTime,t);}
+function ambTension(){if(amb.g&&audio)amb.drG.gain.setTargetAtTime(.04+.2*tension,audio.currentTime,1);}
+function oneShot(kind){const a=ac();if(!a)return;const pan=a.createStereoPanner?a.createStereoPanner():null;let out=a.destination;if(pan){pan.pan.value=Math.random()*1.6-.8;pan.connect(a.destination);out=pan;}const T=a.currentTime;
+ const burst=(t,dur,fr,q,v)=>{const s=a.createBufferSource();s.buffer=noiseBuf(a,dur+.1);const f=a.createBiquadFilter(),gg=a.createGain();f.type='bandpass';f.frequency.value=fr;f.Q.value=q;gg.gain.setValueAtTime(.0001,T+t);gg.gain.linearRampToValueAtTime(v,T+t+dur*.3);gg.gain.exponentialRampToValueAtTime(.001,T+t+dur);s.connect(f);f.connect(gg);gg.connect(out);s.start(T+t);s.stop(T+t+dur+.1);};
+ const thump=(t,f0,v)=>{const o=a.createOscillator(),gg=a.createGain();o.frequency.setValueAtTime(f0,T+t);o.frequency.exponentialRampToValueAtTime(f0/2,T+t+.14);gg.gain.setValueAtTime(v,T+t);gg.gain.exponentialRampToValueAtTime(.001,T+t+.2);o.connect(gg);gg.connect(out);o.start(T+t);o.stop(T+t+.25);};
+ if(kind==='knock')[0,.3,.6].forEach(t=>thump(t,120,.5));else if(kind==='thump')thump(0,80,.9);else if(kind==='step')[0,.5,1,1.5].forEach(t=>burst(t,.12,500,2,.25));else burst(0,1.6,1700,3,.22);}
+function omen(){const p=chain[step];if(!p||p.state==='done')return;const t=tension,now=performance.now();
+ if(t<.5)oneShot(Math.random()<.5?'step':'whisper');
+ else if(t<.8){oneShot('knock');flickerUntil=now+700;}
+ else{ambGain(0,.1);flickerUntil=now+900;setTimeout(()=>{oneShot('thump');ambGain(.5,2);},3200);}
+ const o=story.omens;if(o&&o.length&&Math.random()<.7)fb(p,o[Math.floor(Math.random()*o.length)],'info',4000);}
+
 /* ------------------------------------------------------------------ story data */
 const STORIES=[
- {title:'گنجینهٔ حکیم',col:'#e8b84b',safe:'صندوق حکیم',
+ {title:'گنجینهٔ حکیم',col:'#e8b84b',mood:'wind',omens:['کسی آن‌سوی دیوار آهسته راه می‌رود.','شعلهٔ چراغ لحظه‌ای لرزید.','انگار نجوایی شنیدی.'],safe:'صندوق حکیم',
   intro:'حکیمی سالخورده سال‌ها پیش گنجینه‌اش را در همین خانه پنهان کرد و برای وارثانش چند معما به جا گذاشت. هر معما یک رقم از قفل صندوق را در خود دارد. شتاب نکن؛ حکیم نوشته بود: «هر که صبر کرد، در را شنید.»',
   beats:['نامهٔ اول: «هر که عجله کند، چیزی نمی‌بیند.»','نقشه‌ای کهنه که زیر گرد و غبار مانده بود.','یادداشت کنار چراغ: «پاسخ در خود پرسش است.»','برگی از دفتر خاطرات حکیم، نیمه‌سوخته.','لبهٔ صندوق نوشته: «ارقام را همان‌طور که گفتم بچین.»'],
   items:['نامهٔ حکیم','نقشهٔ کهن','چراغ روغنی','دفتر خاطرات','کلید برنجی'],
   outro:'در صندوق باز شد. داخلش چراغی کوچک بود و نوشته‌ای: «گنج واقعی، صبر و دقتی است که امروز نشان دادی.»'},
- {title:'سارقِ شبانه',col:'#6fb7ff',safe:'صندوقچهٔ پنهان',
+ {title:'سارقِ شبانه',col:'#6fb7ff',mood:'rain',omens:['صدای قدمی در راهرو ایستاد.','چیزی پشت در جابه‌جا شد.','تلفنی دور زنگ خورد و قطع شد.'],safe:'صندوقچهٔ پنهان',
   intro:'شب گذشته گردنبند فیروزه‌ای خانوادگی ناپدید شد. بازرس مطمئن است سارق در همین خانه چند ردپا جا گذاشته است. هر سرنخ یک رقم از قفل صندوقچهٔ پنهان را لو می‌دهد. جزئیات را جدی بگیر؛ دزدها همیشه یک جا اشتباه می‌کنند.',
   beats:['ردپای گل‌آلود کنار میز؛ کسی اینجا مکث کرده.','یادداشت مچاله‌شده: «به ساعت‌ها اعتماد نکن.»','دستکش چرمی جا مانده؛ زیرش کاغذی هست.','قفل خراشیده‌شده؛ دزد عجله داشته است.','صندوقچهٔ آخر؛ بازرس می‌گوید ارقام را درست بچین.'],
   items:['ردپای گل‌آلود','یادداشت مچاله','دستکش چرمی','قفل خراشیده','قاب عکس'],
   outro:'صندوقچه باز شد و گردنبند فیروزه‌ای همان‌جا بود. بازرس لبخند زد: «تو از من هم زیرک‌تری.»'},
- {title:'رصدخانهٔ خیام',col:'#b79cff',safe:'صندوق ستارگان',
+ {title:'رصدخانهٔ خیام',col:'#b79cff',mood:'hum',omens:['ستاره‌ای سوسو زد؛ یا شاید نه.','زیج بی‌دلیل ورق خورد.','سایه‌ای از پشت سرت گذشت.'],safe:'صندوق ستارگان',
   intro:'اخترشناسی در این خانه رصدخانه‌ای کوچک داشت. پیش از مرگ، آخرین یافته‌اش را در صندوقی بست که فقط با نشانه‌های آسمان باز می‌شود. هر نشانه یک رقم دارد. اول بشمار، بعد نتیجه بگیر.',
   beats:['صفحهٔ نخست زیج: «ستاره‌ها دروغ نمی‌گویند.»','اسطرلاب شکسته؛ زیرش یادداشتی بود.','جدول ماه و سال که نیمه‌کاره مانده.','حاشیهٔ دفتر رصد: «اول بشمار، بعد بپرس.»','صندوق ستارگان؛ نشانه‌ها را به‌ترتیب بنشان.'],
   items:['صفحهٔ زیج','اسطرلاب شکسته','جدول ماه و سال','دفتر رصد','نقشهٔ آسمان'],
   outro:'صندوق باز شد: نقشهٔ آسمانی که اخترشناس برای نسل بعد گذاشته بود. حالا تو نگهبان آنی.'},
- {title:'کارگاه ساعت‌ساز',col:'#ff9f5a',safe:'ساعتِ بزرگ',
+ {title:'کارگاه ساعت‌ساز',col:'#ff9f5a',mood:'clock',omens:['تیک‌تاک یک لحظه ایستاد... و دوباره آمد.','زنگ ساعتی دور خودبه‌خود به صدا درآمد.','چرخ‌دنده‌ای از جایی افتاد.'],safe:'ساعتِ بزرگ',
   intro:'ساعت‌سازی پیر این خانه را با چند قفل پر از چرخ‌دنده نگهبانی می‌کرد. می‌گویند ساعتِ بزرگ در پایان زمان را متوقف می‌کند. هر چرخ‌دنده یک رقم دارد؛ دقیق باش، یک ثانیه هم مهم است.',
   beats:['چرخ‌دنده‌ای مسی که هنوز گرم است.','فنر ساعت پیچ‌خورده؛ کنارش جدولی نوشته شده.','عقربه‌ای طلایی روی میز افتاده است.','کوکِ زنگ‌دار؛ زیرش کاغذی تا شده.','ساعتِ بزرگ: «زمان را به ترتیب بچین.»'],
   items:['چرخ‌دندهٔ مسی','فنر ساعت','عقربهٔ طلایی','کوکِ زنگ‌دار','قاب شیشه‌ای'],
   outro:'ساعتِ بزرگ ایستاد و صندوقش باز شد. ساعت‌ساز نوشته بود: «بهترین ساعت، ساعتی است که برایش وقت گذاشتی.»'}
 ];
+
+/* ------------------------------------------------------------------ extra scenarios from JSON (data only: strings, no code, no HTML) */
+const MOODS=['rain','wind','hum','clock'];
+function cleanStory(o){if(!o||typeof o!=='object')return null;const S=(v,max)=>typeof v==='string'&&v.trim()&&v.length<=max?v.trim():null,arr=(v,n,max)=>Array.isArray(v)&&v.length>=n&&v.slice(0,n).every(x=>S(x,max))?v.slice(0,n).map(x=>x.trim()):null;
+ const t=S(o.title,40),safe=S(o.safe,30),intro=S(o.intro,600),outro=S(o.outro,400),beats=arr(o.beats,5,80),items=arr(o.items,5,30);
+ if(!(t&&safe&&intro&&outro&&beats&&items))return null;
+ return{title:t,col:/^#[0-9a-f]{6}$/i.test(o.col||'')?o.col:'#c5aa75',safe,intro,outro,beats,items,mood:MOODS.includes(o.mood)?o.mood:'hum',omens:Array.isArray(o.omens)?o.omens.filter(x=>S(x,60)).slice(0,12):[],custom:true};}
+function loadPack(text,save=true){let j;try{j=JSON.parse(text);}catch{return 0;}const list=Array.isArray(j)?j:Array.isArray(j&&j.stories)?j.stories:[j];let n=0;const ok=[];
+ for(const o of list.slice(0,10)){const c=cleanStory(o);if(c&&!STORIES.some(x=>x.title===c.title)){STORIES.push(c);pendingStory=c;ok.push(c);n++;}}
+ if(save&&ok.length)try{const old=JSON.parse(localStorage.getItem('escapePacks')||'[]');localStorage.setItem('escapePacks',JSON.stringify(old.concat(ok).slice(-20)));}catch(e){}
+ return n;}
+try{loadPack(localStorage.getItem('escapePacks')||'[]',false);pendingStory=null;}catch(e){}
 let story=STORIES[0];const game={legend:null,rule:'asc'};
 const SHAPE_FA={circle:'دایره',triangle:'مثلث',square:'مربع',diamond:'لوزی',star:'ستاره',heart:'قلب'};
 const shuffle=a=>a.map(v=>[rng(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
@@ -161,7 +197,7 @@ const PW=1.1,PH=1.5;
 const act=(p,st='puzzle')=>!paused&&phase==='play'&&p===chain[step]&&p.state===st;
 const active=p=>act(p);
 function put(g,m,x,y,z=.015){m.position.set(x,y,z);g.add(m);return m;}
-function fb(p,text,kind='bad',ms=4200){if(!p.fbMesh)return;p.fbMesh.userData.draw(text,{fg:kind==='ok'?C.ok:kind==='bad'?C.bad:C.accent});p.fbUntil=performance.now()+ms;}
+function fb(p,text,kind='bad',ms=4200){if(!p.fbMesh)return;if(kind==='bad')tension=Math.min(1,tension+.08);p.fbMesh.userData.draw(text,{fg:kind==='ok'?C.ok:kind==='bad'?C.bad:C.accent});p.fbUntil=performance.now()+ms;}
 function line(g,text,y,h=.08,o={}){return put(g,labelMesh(text,1.0,h,Object.assign({size:.55,fg:C.text},o)),0,y);}
 function bigText(g,text,x,y,w,h,o={}){return put(g,labelMesh(text,w,h,Object.assign({bg:'#0a141e',border:C.btnB,size:.7,weight:'800'},o)),x,y);}
 function dots(g,x,y,total){const m=put(g,labelMesh('',.64,.1,{dots:new Array(total).fill(false)}),x,y);m.userData.set=(n,col)=>m.userData.draw('',{dots:Array.from({length:total},(_,i)=>i<n),fg:col||C.ok});return m;}
@@ -322,7 +358,39 @@ const Modules={
    if(p.inp.length===p.round){p.prog.userData.set(p.round);if(p.round===5){solved(p);return;}p.round++;p.inp=[];fb(p,'درست! یک نت بیشتر.','ok',2200);setTimeout(play,1100);}
   },{style:{bg:cols[i],border:'#ffffff',fg:'#101010',dir:'ltr',size:.7,weight:'800'}}));
   p.plan=()=>p.playing?[]:p.answer.slice(0,p.round).map(x=>p.pads[x]);},
-  hints:p=>['رنگ و صدا را با هم به خاطر بسپار؛ هر وقت خواستی «پخش» را دوباره بزن.','سعی کن توالی را در ذهنت شمارهٔ دکمه‌ها کنی.','توالی کامل: '+p.answer.map(x=>x+1).join('، ')]}
+  hints:p=>['رنگ و صدا را با هم به خاطر بسپار؛ هر وقت خواستی «پخش» را دوباره بزن.','سعی کن توالی را در ذهنت شمارهٔ دکمه‌ها کنی.','توالی کامل: '+p.answer.map(x=>x+1).join('، ')]},
+
+ arrange:{name:'چیدمان',build(p,g){
+  const TN=['قرمز','آبی','زرد','سبز'],TC=['#ef6351','#4d96ff','#ffd166','#55c991'],nm=i=>'«'+TN[i]+'»',isEnd=v=>v===0||v===3;
+  let B,clues=null,fallback=null;
+  for(let tr=0;tr<400&&!clues;tr++){
+   const A=shuffle([0,1,2,3]);B=A;const pool=[];
+   for(let i=0;i<4;i++){
+    pool.push({w:1,s:nm(i)+(isEnd(A[i])?' در یکی از دو سر ردیف است.':' در یکی از دو سر ردیف نیست.'),f:q=>isEnd(q[i])===isEnd(A[i])});
+    pool.push({w:.6,s:nm(i)+' در جایگاه '+(A[i]+1)+' از چپ است.',f:q=>q[i]===A[i]});
+    for(let j=0;j<4;j++)if(i!==j){
+     if(A[i]<A[j])pool.push({w:2,s:nm(i)+' جایی سمت چپِ '+nm(j)+' است.',f:q=>q[i]<q[j]});
+     if(i<j){if(Math.abs(A[i]-A[j])===1)pool.push({w:3,s:nm(i)+' کنارِ '+nm(j)+' است.',f:q=>Math.abs(q[i]-q[j])===1});else pool.push({w:2,s:nm(i)+' و '+nm(j)+' کنار هم نیستند.',f:q=>Math.abs(q[i]-q[j])>1});}}}
+   const ord=pool.map(c=>[rng()*c.w,c]).sort((a,b)=>b[0]-a[0]).map(x=>x[1]);
+   let cand=PERMS,ch=[];for(const c of ord){const nx=cand.filter(c.f);if(nx.length<cand.length){ch.push(c);cand=nx;if(cand.length===1)break;}}
+   if(cand.length===1){fallback={B:A.slice(),ch};if(ch.length>=4&&ch.length<=6)clues=ch;}}
+  if(!clues){clues=fallback.ch;B=fallback.B;}
+  p.B=B;p.clues=clues;p.slotOf=[-1,-1,-1,-1];p.sel=-1;
+  line(g,'مهره‌ها را در ردیف بچین (بکش و رها کن، یا مهره و بعد خانه را بزن).',.5,.06,{size:.5,fg:C.accent});
+  const sp=Math.min(.085,.34/clues.length);clues.forEach((c,i)=>line(g,(i+1)+' – '+c.s,.42-i*sp,sp-.005,{size:.6}));
+  const slotX=s=>(s-1.5)*.26,trayX=i=>(i-1.5)*.26,SY=-.12,TY=-.42;
+  const layout=()=>p.tiles.forEach((t,i)=>{const s=p.slotOf[i],x=s>=0?slotX(s):trayX(i),y=s>=0?SY:TY;t.position.set(x,y,.04);t.userData.home=[x,y];t.userData.draw(TN[i],{border:p.sel===i?'#00ffd0':'#ffffff',bg:TC[i]});});
+  const check=()=>{if(p.slotOf.some(v=>v<0))return;if(p.slotOf.join()===B.join()){solved(p);return;}const bad=clues.findIndex(c=>!c.f(p.slotOf));sfx('bad');fb(p,bad>=0?'سرنخ '+(bad+1)+' با این چیدمان نمی‌خواند.':'چیدمان درست نیست.');};
+  const place=(t,s)=>{const old=p.slotOf[t],occ=p.slotOf.indexOf(s);if(occ>=0&&occ!==t)p.slotOf[occ]=old;p.slotOf[t]=s;p.sel=-1;};
+  p.slots=[0,1,2,3].map(s=>button(g,String(s+1),slotX(s),SY,.24,.24,()=>{if(!active(p)||p.sel<0)return;place(p.sel,s);layout();check();},{style:{bg:'#0e1b27',border:'#41596b',fg:'#4d6b80',dir:'ltr',size:.5}}));
+  p.tiles=[0,1,2,3].map(i=>{const b=button(g,TN[i],0,0,.22,.22,()=>{if(!active(p))return;
+    if(p.sel<0)p.sel=i;else if(p.sel===i)p.sel=-1;else if(p.slotOf[i]>=0)place(p.sel,p.slotOf[i]);else p.sel=i;layout();check();},{z:.04,style:{bg:TC[i],border:'#ffffff',fg:'#101010',size:.42,weight:'800'}});
+   b.userData.drag=true;b.userData.panel=p.group;
+   b.userData.dragEnd=moved=>{if(!active(p)||!moved)return;let best=-1,bd=.18;for(let s=0;s<4;s++){const d=Math.hypot(b.position.x-slotX(s),b.position.y-SY);if(d<bd){bd=d;best=s;}}
+    if(best>=0&&p.sel===i)place(i,best);else p.sel=-1;layout();check();};return b;});
+  layout();
+  p.plan=()=>{const l=[];for(let i=0;i<4;i++)l.push(p.tiles[i],p.slots[B[i]]);return l;};},
+  hints:p=>['اول سرنخ‌هایی را بخوان که جایگاه را دقیق می‌گویند؛ بعد بقیه را با آن‌ها بسنج.','چپ‌ترین خانه: «'+['قرمز','آبی','زرد','سبز'][p.B.indexOf(0)]+'»','چیدمان از چپ: '+[0,1,2,3].map(s=>['قرمز','آبی','زرد','سبز'][p.B.indexOf(s)]).join('، ')]}
 };
 const TYPE_KEYS=Object.keys(Modules);
 
@@ -350,7 +418,7 @@ function buildPuzzle(p){
   line(p.safe,'پازل آخر حل شد! حالا '+story.safe+'.',.5,.09,{size:.6,fg:th});
   p.ruleLine=line(p.safe,'',.35,.16,{size:.4});
   line(p.safe,'ارقام هر مرحله روی پانل آن مرحله و در دفترچه (دکمهٔ B) است.',.2,.08,{size:.48,fg:C.muted});
-  p.safeKeys=keypad(p.safe,p,chain.length,v=>{const code=safeCode();if(v===code){p.fbMesh.userData.draw('');p.fbUntil=0;p.state='done';step++;elapsed+=performance.now()-started;phase='end';sfx('ok');return null;}
+  p.safeKeys=keypad(p.safe,p,chain.length,v=>{const code=safeCode();if(v===code){p.fbMesh.userData.draw('');p.fbUntil=0;p.state='done';step++;elapsed+=performance.now()-started;phase='end';sfx('ok');ambGain(0,1);setTimeout(ambStop,4000);return null;}
    const ex=[...v].filter((c,i)=>c===code[i]).length;return ex+' رقم در جای درست است.';},-.02,'safe');
   p.plan2=()=>[...safeCode()].map(c=>p.safeKeys[c]);
  }
@@ -360,7 +428,7 @@ function buildPuzzle(p){
 }
 function safeCode(){const ds=chain.map(c=>c.digit);return(game.rule==='asc'?ds.slice().sort((a,b)=>a-b):game.rule==='desc'?ds.slice().sort((a,b)=>b-a):ds).join('');}
 const SAFE_RULE={asc:'ارقام همهٔ مرحله‌ها را از کوچک به بزرگ وارد کن.',desc:'ارقام همهٔ مرحله‌ها را از بزرگ به کوچک وارد کن.',found:'ارقام را به ترتیب مرحله‌ها (مرحلهٔ 1 تا آخر) وارد کن.'};
-function solved(p){if(p!==chain[step]||paused||p.state!=='puzzle')return;sfx('ok');
+function solved(p){if(p!==chain[step]||paused||p.state!=='puzzle')return;sfx('ok');tension*=.35;ambTension();
  if(p.index===chain.length-1){p.state='safe';p.ruleLine.userData.draw(SAFE_RULE[game.rule]);p.hintText.userData.draw('');p.level=0;fb(p,'عالی! فقط قفل نهایی مانده.','ok',5000);}
  else{p.state='done';step++;}
 }
@@ -389,7 +457,7 @@ function startGame(fresh){
  if(spots.length<NEED){notify('حداقل '+NEED+' محل لازم است.','bad',4000);return;}
  seed=(!fresh&&seedParam)?seedParam:randomSeed();seedParam=null;rng=seeded(seed);
  clearChain();step=0;hints=0;elapsed=0;paused=false;menuOpen=false;notebookOpen=false;notice.until=0;
- story=STORIES[storyParam!==null&&STORIES[storyParam]?storyParam:Math.floor(rng()*STORIES.length)];
+ story=pendingStory||STORIES[storyParam!==null&&STORIES[storyParam]?storyParam:Math.floor(rng()*STORIES.length)];pendingStory=null;
  const {o}=headPose();const bySpot=spots.slice().sort((a,b)=>a.pos.distanceTo(o)-b.pos.distanceTo(o));const first=bySpot.shift();
  const rest=shuffle(bySpot);const n=Math.min(spots.length,3+Math.floor(rng()*3));const use=[first,...rest].slice(0,n);
  const types=shuffle(TYPE_KEYS).slice(0,n);
@@ -402,8 +470,8 @@ function startGame(fresh){
  chain.forEach(buildPuzzle);chain.forEach(p=>world.add(p.group));
  markers.visible=false;phase='intro';
 }
-function beginPlay(){phase='play';started=performance.now();menuOpen=false;notebookOpen=false;sfx('ok');}
-function newPlaces(){clearChain();while(spots.length)removeSpot();markers.visible=true;paused=false;menuOpen=false;phase='spots';}
+function beginPlay(){phase='play';started=performance.now();menuOpen=false;notebookOpen=false;tension=0;nextOmen=performance.now()+25000;ambStop();ambStart(story.mood);sfx('ok');}
+function newPlaces(){ambStop();clearChain();while(spots.length)removeSpot();markers.visible=true;paused=false;menuOpen=false;phase='spots';}
 function toggleMenu(){if(phase!=='play'||paused)return;menuOpen=!menuOpen;notebookOpen=false;cardKey='';cardTick=0;sfx('tick');}
 
 /* ------------------------------------------------------------------ the wizard card (3D HUD in AR, DOM on screen) */
@@ -455,8 +523,8 @@ function buildHUD(cd){
  sec.forEach((bt,i)=>{const row=Math.floor(i/3),inRow=Math.min(3,sec.length-row*3),col=i%3,x=(((inRow-1)/2)-col)*.42;button(hud,bt.label,x,y-.08-row*.16,.4,.13,bt.fn,{disabled:bt.disabled,z:.03,style:{size:.46}});});
 }
 function capture(){if(!session?.initiateRoomCapture||captureUsed)return;captureUsed=true;session.initiateRoomCapture().then(()=>notify('پس از پایان تنظیم اتاق، دوباره اطراف را نگاه کن.','info',6000)).catch(()=>notify('تنظیم اتاق ممکن نشد. «ثبت همین‌جا» را امتحان کن.','bad',6000));}
-function pause(){if(phase!=='play')return;if(!paused)elapsed+=performance.now()-started;else started=performance.now();paused=!paused;menuOpen=false;notebookOpen=false;cardKey='';cardTick=0;}
-function quit(){if(session)session.end();else location.href=location.pathname;}
+function pause(){if(phase!=='play')return;if(!paused)elapsed+=performance.now()-started;else started=performance.now();paused=!paused;menuOpen=false;notebookOpen=false;cardKey='';cardTick=0;ambGain(paused?0:.5,.3);}
+function quit(){ambStop();if(session)session.end();else location.href=location.pathname;}
 
 /* ------------------------------------------------------------------ session (AR) and demo */
 async function enterAR(){
@@ -464,7 +532,7 @@ async function enterAR(){
   session=await navigator.xr.requestSession('immersive-ar',{requiredFeatures:['local-floor'],optionalFeatures:['plane-detection','anchors','hit-test','hand-tracking','mesh-detection']});
   renderer.setClearColor(0x000000,0);scene.background=null;await renderer.xr.setSession(session);ref=renderer.xr.getReferenceSpace();demo=false;demoGroup.visible=false;
   surfaces=[];planeMap.clear();spots=[];captureUsed=false;phase='safety';paused=false;
-  session.addEventListener('end',()=>{session=null;hitSource=null;spots.forEach(s=>s.anchor?.delete?.());phase='start';renderer.setClearColor(0x0f1c2a,1);hudWasVisible=false;newPlacesSilent();cardKey='';});
+  session.addEventListener('end',()=>{ambStop();session=null;hitSource=null;spots.forEach(s=>s.anchor?.delete?.());phase='start';renderer.setClearColor(0x0f1c2a,1);hudWasVisible=false;newPlacesSilent();cardKey='';});
   session.addEventListener('visibilitychange',()=>{if(session&&session.visibilityState!=='visible'&&phase==='play'&&!paused)pause();});
   ref.addEventListener?.('reset',()=>{notify('جای مبدأ هدست تغییر کرد؛ اگر پازل‌ها جابه‌جا شدند «انتخاب دوبارهٔ محل‌ها» را بزن.','bad',9000);});
   try{const viewer=await session.requestReferenceSpace('viewer');hitSource=await session.requestHitTestSource({space:viewer});}catch{}
@@ -482,13 +550,15 @@ function makeDemo(){
  addSurface(new THREE.Matrix4().compose(new THREE.Vector3(0,1.3,-5),new THREE.Quaternion().setFromEuler(new THREE.Euler(Math.PI/2,0,0)),new THREE.Vector3(1,1,1)),'دیوار',rect(3.8,1.3));
  phase='safety';scanStart=performance.now()-6000;cardKey='';
 }
+$('pack').onclick=()=>$('packFile').click();$('packFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;const n=loadPack(await f.text());$('packInfo').textContent=n?n+' سناریو اضافه شد و در بازی بعدی استفاده می‌شود.':'فایل معتبر نبود (قالب در scenario-example.json است).';e.target.value='';};
 $('ar').onclick=()=>{ac();enterAR();};$('demo').onclick=()=>{ac();makeDemo();};
 
 /* ------------------------------------------------------------------ input: controllers, hands, mouse */
-function activate(origin,direction){const now=performance.now();if(now-lastAct<220)return;ray.set(origin,direction);
- const targets=clickables.filter(m=>{let o=m;while(o){if(!o.visible)return false;o=o.parent;}return true;});const hit=ray.intersectObjects(targets,false)[0];if(!hit||hit.distance>5)return;lastAct=now;hit.object.userData.action?.();}
+function endDrag(src){if(!dragState||dragState.src!==src)return;const ds=dragState;dragState=null;ds.m.userData.dragEnd?.(ds.moved);}
+function activate(origin,direction,src){const now=performance.now();if(now-lastAct<220)return;ray.set(origin,direction);
+ const targets=clickables.filter(m=>{let o=m;while(o){if(!o.visible)return false;o=o.parent;}return true;});const hit=ray.intersectObjects(targets,false)[0];if(!hit||hit.distance>5)return;lastAct=now;hit.object.userData.action?.();if(src!==undefined&&hit.object.userData.drag)dragState={m:hit.object,src,moved:false};}
 const rays=[];for(let i=0;i<2;i++){const c=renderer.xr.getController(i);scene.add(c);const laser=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-2.5)]),new THREE.LineBasicMaterial({color:0x55c991}));c.add(laser);c.userData.laser=laser;rays.push(c);
- c.addEventListener('selectstart',e=>{if(e.data?.hand)return;ac();const pos=new THREE.Vector3(),q=new THREE.Quaternion();c.getWorldPosition(pos);c.getWorldQuaternion(q);activate(pos,new THREE.Vector3(0,0,-1).applyQuaternion(q));});}
+ c.addEventListener('selectstart',e=>{if(e.data?.hand)return;ac();const pos=new THREE.Vector3(),q=new THREE.Quaternion();c.getWorldPosition(pos);c.getWorldQuaternion(q);activate(pos,new THREE.Vector3(0,0,-1).applyQuaternion(q),i);});c.addEventListener('selectend',()=>endDrag(i));}
 const pinch=new WeakMap();
 function hands(frame){for(const source of session.inputSources){if(!source.hand)continue;const a=source.hand.get('thumb-tip'),b=source.hand.get('index-finger-tip');const ap=frame.getJointPose(a,ref),bp=frame.getJointPose(b,ref);if(!ap||!bp){pinch.set(source,false);continue;}
  const p=bp.transform.position,t=ap.transform.position,d=Math.hypot(p.x-t.x,p.y-t.y,p.z-t.z),was=pinch.get(source)||false,now=was?d<.035:d<.022;
@@ -497,10 +567,10 @@ function updateHover(list){const now=new Set();const targets=clickables.filter(m
  for(const [o,d] of list){ray.set(o,d);const h=ray.intersectObjects(targets,false)[0];if(h&&h.distance<5)now.add(h.object.id);}
  for(const m of clickables){const on=now.has(m.id);if(on!==hovered.has(m.id)){m.material.color.setScalar(on?1.45:1);on?hovered.add(m.id):hovered.delete(m.id);}}}
 let drag=null;const cv=renderer.domElement;
-cv.addEventListener('pointerdown',e=>{if(!demo)return;drag={x:e.clientX,y:e.clientY,moved:false,sx:e.clientX,sy:e.clientY};cv.setPointerCapture?.(e.pointerId);});
+cv.addEventListener('pointerdown',e=>{if(!demo)return;mouse.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);ray.setFromCamera(mouse,camera);const dh=ray.intersectObjects(clickables.filter(m=>{let o=m;while(o){if(!o.visible)return false;o=o.parent;}return m.userData.drag;}),false)[0];if(dh&&dh.distance<5){ac();lastAct=0;activate(ray.ray.origin.clone(),ray.ray.direction.clone(),'mouse');if(dragState){cv.setPointerCapture?.(e.pointerId);return;}}drag={x:e.clientX,y:e.clientY,moved:false,sx:e.clientX,sy:e.clientY};cv.setPointerCapture?.(e.pointerId);});
 cv.addEventListener('pointermove',e=>{if(!demo)return;if(drag){if(Math.hypot(e.clientX-drag.sx,e.clientY-drag.sy)>6)drag.moved=true;if(drag.moved){yaw-=(e.clientX-drag.x)*.005;pitch=Math.max(-1.4,Math.min(1.4,pitch-(e.clientY-drag.y)*.005));}drag.x=e.clientX;drag.y=e.clientY;}
  mouse.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);mouseOn=true;});
-cv.addEventListener('pointerup',e=>{if(!demo||!drag)return;const click=!drag.moved;drag=null;if(click){ac();mouse.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);ray.setFromCamera(mouse,camera);activate(ray.ray.origin.clone(),ray.ray.direction.clone());}});
+cv.addEventListener('pointerup',e=>{if(demo&&dragState&&dragState.src==='mouse'){endDrag('mouse');return;}if(!demo||!drag)return;const click=!drag.moved;drag=null;if(click){ac();mouse.set(e.clientX/innerWidth*2-1,-e.clientY/innerHeight*2+1);ray.setFromCamera(mouse,camera);activate(ray.ray.origin.clone(),ray.ray.direction.clone());}});
 const mouse=new THREE.Vector2();let mouseOn=false;
 window.addEventListener('keydown',e=>{keys.add(e.code);if(e.code==='Escape'||e.code==='KeyM'||e.code==='Tab'){e.preventDefault();toggleMenu();}});window.addEventListener('keyup',e=>keys.delete(e.code));
 window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
@@ -517,7 +587,7 @@ const padPrev=new WeakMap();
 function pollPad(){let pads=0;for(const src of session.inputSources){if(!src.gamepad||src.hand)continue;pads++;const b=src.gamepad.buttons[5],dn=!!(b&&b.pressed);if(dn&&!padPrev.get(src))toggleMenu();padPrev.set(src,dn);}return pads;}
 
 /* ------------------------------------------------------------------ main loop */
-let last=performance.now(),cardTick=0,handOnly=false;
+let last=performance.now(),cardTick=0,handOnly=false,ambTick=0;
 renderer.setAnimationLoop((time,frame)=>{
  const dt=Math.min((time-last)/1000,.05);last=time;const now=performance.now();
  if(session&&frame){ref=renderer.xr.getReferenceSpace();guard(()=>scan(frame));
@@ -550,10 +620,18 @@ renderer.setAnimationLoop((time,frame)=>{
   if(dist>2.2){showA=true;const fx=d.x,fz=d.z,fl=Math.hypot(fx,fz)||1;arrow.position.set(o.x+fx/fl*.85,o.y-.38,o.z+fz/fl*.85);arrow.rotation.set(0,Math.atan2(-dx,-dz),0);arrowLbl.quaternion.copy(q);arrowLbl.rotation.set(0,0,0);
    const t='مرحله '+(step+1)+' · '+Math.round(dist)+' متر';if(t!==arrowTxt){arrowTxt=t;arrowLbl.userData.draw(t);}}}
   arrow.visible=showA;if(showA)arrowLbl.lookAt(camera.getWorldPosition(new THREE.Vector3()));}
+ // dragging a movable piece along the panel plane
+ if(dragState){const ds=dragState,m=ds.m;let o,dv;if(ds.src==='mouse'){ray.setFromCamera(mouse,camera);o=ray.ray.origin.clone();dv=ray.ray.direction.clone();}else{const c=rays[ds.src],qq=new THREE.Quaternion();o=new THREE.Vector3();c.getWorldPosition(o);c.getWorldQuaternion(qq);dv=new THREE.Vector3(0,0,-1).applyQuaternion(qq);}
+  const pg=m.userData.panel,mw=pg.matrixWorld,nrm=new THREE.Vector3(0,0,1).transformDirection(mw),pt=new THREE.Vector3().setFromMatrixPosition(mw),den=nrm.dot(dv);
+  if(Math.abs(den)>1e-4){const t=nrm.dot(pt.clone().sub(o))/den;if(t>0){const loc=m.parent.worldToLocal(o.clone().addScaledVector(dv,t));m.position.set(Math.max(-.5,Math.min(.5,loc.x)),Math.max(-.5,Math.min(.5,loc.y)),.06);const h=m.userData.home||[0,0];if(Math.hypot(m.position.x-h[0],m.position.y-h[1])>.05)ds.moved=true;}}}
+ // atmosphere: tension grows with time and mistakes, triggers omens
+ if(phase==='play'&&!paused&&!menuOpen){tension=Math.min(1,tension+dt*.004);if(now>nextOmen){if(tension>.2)omen();nextOmen=now+25000+Math.random()*25000;}}
+ if(now-ambTick>1000){ambTick=now;ambTension();}
+ {const cp=chain[step];if(cp&&now<flickerUntil&&Math.floor(now/90)%2===0)cp.group.visible=false;}
  // hover highlight
  if(session){const list=[];for(const c of rays){if(!c.visible)continue;const p=new THREE.Vector3(),qq=new THREE.Quaternion();c.getWorldPosition(p);c.getWorldQuaternion(qq);if(p.lengthSq()>0)list.push([p,new THREE.Vector3(0,0,-1).applyQuaternion(qq)]);}updateHover(list);}
  else if(demo&&mouseOn){ray.setFromCamera(mouse,camera);updateHover([[ray.ray.origin.clone(),ray.ray.direction.clone()]]);}
  renderer.render(scene,camera);
 });
-window.EscapeGame={Modules,get chain(){return chain;},get spots(){return spots;},get phase(){return phase;},get step(){return step;},get story(){return story;},get game(){return game;},get menuOpen(){return menuOpen;},get hudVisible(){return hud.visible;},get arrowVisible(){return arrow.visible;},cardFor,toggleMenu,beginPlay,safeCode,notebookText,lightsSolve,ABJAD,ABJ_WORDS,makeSeq,seeded,get gaze(){return gazeInfo;},activate,clickables,placeAt,gazeCast,scan,addSurface,get surfaces(){return surfaces;},headPose,get hud(){return hud;}};
+window.EscapeGame={get tension(){return tension;},set tension(v){tension=v;},omen,oneShot,loadPack,STORIES,get dragState(){return dragState;},Modules,get chain(){return chain;},get spots(){return spots;},get phase(){return phase;},get step(){return step;},get story(){return story;},get game(){return game;},get menuOpen(){return menuOpen;},get hudVisible(){return hud.visible;},get arrowVisible(){return arrow.visible;},cardFor,toggleMenu,beginPlay,safeCode,notebookText,lightsSolve,ABJAD,ABJ_WORDS,makeSeq,seeded,get gaze(){return gazeInfo;},activate,clickables,placeAt,gazeCast,scan,addSurface,get surfaces(){return surfaces;},headPose,get hud(){return hud;}};
 </script></body></html>
