@@ -69,6 +69,8 @@ function drawShape(x,type,cx,cy,r,col,filled=true){
  if(type==='circle')x.arc(cx,cy,r,0,Math.PI*2);
  else if(type==='triangle'){x.moveTo(cx,cy-r);x.lineTo(cx+r*.95,cy+r*.8);x.lineTo(cx-r*.95,cy+r*.8);x.closePath();}
  else if(type==='tridown'){x.moveTo(cx,cy+r);x.lineTo(cx+r*.95,cy-r*.8);x.lineTo(cx-r*.95,cy-r*.8);x.closePath();}
+ else if(type==='triL'){x.moveTo(cx-r,cy);x.lineTo(cx+r*.8,cy-r*.95);x.lineTo(cx+r*.8,cy+r*.95);x.closePath();}
+ else if(type==='triR'){x.moveTo(cx+r,cy);x.lineTo(cx-r*.8,cy-r*.95);x.lineTo(cx-r*.8,cy+r*.95);x.closePath();}
  else if(type==='square'){x.rect(cx-r*.85,cy-r*.85,r*1.7,r*1.7);}
  else if(type==='diamond'){x.moveTo(cx,cy-r);x.lineTo(cx+r*.8,cy);x.lineTo(cx,cy+r);x.lineTo(cx-r*.8,cy);x.closePath();}
  else if(type==='star'){for(let i=0;i<10;i++){const a=-Math.PI/2+i*Math.PI/5,rr=i%2?r*.45:r;x[i?'lineTo':'moveTo'](cx+Math.cos(a)*rr,cy+Math.sin(a)*rr);}x.closePath();}
@@ -83,7 +85,8 @@ function labelMesh(text,w,h,o={}){
  const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({map:tex,transparent:true,side:THREE.DoubleSide,depthWrite:false}));
  m.userData.draw=(t,oo)=>{const q=Object.assign({},o,oo||{});x.clearRect(0,0,cv.width,cv.height);
   if(q.bg){rrect(x,3,3,cv.width-6,cv.height-6,q.radius??Math.min(cv.height*.2,40));x.fillStyle=q.bg;x.fill();if(q.border){x.lineWidth=Math.max(3,cv.height*.03);x.strokeStyle=q.border;x.stroke();}}
-  if(q.shape)drawShape(x,q.shape,cv.width/2,cv.height/2,Math.min(cv.width,cv.height)*.36,q.fg||C.accent);
+  if(q.custom)q.custom(x,cv.width,cv.height);
+  else if(q.shape)drawShape(x,q.shape,cv.width/2,cv.height/2,Math.min(cv.width,cv.height)*.36,q.fg||C.accent);
   else if(q.pair){const px=Math.floor(cv.height*.72);x.textBaseline='middle';x.textAlign='center';x.font=`800 ${px}px ${FONT}`;x.fillStyle=q.fg||C.text;x.direction='rtl';x.fillText(q.pair[0],cv.width*.72,cv.height/2+px*.04);x.direction='ltr';x.fillStyle=C.accent;x.fillText(q.pair[1]+' =',cv.width*.3,cv.height/2+px*.04);}
   else if(q.dots){const n=q.dots.length,gap=cv.height*.62,x0=cv.width/2-(n-1)*gap/2;q.dots.forEach((on,i)=>{drawShape(x,'circle',x0+i*gap,cv.height/2,cv.height*.2,on?(q.fg||C.ok):'#3d5568',on);});}
   else if(t!=='')drawText(x,t,cv.width,cv.height,q);
@@ -172,7 +175,37 @@ const STORIES=[
   intro:'ساعت‌سازی پیر این خانه را با چند قفل پر از چرخ‌دنده نگهبانی می‌کرد. می‌گویند ساعتِ بزرگ در پایان زمان را متوقف می‌کند. هر چرخ‌دنده یک رقم دارد؛ دقیق باش، یک ثانیه هم مهم است.',
   beats:['چرخ‌دنده‌ای مسی که هنوز گرم است.','فنر ساعت پیچ‌خورده؛ کنارش جدولی نوشته شده.','عقربه‌ای طلایی روی میز افتاده است.','کوکِ زنگ‌دار؛ زیرش کاغذی تا شده.','ساعتِ بزرگ: «زمان را به ترتیب بچین.»'],
   items:['چرخ‌دندهٔ مسی','فنر ساعت','عقربهٔ طلایی','کوکِ زنگ‌دار','قاب شیشه‌ای'],
-  outro:'ساعتِ بزرگ ایستاد و صندوقش باز شد. ساعت‌ساز نوشته بود: «بهترین ساعت، ساعتی است که برایش وقت گذاشتی.»'}
+  outro:'ساعتِ بزرگ ایستاد و صندوقش باز شد. ساعت‌ساز نوشته بود: «بهترین ساعت، ساعتی است که برایش وقت گذاشتی.»'},
+ {title:'شبِ موزه',col:'#ff8fab',mood:'hum',prefer:['painting','arrange','memory','codelock','abjad'],safe:'گاوصندوق نگهبان',omens:['صدای پایی در تالار بالا پیچید.','یکی از قاب‌ها لحظه‌ای لرزید.','برای لحظه‌ای حس کردی تندیسی سر چرخاند.'],
+  intro:'موزه بسته شده و تو تنها کسی هستی که از قلم افتاده‌ای. نگهبانِ شب پیش از رفتن چند نشانه روی آثار گذاشته تا گاوصندوقش را فقط آدم کنجکاو باز کند. تابلوها را دقیق نگاه کن؛ گاهی چیزی سر جایش نیست.',
+  beats:['زیر نور کم‌سوی تالار، قابی کمی کج شده است.','کنار تندیس‌ها کارتی با خط نگهبان افتاده است.','تابلویی که دیروز اینجا نبود، حالا روی دیوار است.','ردیف آثار کوچک را کسی جابه‌جا کرده است.','گاوصندوق نگهبان پشت پردهٔ مخمل پنهان است.'],
+  items:['قاب کج','کارت نگهبان','تابلوی تازه','اثر جابه‌جاشده','کلید پرده'],
+  outro:'گاوصندوق باز شد؛ زیرش یادداشت نگهبان بود: «چشم‌هایی که صبور نگاه کنند، همیشه چیزی پیدا می‌کنند.»'},
+ {title:'کاخ موسیقی',col:'#ffd166',mood:'wind',prefer:['piano','radio','arrange','sequence','abjad'],safe:'جعبهٔ موسیقی',omens:['یک نت از جایی دور خودبه‌خود نواخته شد.','زه‌ای در تاریکی لرزید.','رادیو لحظه‌ای نجوا کرد و ساکت شد.'],
+  intro:'کاخ قدیمیِ یک نوازندهٔ بزرگ سال‌هاست خاموش است. می‌گویند آخرین آهنگش را در قفلی پنهان کرده که فقط با گوش و حوصله باز می‌شود. ساز را بشنو، رادیو را کوک کن و نت‌ها را به یاد بسپار.',
+  beats:['پیانوی بزرگ زیر پارچه‌ای خاک‌گرفته است.','سنتوری بی‌زه کنار پنجره؛ کسی زه‌هایش را باز کرده.','رادیوی قدیمی هنوز یک ایستگاه را نشان می‌دهد.','طبلی روی میز؛ زیرش نت‌های نیمه‌پاک‌شده.','جعبهٔ موسیقی آخرین قفل است؛ فنرش پیچیده.'],
+  items:['پیانو','سنتور','رادیو','طبل','فنر جعبه'],
+  outro:'جعبهٔ موسیقی آهنگ آخر را نواخت و قفل باز شد. نوازنده نوشته بود: «موسیقی را کسی می‌شنود که گوش بدهد.»'},
+ {title:'ایستگاه گمشده',col:'#7fd4ff',mood:'hum',prefer:['orbit','radio','chem','timeline','sequence'],safe:'محفظهٔ فرماندهی',omens:['از دیوار صدای کوبشی خفیف آمد.','چراغ‌ها برای لحظه‌ای افت کردند.','صدای نفسی از بلندگو آمد و قطع شد.'],
+  intro:'ارتباط با یک ایستگاه فضایی کوچک قطع شده و تو تنها کسی هستی که کدهای فرماندهی را می‌شناسد. هر سامانه یک رقم از قفل محفظه را نگه می‌دارد. مدارها، ساعت‌ها و سیگنال‌ها را دقیق بخوان.',
+  beats:['چراغ هشدار اتاق کنترل چشمک می‌زند.','جدول مدارها روی صفحه نیمه‌روشن مانده است.','گیرندهٔ رادیویی هنوز سیگنال ضعیفی می‌گیرد.','دفتر ثبت فرمانده با ساعتی خط‌خورده.','محفظهٔ فرماندهی؛ ارقام باید درست وارد شود.'],
+  items:['چراغ هشدار','جدول مدارها','گیرندهٔ رادیو','دفتر فرمانده','کلید محفظه'],
+  outro:'محفظه باز شد و ارتباط برقرار شد. صدایی از آن سوی خط گفت: «ما منتظرت بودیم.»'},
+ {title:'آخرین نمایش',col:'#ff6b6b',mood:'rain',prefer:['seat','timeline','dooz','deduction','memory'],safe:'اتاق نمایش',omens:['پروژکتور بی‌دلیل چشمک زد.','صدای باز و بسته‌شدن یک صندلی آمد.','سایه‌ای روی پردهٔ خاموش گذشت.'],
+  intro:'سینمای قدیمی امشب آخرین نمایشش را دارد، اما فیلم هرگز شروع نمی‌شود. اپراتور ناپدید شده و فقط چند نشانه جا گذاشته. صندلی‌ها، ساعت اکران و بلیت‌ها را بررسی کن؛ یکی از آن‌ها راز اتاق نمایش را می‌داند.',
+  beats:['بلیتی روی صندلی ردیف جلو جا مانده است.','ساعت اکران روی دیوار ایستاده است.','دفتر اپراتور باز است؛ کسی عجله داشته.','روی تخته‌ای در لابی بازی نیمه‌کاره‌ای مانده است.','در اتاق نمایش قفل است و پروژکتور هنوز گرم.'],
+  items:['بلیت','ساعت اکران','دفتر اپراتور','تختهٔ بازی','کلید اتاق نمایش'],
+  outro:'در اتاق نمایش باز شد؛ پرده روشن شد و فیلمی شروع شد که خودت شخصیتش بودی.'},
+ {title:'آزمایشگاه متروک',col:'#7bd88f',mood:'clock',prefer:['chem','lights','maze','codelock','cipher'],safe:'گاوصندوق شیمی',omens:['از لوله‌ای حباب آهسته بالا آمد.','چیزی در انبار افتاد.','بوی تند و غریبی برای لحظه‌ای آمد.'],
+  intro:'آزمایشگاهی در همین خانه سال‌ها بسته مانده و دانشمندش فرمول یک ماده را در قفل پنهان کرده است. هر آزمایش یک رقم می‌دهد. عنصرها را بشناس، چراغ‌ها را خاموش کن و مسیر را پیدا کن.',
+  beats:['روی میز کار، لوله‌ای نیمه‌پر رها شده است.','جدول عنصرها با ماژیک قرمز علامت خورده است.','کلید برق آزمایشگاه چراغ‌ها را سردرگم کرده است.','نقشهٔ مسیر انبار پشت در بایگانی چسبانده شده.','گاوصندوق شیمی؛ برچسبش می‌گوید ارقام را درست بچین.'],
+  items:['لولهٔ آزمایش','جدول عنصرها','کلید برق','نقشهٔ انبار','برچسب گاوصندوق'],
+  outro:'گاوصندوق باز شد و فرمول پنهان بیرون آمد. دانشمند نوشته بود: «کنجکاوی بهترین واکنشگر است.»'},
+ {title:'هزارتوی باغ',col:'#b5e48c',mood:'wind',prefer:['maze','memory','dooz','arrange','sequence'],safe:'دروازهٔ باغ',omens:['برگ‌ها بی‌باد خش‌خش کردند.','در دوردست باغ آهسته بسته شد.','کسی پشت پرچین خندید و ساکت شد.'],
+  intro:'باغی قدیمی با پرچین‌های بلند و راه‌های پیچ‌درپیچ. باغبان پیر دروازهٔ آخر را قفل کرده و کلیدش را در معماهای باغ پنهان کرده است. مسیر را پیدا کن، جفت‌ها را به یاد بسپار و مهره‌ها را بچین.',
+  beats:['ورودی باغ؛ پرچین‌ها بالاتر از قد توست.','سنگ‌فرشی که نیمی از آن زیر برگ پنهان است.','تختهٔ بازی باغبان زیر درخت بزرگ.','تندیس‌هایی که ظاهراً جابه‌جا شده‌اند.','دروازهٔ آخر؛ باغبان نوشته ارقام را درست بچین.'],
+  items:['نقشهٔ باغ','سنگ‌فرش','تختهٔ باغبان','تندیس','کلید دروازه'],
+  outro:'دروازه باز شد و باغ آرام شد. باغبان نوشته بود: «راه را کسی پیدا می‌کند که گم شدن را بلد باشد.»'}
 ];
 
 /* ------------------------------------------------------------------ extra scenarios from JSON (data only: strings, no code, no HTML) */
@@ -235,6 +268,21 @@ function makeSeq(){
   else{const a=ri(1,5),d=ri(2,5),b=ri(1,3);for(let i=0;i<8;i++)xs.push(i%2===0?a+d*(i/2):b*Math.pow(2,(i-1)/2));shown=7;rule='دو رشتهٔ درهم‌ریخته: عددهای جایگاه‌های فرد +'+d+' می‌شوند و جایگاه‌های زوج دو برابر.';kind='شاید دو رشته در هم رفته‌اند.';}
   const ans=xs[shown];if(xs.every(v=>v>0&&v<1000))return{xs:xs.slice(0,shown),answer:ans,rule,kind};}
  return{xs:[2,4,8,16,32,64],answer:128,rule:'هر عدد دو برابر قبلی است.',kind:'ضرب'};
+}
+const PLANETS=[['عطارد','#b5a79a',4.9,.39,.24],['زهره','#e8c47a',12.1,.72,.62],['زمین','#4d96ff',12.7,1,1],['مریخ','#ef6351',6.8,1.52,1.88],['مشتری','#d9a066',139.8,5.2,11.86],['زحل','#e6d28c',116.5,9.58,29.5],['اورانوس','#7fe0e0',50.7,19.2,84],['نپتون','#5a74e8',49.2,30.1,165]];
+const ELEM={H:1,C:6,N:7,O:8,Na:11,Mg:12,Al:13,S:16,Cl:17,K:19,Ca:20,Fe:26};
+const COMPS=[['H2O',{H:2,O:1}],['CO2',{C:1,O:2}],['NaCl',{Na:1,Cl:1}],['NH3',{N:1,H:3}],['CH4',{C:1,H:4}],['MgO',{Mg:1,O:1}],['H2S',{H:2,S:1}],['SO2',{S:1,O:2}],['CaCO3',{Ca:1,C:1,O:3}],['H2SO4',{H:2,S:1,O:4}],['Fe2O3',{Fe:2,O:3}],['Al2O3',{Al:2,O:3}],['KCl',{K:1,Cl:1}],['CaO',{Ca:1,O:1}]];
+// shared "put four pieces in a row" UI (drag/drop or tap piece then slot); B[piece]=correct slot
+function arrangeUI(p,g,TN,TC,B,failMsg){
+ p.B=B;p.slotOf=[-1,-1,-1,-1];p.sel=-1;const slotX=s=>(s-1.5)*.26,trayX=i=>(i-1.5)*.26,SY=-.12,TY=-.42;
+ const layout=()=>p.tiles.forEach((t,i)=>{const s=p.slotOf[i],x=s>=0?slotX(s):trayX(i),y=s>=0?SY:TY;t.position.set(x,y,.04);t.userData.home=[x,y];t.userData.draw(TN[i],{border:p.sel===i?'#00ffd0':'#ffffff',bg:TC[i]});});
+ const check=()=>{if(p.slotOf.some(v=>v<0))return;if(p.slotOf.join()===B.join()){solved(p);return;}sfx('bad');fb(p,failMsg(p.slotOf));};
+ const place=(t,s)=>{const old=p.slotOf[t],occ=p.slotOf.indexOf(s);if(occ>=0&&occ!==t)p.slotOf[occ]=old;p.slotOf[t]=s;p.sel=-1;};
+ p.slots=[0,1,2,3].map(s=>button(g,String(s+1),slotX(s),SY,.24,.24,()=>{if(!active(p)||p.sel<0)return;place(p.sel,s);layout();check();},{style:{bg:'#0e1b27',border:'#41596b',fg:'#4d6b80',dir:'ltr',size:.5}}));
+ p.tiles=[0,1,2,3].map(i=>{const b=button(g,TN[i],0,0,.22,.22,()=>{if(!active(p))return;if(p.sel<0)p.sel=i;else if(p.sel===i)p.sel=-1;else if(p.slotOf[i]>=0)place(p.sel,p.slotOf[i]);else p.sel=i;layout();check();},{z:.04,style:{bg:TC[i],border:'#ffffff',fg:'#101010',size:.42,weight:'800'}});
+  b.userData.drag=true;b.userData.panel=p.group;
+  b.userData.dragEnd=moved=>{if(!active(p)||!moved)return;let best=-1,bd=.18;for(let q=0;q<4;q++){const d=Math.hypot(b.position.x-slotX(q),b.position.y-SY);if(d<bd){bd=d;best=q;}}if(best>=0&&p.sel===i)place(i,best);else p.sel=-1;layout();check();};return b;});
+ layout();p.plan=()=>{const l=[];for(let i=0;i<4;i++)l.push(p.tiles[i],p.slots[B[i]]);return l;};
 }
 const Modules={
  codelock:{name:'قفل سه‌حلقه',build(p,g){
@@ -375,22 +423,148 @@ const Modules={
    let cand=PERMS,ch=[];for(const c of ord){const nx=cand.filter(c.f);if(nx.length<cand.length){ch.push(c);cand=nx;if(cand.length===1)break;}}
    if(cand.length===1){fallback={B:A.slice(),ch};if(ch.length>=4&&ch.length<=6)clues=ch;}}
   if(!clues){clues=fallback.ch;B=fallback.B;}
-  p.B=B;p.clues=clues;p.slotOf=[-1,-1,-1,-1];p.sel=-1;
+  p.clues=clues;
   line(g,'مهره‌ها را در ردیف بچین (بکش و رها کن، یا مهره و بعد خانه را بزن).',.5,.06,{size:.5,fg:C.accent});
   const sp=Math.min(.085,.34/clues.length);clues.forEach((c,i)=>line(g,(i+1)+' – '+c.s,.42-i*sp,sp-.005,{size:.6}));
-  const slotX=s=>(s-1.5)*.26,trayX=i=>(i-1.5)*.26,SY=-.12,TY=-.42;
-  const layout=()=>p.tiles.forEach((t,i)=>{const s=p.slotOf[i],x=s>=0?slotX(s):trayX(i),y=s>=0?SY:TY;t.position.set(x,y,.04);t.userData.home=[x,y];t.userData.draw(TN[i],{border:p.sel===i?'#00ffd0':'#ffffff',bg:TC[i]});});
-  const check=()=>{if(p.slotOf.some(v=>v<0))return;if(p.slotOf.join()===B.join()){solved(p);return;}const bad=clues.findIndex(c=>!c.f(p.slotOf));sfx('bad');fb(p,bad>=0?'سرنخ '+(bad+1)+' با این چیدمان نمی‌خواند.':'چیدمان درست نیست.');};
-  const place=(t,s)=>{const old=p.slotOf[t],occ=p.slotOf.indexOf(s);if(occ>=0&&occ!==t)p.slotOf[occ]=old;p.slotOf[t]=s;p.sel=-1;};
-  p.slots=[0,1,2,3].map(s=>button(g,String(s+1),slotX(s),SY,.24,.24,()=>{if(!active(p)||p.sel<0)return;place(p.sel,s);layout();check();},{style:{bg:'#0e1b27',border:'#41596b',fg:'#4d6b80',dir:'ltr',size:.5}}));
-  p.tiles=[0,1,2,3].map(i=>{const b=button(g,TN[i],0,0,.22,.22,()=>{if(!active(p))return;
-    if(p.sel<0)p.sel=i;else if(p.sel===i)p.sel=-1;else if(p.slotOf[i]>=0)place(p.sel,p.slotOf[i]);else p.sel=i;layout();check();},{z:.04,style:{bg:TC[i],border:'#ffffff',fg:'#101010',size:.42,weight:'800'}});
-   b.userData.drag=true;b.userData.panel=p.group;
-   b.userData.dragEnd=moved=>{if(!active(p)||!moved)return;let best=-1,bd=.18;for(let s=0;s<4;s++){const d=Math.hypot(b.position.x-slotX(s),b.position.y-SY);if(d<bd){bd=d;best=s;}}
-    if(best>=0&&p.sel===i)place(i,best);else p.sel=-1;layout();check();};return b;});
-  layout();
-  p.plan=()=>{const l=[];for(let i=0;i<4;i++)l.push(p.tiles[i],p.slots[B[i]]);return l;};},
-  hints:p=>['اول سرنخ‌هایی را بخوان که جایگاه را دقیق می‌گویند؛ بعد بقیه را با آن‌ها بسنج.','چپ‌ترین خانه: «'+['قرمز','آبی','زرد','سبز'][p.B.indexOf(0)]+'»','چیدمان از چپ: '+[0,1,2,3].map(s=>['قرمز','آبی','زرد','سبز'][p.B.indexOf(s)]).join('، ')]}
+  arrangeUI(p,g,TN,TC,B,q=>{const bad=clues.findIndex(c=>!c.f(q));return bad>=0?'سرنخ '+(bad+1)+' با این چیدمان نمی‌خواند.':'چیدمان درست نیست.';});},
+  hints:p=>['اول سرنخ‌هایی را بخوان که جایگاه را دقیق می‌گویند؛ بعد بقیه را با آن‌ها بسنج.','چپ‌ترین خانه: «'+['قرمز','آبی','زرد','سبز'][p.B.indexOf(0)]+'»','چیدمان از چپ: '+[0,1,2,3].map(s=>['قرمز','آبی','زرد','سبز'][p.B.indexOf(s)]).join('، ')]},
+ orbit:{name:'ترتیب سیاره‌ها',build(p,g){
+  let pl,kind,B,vals,tries=0;
+  do{pl=shuffle(PLANETS).slice(0,4);kind=pick(['dist','diam','diff','period','diam']);
+   const key=a=>kind==='dist'?a[3]:kind==='diam'?-a[2]:kind==='diff'?Math.abs(a[2]-12.7):-a[4];
+   const ord=pl.map((a,i)=>[key(a),i]).sort((x,y)=>x[0]-y[0]);B=[0,0,0,0];ord.forEach((x,s)=>B[x[1]]=s);
+   const gaps=ord.slice(1).map((x,i)=>Math.abs(x[0]-ord[i][0]));var okGap=Math.min(...gaps)>.05;}while(!okGap&&++tries<60);
+  const vi=kind==='dist'?3:kind==='period'?4:2,fmt=a=>String(a[vi]);
+  const rule={dist:'سیاره‌ها را از چپ به راست از نزدیک‌ترین تا دورترین به خورشید بچین. (عدد = فاصله از خورشید، به واحد نجومی)',
+   diam:'سیاره‌ها را از چپ به راست از بزرگ‌ترین تا کوچک‌ترین قطر بچین. (عدد = قطر، هزار کیلومتر)',
+   diff:'از چپ به راست بر حسب «اختلاف قطر با زمین» از کم به زیاد بچین. قطر زمین 12.7 است. (عدد = قطر، هزار کیلومتر)',
+   period:'از چپ به راست از بیشترین تا کمترین زمانِ یک دور گردش به دور خورشید بچین. (عدد = سال)'}[kind];
+  p.pl=pl;p.kind=kind;
+  line(g,rule,.43,.2,{size:.4});
+  pl.forEach((a,i)=>put(g,labelMesh('',.48,.085,{bg:'#0a141e',border:C.btnB,radius:14,pair:[a[0],fmt(a)],ppm:300,order:-4}),(i%2?.25:-.25),.2-Math.floor(i/2)*.095,.012));
+  arrangeUI(p,g,pl.map(a=>a[0]),pl.map(a=>a[1]),B,q=>[...q].filter((s,i)=>s===B[i]).length+' مهره در جای درست است.');},
+  hints:p=>['فقط به عددِ جدول نگاه کن و ترتیب را از روی آن بساز.','چپ‌ترین خانه: '+p.pl[p.B.indexOf(0)][0],'چیدمان از چپ: '+[0,1,2,3].map(s=>p.pl[p.B.indexOf(s)][0]).join('، ')]},
+ piano:{name:'ساز و آهنگ',build(p,g){
+  const SH=[0,1,3,5,7,8,10],fr=d=>261.63*Math.pow(2,SH[d]/12),k=ri(1,3);let mel;do{mel=Array.from({length:4},()=>ri(0,6-k));}while(new Set(mel).size<3);
+  p.mel=mel;p.k=k;p.answer=mel.map(d=>d+k);p.inp=[];p.playing=false;
+  line(g,'«گوش بده» را بزن؛ همین آهنگ را '+k+' نت (پله) بالاتر روی کلیدها بنواز.',.46,.12,{size:.42});
+  bigText(g,mel.map(d=>d+1).join('    '),0,.31,.7,.12,{dir:'ltr',nowrap:true,size:.7,fg:C.accent,border:C.accent});
+  line(g,'عدد = شمارهٔ نت (1 پایین‌ترین، 7 بالاترین). مثلاً نت 2 را یک پله بالا ببری، می‌شود 3.',.2,.08,{size:.45,fg:C.muted});
+  p.prog=dots(g,0,.08,4);
+  button(g,'گوش بده',0,-.03,.4,.1,()=>{if(!active(p)||p.playing)return;p.playing=true;mel.forEach((d,i)=>setTimeout(()=>{if(!paused)beep(fr(d),.4,'triangle',.1);if(i===3)setTimeout(()=>{p.playing=false;},400);},i*550));},{kind:'primary'});
+  p.pk=[];for(let i=0;i<7;i++)p.pk.push(button(g,String(i+1),(i-3)*.14,-.27,.13,.32,()=>{if(!active(p)||p.playing)return;beep(fr(i),.4,'triangle',.1);p.inp.push(i);
+   if(i!==p.answer[p.inp.length-1]){sfx('bad');fb(p,'این نت نبود؛ از اول بنواز.');p.inp=[];p.prog.userData.set(0);return;}
+   p.prog.userData.set(p.inp.length);if(p.inp.length===4)solved(p);},{style:{bg:'#efe6cf',border:'#8a7a55',fg:'#14110a',dir:'ltr',size:.5,weight:'800'}}));
+  p.plan=()=>p.playing?[]:p.answer.map(x=>p.pk[x]);},
+  hints:p=>['آهنگ را چند بار بشنو و شمارهٔ نت‌های بالا را با دقت بخوان.','هر نت را '+p.k+' عدد بزرگ‌تر کن.','کلیدها: '+p.answer.map(x=>x+1).join('، ')]},
+ radio:{name:'رادیو',build(p,g){
+  const Bv=ri(100,300)/10,t=ri(900,1040)/10,Av=Math.round((t+Bv)*10)/10;p.t=t;p.f=88;
+  line(g,'ایستگاه را پیدا کن: فرکانسش برابر است با '+Av.toFixed(1)+' منهای '+Bv.toFixed(1)+'.',.46,.12,{size:.45});
+  line(g,'وقتی درست کوک شود، صدا صاف می‌شود و نوار سیگنال پر.',.34,.07,{size:.5,fg:C.muted});
+  const disp=bigText(g,'',0,.2,.7,.13,{dir:'ltr',nowrap:true,size:.7}),sig=dots(g,0,.06,5);
+  const show=()=>{disp.userData.draw(p.f.toFixed(1)+' MHz');const d=Math.abs(p.f-t);sig.userData.set(d<.05?5:d<.5?4:d<2?3:d<5?2:d<12?1:0,d<.05?C.ok:C.accent);return d;};
+  const press=dv=>{if(!active(p))return;p.f=Math.max(88,Math.min(108,Math.round((p.f+dv)*10)/10));const d=show();if(d<.05){beep(880,.15,'sine',.08);beep(1320,.3,'sine',.07,.15);}else beep(180+Math.random()*500,.1,'sawtooth',Math.min(.09,.015+d*.004));};
+  show();p.dv={};[[-1,'-1'],[-.1,'-0.1'],[.1,'+0.1'],[1,'+1']].forEach(([dv,tx],i)=>{p.dv[dv]=button(g,tx,(i-1.5)*.26,-.12,.24,.13,()=>press(dv),{style:{dir:'ltr',size:.55,weight:'800'}});});
+  p.submit=button(g,'ثبت ایستگاه',0,-.3,.6,.13,()=>{if(!active(p))return;if(Math.abs(p.f-t)<.05)solved(p);else{sfx('bad');fb(p,'روی این فرکانس ایستگاهی نیست؛ به سیگنال گوش بده.');}},{kind:'primary'});
+  p.plan=()=>{const n=Math.round((t-p.f)*10),l=[],big=Math.trunc(n/10),sm=n-big*10;for(let i=0;i<Math.abs(big);i++)l.push(p.dv[big<0?-1:1]);for(let i=0;i<Math.abs(sm);i++)l.push(p.dv[sm<0?-.1:.1]);l.push(p.submit);return l;};},
+  hints:p=>['ابتدا حساب کن فرکانس چند می‌شود.','فرکانس ایستگاه: بین '+Math.floor(p.t)+' و '+(Math.floor(p.t)+1)+'.','فرکانس: '+p.t.toFixed(1)]},
+ seat:{name:'صندلی سینما',build(p,g){
+  const R=4,Cn=5,cells=[];for(let r=1;r<=R;r++)for(let c=1;c<=Cn;c++)cells.push([r,c]);
+  let T,clues=null,fb2=null;
+  for(let tr=0;tr<400&&!clues;tr++){
+   T=pick(cells);const[r,c]=T,L=[];
+   L.push({s:'ردیف او '+(r%2?'فرد':'زوج')+' است.',f:q=>q[0]%2===r%2});L.push({s:'شمارهٔ صندلی او '+(c%2?'فرد':'زوج')+' است.',f:q=>q[1]%2===c%2});
+   L.push({s:'مجموع شمارهٔ ردیف و صندلی او برابر '+(r+c)+' است.',f:q=>q[0]+q[1]===r+c});
+   const kr=ri(1,3);if(r>kr)L.push({s:'ردیف او از '+kr+' بزرگ‌تر است.',f:q=>q[0]>kr});else if(r<=kr)L.push({s:'ردیف او حداکثر '+kr+' است.',f:q=>q[0]<=kr});
+   const kc=ri(1,4);if(c>kc)L.push({s:'شمارهٔ صندلی او از '+kc+' بزرگ‌تر است.',f:q=>q[1]>kc});else L.push({s:'شمارهٔ صندلی او حداکثر '+kc+' است.',f:q=>q[1]<=kc});
+   if(c===1||c===Cn)L.push({s:'کنار یکی از دو راهروی کناری نشسته است.',f:q=>q[1]===1||q[1]===Cn});if(c===3)L.push({s:'درست وسط ردیف نشسته است.',f:q=>q[1]===3});
+   if(r===c)L.push({s:'شمارهٔ ردیف و صندلی‌اش برابر است.',f:q=>q[0]===q[1]});if(c===2*r)L.push({s:'شمارهٔ صندلی‌اش دو برابر ردیفش است.',f:q=>q[1]===2*q[0]});
+   let cand=cells,ch=[];for(const x of shuffle(L)){const nx=cand.filter(x.f);if(nx.length<cand.length){ch.push(x);cand=nx;if(cand.length===1)break;}}
+   if(cand.length===1){fb2={T,ch};if(ch.length>=3&&ch.length<=5)clues=ch;}}
+  if(!clues){clues=fb2.ch;T=fb2.T;}
+  p.T=T;p.clues=clues;p.pick=null;
+  line(g,'سارق در سالن نشسته است. با سرنخ‌ها صندلی‌اش را پیدا کن.',.5,.06,{size:.55,fg:C.accent});
+  clues.forEach((c,i)=>line(g,(i+1)+' – '+c.s,.43-i*.07,.065,{size:.6}));
+  line(g,'ردیف 1 نزدیک پرده است؛ صندلی‌ها از چپ شماره‌گذاری شده‌اند.',.07,.055,{size:.55,fg:C.muted});
+  put(g,labelMesh('پرده',.85,.05,{bg:'#27384a',size:.7,fg:C.muted,radius:10}),-.04,.0);
+  p.cellBtns={};const mark=()=>cells.forEach(([r,c])=>p.cellBtns[r+'-'+c].userData.draw(String(c),{bg:p.pick&&p.pick[0]===r&&p.pick[1]===c?'#e8b84b':'#2d4a60',fg:p.pick&&p.pick[0]===r&&p.pick[1]===c?'#101010':'#ffffff'}));
+  cells.forEach(([r,c])=>{p.cellBtns[r+'-'+c]=button(g,String(c),(c-3)*.17-.04,-.08-(r-1)*.115,.155,.1,()=>{if(!active(p))return;p.pick=[r,c];mark();},{style:{dir:'ltr',size:.6,weight:'800'}});});
+  for(let r=1;r<=R;r++)put(g,labelMesh('ردیف '+r,.2,.07,{size:.6,fg:C.muted}),.47,-.08-(r-1)*.115);
+  p.confirm=button(g,'این صندلی',0,-.55,.5,.09,()=>{if(!active(p))return;if(!p.pick){fb(p,'اول یک صندلی انتخاب کن.','info');return;}
+   if(p.pick[0]===T[0]&&p.pick[1]===T[1]){solved(p);return;}sfx('bad');const bad=clues.findIndex(c=>!c.f(p.pick));fb(p,bad>=0?'سرنخ '+(bad+1)+' با این صندلی نمی‌خواند.':'این صندلی نیست.');},{kind:'primary'});
+  p.plan=()=>[p.cellBtns[T[0]+'-'+T[1]],p.confirm];},
+  hints:p=>['اول سرنخ‌هایی را بخوان که ردیف را محدود می‌کنند.','ردیف: '+p.T[0],'ردیف '+p.T[0]+'، صندلی '+p.T[1]]},
+ painting:{name:'تفاوت تابلوها',build(p,g){
+  const cols=['#ef6351','#4d96ff','#ffd166','#55c991','#c77dff'],sh=['circle','triangle','square','diamond','star'],R=3,Cn=4;
+  const A=Array.from({length:R*Cn},()=>({s:ri(0,4),c:ri(0,4)})),diff=shuffle([...Array(R*Cn).keys()]).slice(0,3);
+  const Bv=A.map((c,i)=>diff.includes(i)?(rng()<.5?{s:(c.s+ri(1,4))%5,c:c.c}:{s:c.s,c:(c.c+ri(1,4))%5}):{s:c.s,c:c.c});
+  p.diff=diff;p.found=new Set();
+  const cell=(x,y,v,btn,i)=>{const o={bg:'#0a141e',border:'#41596b',shape:sh[v.s],fg:cols[v.c],radius:12,ppm:300};return btn?button(g,'',x,y,.2,.125,()=>{
+    if(!active(p)||p.found.has(i))return;if(diff.includes(i)){p.found.add(i);beep(700,.12,'triangle',.08);p.cells[i].userData.draw('',{border:C.ok});p.prog.userData.set(p.found.size);fb(p,'یک تفاوت پیدا شد!','ok',2000);if(p.found.size===3)solved(p);}
+    else{sfx('bad');fb(p,'این خانه با تابلوی اصلی یکی است.');}},{style:o}):put(g,labelMesh('',.2,.125,o),x,y,.012);};
+  line(g,'تابلوی اصلی',.5,.05,{size:.65,fg:C.muted});
+  A.forEach((v,i)=>cell(((i%Cn)-1.5)*.22,.39-Math.floor(i/Cn)*.135,v,false));
+  line(g,'تابلوی کپی — 3 تفاوت را پیدا کن (شکل یا رنگ)',.015,.05,{size:.6,fg:C.accent});
+  p.cells=Bv.map((v,i)=>cell(((i%Cn)-1.5)*.22,-.08-Math.floor(i/Cn)*.135,v,true,i));
+  p.prog=dots(g,0,-.47,3);
+  p.plan=()=>diff.filter(i=>!p.found.has(i)).map(i=>p.cells[i]);},
+  hints:p=>['خانه به خانه مقایسه کن؛ هر تفاوت یا شکل است یا رنگ.','یک تفاوت در ردیف '+(Math.floor(p.diff.find(i=>!p.found.has(i))/4)+1)+' است.','تفاوت‌ها: '+p.diff.map(i=>'ردیف '+(Math.floor(i/4)+1)+' ستون '+(i%4+1)).join(' ، ')]},
+ chem:{name:'جدول تناوبی',build(p,g){
+  const c=pick(COMPS),syms=Object.keys(c[1]);p.answer=String(syms.reduce((a,s)=>a+ELEM[s]*c[1][s],0));p.comp=c;
+  line(g,'عدد اتمی هر عنصر را در تعداد اتم‌هایش ضرب کن و همه را با هم جمع کن.',.47,.1,{size:.5});
+  bigText(g,c[0],0,.33,.6,.15,{dir:'ltr',nowrap:true,size:.75,fg:C.accent,border:C.accent});
+  line(g,'عدد کوچک بعد از نماد، تعداد اتم است (بدون عدد یعنی 1).',.22,.07,{size:.5,fg:C.muted});
+  const tiles=shuffle(syms.concat(shuffle(Object.keys(ELEM).filter(s=>!syms.includes(s))).slice(0,4-syms.length)));
+  tiles.forEach((s,i)=>put(g,labelMesh('',.235,.085,{bg:'#0a141e',border:C.btnB,radius:14,pair:[s,ELEM[s]],ppm:300,order:-4}),(i-1.5)*.25,.11,.012));
+  p.keys=keypad(g,p,p.answer.length,v=>{if(v===p.answer){solved(p);return null;}return 'نه؛ دوباره حساب کن.';});
+  p.plan=()=>[...p.answer].map(ch=>p.keys[ch]);},
+  hints:p=>['هر نماد را در جدول پیدا کن و عدد اتمی‌اش را بردار.','محاسبه: '+Object.keys(p.comp[1]).map(s=>ELEM[s]+'×'+p.comp[1][s]).join(' + '),'پاسخ: '+p.answer]},
+ memory:{name:'جفت‌ها',build(p,g){
+  const cols=['#ef6351','#4d96ff','#ffd166','#55c991','#c77dff','#ff9f5a'],shp=['circle','triangle','square','diamond','star','heart'];
+  const deck=shuffle([0,1,2,3,4,5,0,1,2,3,4,5]);p.deck=deck;p.open=[];p.matched=new Set();p.busy=false;p.tries=0;
+  line(g,'کارت‌ها را دوتا‌دوتا باز کن و جفت‌های هم‌شکل و هم‌رنگ را پیدا کن.',.47,.08,{size:.5});
+  const info=line(g,'',-.46,.07,{size:.6,fg:C.muted}),upd=()=>info.userData.draw('تلاش: '+p.tries+'  ·  جفت‌های پیدا شده: '+p.matched.size/2+' از 6');upd();
+  const show=i=>p.cards[i].userData.draw('',{shape:shp[deck[i]],fg:cols[deck[i]],bg:'#14263a',border:cols[deck[i]]}),hide=i=>p.cards[i].userData.draw('؟',{shape:null});
+  p.cards=deck.map((v,i)=>button(g,'؟',((i%4)-1.5)*.26,.3-Math.floor(i/4)*.28,.24,.26,()=>{
+   if(!active(p)||p.busy||p.matched.has(i)||p.open.includes(i))return;show(i);beep(500+v*60,.1,'triangle',.06);p.open.push(i);
+   if(p.open.length===2){p.tries++;const[a,b]=p.open;if(deck[a]===deck[b]){p.matched.add(a);p.matched.add(b);p.open=[];upd();beep(880,.15,'sine',.08);if(p.matched.size===12)solved(p);}
+    else{p.busy=true;upd();setTimeout(()=>{hide(a);hide(b);p.open=[];p.busy=false;},900);}}},{style:{size:.7}}));
+  p.plan=()=>{const l=[];for(let v=0;v<6;v++){const ix=deck.map((x,i)=>x===v&&!p.matched.has(i)?i:-1).filter(i=>i>=0);if(ix.length===2)l.push(p.cards[ix[0]],p.cards[ix[1]]);}return p.busy?[]:l;};},
+  hints:p=>['هر کارتی را که دیدی در ذهنت جایش را نگه دار.','هر جفت یک شکل و یک رنگ مشترک دارد.','خانه‌های جفت‌ها: '+[0,1,2,3,4,5].map(v=>p.deck.map((x,i)=>x===v?i+1:0).filter(Boolean).join('و')).join(' ، ')]},
+ maze:{name:'هزارتو',build(p,g){
+  const N=6,open=Array.from({length:N*N},()=>({N:0,E:0,S:0,W:0})),seen=new Set([0]),stack=[0],dirs=[['N',0,-1,'S'],['E',1,0,'W'],['S',0,1,'N'],['W',-1,0,'E']];
+  while(stack.length){const c=stack[stack.length-1],cx=c%N,cy=Math.floor(c/N);const nb=shuffle(dirs).filter(([d,dx,dy])=>{const x=cx+dx,y=cy+dy;return x>=0&&y>=0&&x<N&&y<N&&!seen.has(y*N+x);});
+   if(!nb.length){stack.pop();continue;}const[d,dx,dy,o]=nb[0],n=(cy+dy)*N+cx+dx;open[c][d]=1;open[n][o]=1;seen.add(n);stack.push(n);}
+  const nbr=(c,d)=>{const e=dirs.find(x=>x[0]===d);return(Math.floor(c/N)+e[2])*N+(c%N)+e[1];};
+  const bfs=s=>{const dist=new Array(N*N).fill(-1),prev={};dist[s]=0;const q=[s];while(q.length){const c=q.shift();for(const[d]of dirs)if(open[c][d]){const n=nbr(c,d);if(dist[n]<0){dist[n]=dist[c]+1;prev[n]=[c,d];q.push(n);}}}return{dist,prev};};
+  const b0=bfs(0);let key=0;b0.dist.forEach((v,i)=>{if(v>b0.dist[key])key=i;});const bk=bfs(key);let exit=-1;bk.dist.forEach((v,i)=>{if(i!==key&&i!==0&&(exit<0||v>bk.dist[exit]))exit=i;});
+  p.pos=0;p.hasKey=false;p.exit=exit;p.key=key;
+  const mesh=put(g,labelMesh('',.56,.56,{bg:'#0a141e',border:C.btnB,radius:14,custom:(x,W,H)=>{const s=W/N;x.lineWidth=5;x.strokeStyle='#7fd4ff';x.lineCap='round';
+    for(let c=0;c<N*N;c++){const cx=(c%N)*s,cy=Math.floor(c/N)*s,o=open[c];x.beginPath();if(!o.N){x.moveTo(cx,cy);x.lineTo(cx+s,cy);}if(!o.W){x.moveTo(cx,cy);x.lineTo(cx,cy+s);}if(c%N===N-1&&!o.E){x.moveTo(cx+s,cy);x.lineTo(cx+s,cy+s);}if(Math.floor(c/N)===N-1&&!o.S){x.moveTo(cx,cy+s);x.lineTo(cx+s,cy+s);}x.stroke();}
+    const at=(c)=>[(c%N+.5)*s,(Math.floor(c/N)+.5)*s];
+    let[ex,ey]=at(exit);x.fillStyle=p.hasKey?'#55c991':'#3d5a4a';x.fillRect(ex-s*.28,ey-s*.28,s*.56,s*.56);
+    if(!p.hasKey){const[kx,ky]=at(key);drawShape(x,'star',kx,ky,s*.3,'#ffd166');}
+    const[px,py]=at(p.pos);x.fillStyle='#4ddac0';x.beginPath();x.arc(px,py,s*.22,0,7);x.fill();}}),0,.17,.01);
+  line(g,'کلید طلایی را بردار، بعد به در سبز برسد.',.5,.06,{size:.6,fg:C.accent});
+  const move=d=>{if(!active(p))return;if(!open[p.pos][d]){beep(120,.06,'square',.05);return;}p.pos=nbr(p.pos,d);beep(500,.04,'sine',.04);
+   if(p.pos===key&&!p.hasKey){p.hasKey=true;fb(p,'کلید را برداشتی! حالا به در برو.','ok',3000);beep(1000,.2,'triangle',.08);}
+   mesh.userData.draw('');if(p.pos===exit){if(p.hasKey)solved(p);else fb(p,'در قفل است؛ اول کلید را بردار.','info');}};
+  p.mv={N:button(g,'',0,-.2,.2,.11,()=>move('N'),{style:{shape:'triangle',fg:'#fff'}}),W:button(g,'',-.22,-.33,.2,.11,()=>move('W'),{style:{shape:'triL',fg:'#fff'}}),S:button(g,'',0,-.33,.2,.11,()=>move('S'),{style:{shape:'tridown',fg:'#fff'}}),E:button(g,'',.22,-.33,.2,.11,()=>move('E'),{style:{shape:'triR',fg:'#fff'}})};
+  p.plan=()=>{const tgt=p.hasKey?exit:key,b=bfs(p.pos),path=[];let c=tgt;while(c!==p.pos){const[pc,d]=b.prev[c];path.unshift(p.mv[d]);c=pc;}return path;};
+  p.dirTo=()=>{const tgt=p.hasKey?exit:key;return(p.plan()||[]).length;};},
+  hints:p=>['از ورودی شروع کن و بن‌بست‌ها را رها کن.','اول کلید، بعد در. تا کلید حدود '+p.plan().length+' حرکت مانده.','مسیر: '+p.plan().map(m=>Object.keys(p.mv).find(k=>p.mv[k]===m)).join('').replace(/N/g,'↑').replace(/S/g,'↓').replace(/E/g,'→').replace(/W/g,'←')]},
+ dooz:{name:'دوز',build(p,g){
+  const L=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]],has=(b,m)=>L.some(l=>l.every(k=>b[k]===m));
+  const wins=(b,m)=>{const r=[];for(let i=0;i<9;i++)if(!b[i]){b[i]=m;if(has(b,m))r.push(i);b[i]=0;}return r;};
+  let b,xw,ow;for(let t=0;t<800;t++){b=new Array(9).fill(0);const cl=shuffle([0,1,2,3,4,5,6,7,8]);cl.slice(0,3).forEach(i=>b[i]='X');cl.slice(3,6).forEach(i=>b[i]='O');if(has(b,'X')||has(b,'O'))continue;xw=wins(b,'X');ow=wins(b,'O');if(xw.length===1&&ow.length===1&&xw[0]!==ow[0])break;}
+  p.xw=xw;p.board=b;
+  line(g,'نوبت X است. جایی بزن که همین حالا برنده شوی.',.47,.08,{size:.6,fg:C.accent});
+  line(g,'خانه‌ها از بالا-چپ به پایین-راست شماره می‌شوند (1 تا 9).',.38,.06,{size:.5,fg:C.muted});
+  p.cellsD=b.map((v,i)=>button(g,v||String(i+1),((i%3)-1)*.28,.2-Math.floor(i/3)*.27,.26,.25,()=>{if(!active(p))return;
+   if(v){fb(p,'این خانه پر است.','info');return;}if(i===xw[0]){solved(p);return;}sfx('bad');fb(p,i===ow[0]?'این فقط جلوی حریف را می‌گیرد؛ ولی می‌توانستی برنده شوی!':'با این حرکت برنده نمی‌شوی.');},
+   {style:{dir:'ltr',size:v?.8:.4,weight:'800',fg:v==='X'?C.accent:v==='O'?'#7fd4ff':'#5d7a8f',bg:v?'#0a141e':'#16293a'}}));
+  p.plan=()=>[p.cellsD[xw[0]]];},
+  hints:p=>['به دنبال ردیفی باش که دو X دارد و خانهٔ سومش خالی است.','به جلوگیری فکر نکن؛ نوبت توست و می‌توانی همین حالا ببری.','خانهٔ شمارهٔ '+(p.xw[0]+1)]}
 };
 const TYPE_KEYS=Object.keys(Modules);
 
@@ -460,7 +634,7 @@ function startGame(fresh){
  story=pendingStory||STORIES[storyParam!==null&&STORIES[storyParam]?storyParam:Math.floor(rng()*STORIES.length)];pendingStory=null;
  const {o}=headPose();const bySpot=spots.slice().sort((a,b)=>a.pos.distanceTo(o)-b.pos.distanceTo(o));const first=bySpot.shift();
  const rest=shuffle(bySpot);const n=Math.min(spots.length,3+Math.floor(rng()*3));const use=[first,...rest].slice(0,n);
- const types=shuffle(TYPE_KEYS).slice(0,n);
+ const pref=shuffle((story.prefer||[]).filter(t=>TYPE_KEYS.includes(t))),types=pref.concat(shuffle(TYPE_KEYS.filter(t=>!pref.includes(t)))).slice(0,n);
  if(typeParam&&TYPE_KEYS.includes(typeParam)){const k=types.indexOf(typeParam);if(k>=0)types.splice(k,1);types.splice(typeParam==='cipher'?1:0,0,typeParam);types.length=n;}
  if(types[0]==='cipher'){const j=types.findIndex(t=>t!=='cipher');[types[0],types[j]]=[types[j],types[0]];}
  game.legend={};shuffle([1,2,3,4,5,6,7,8,9]).slice(0,6).forEach((v,i)=>game.legend[SHAPES[i]]=v);
