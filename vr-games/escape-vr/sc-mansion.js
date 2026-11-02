@@ -9,6 +9,7 @@ const CODE={};
  const digs=[];while(digs.length<5){const d=ri(1,9);if(!digs.includes(d))digs.push(d)}
  CODE.books=years.map((y,i)=>({y,d:digs[i]}));CODE.sorted=CODE.books.slice().sort((a,b)=>a.y-b.y);CODE.lib=CODE.sorted.map(b=>b.d).join('');
  const cols=[['قرمز',0xff3030],['آبی',0x3080ff],['سبز',0x30d060],['زرد',0xffd030]];CODE.levers=cols.map((c,i)=>({i,n:c[0],c:c[1]}));CODE.order=CODE.levers.slice().sort(()=>rnd()-.5)}
+const TSTR=CODE.M===0?'ساعت '+fa(CODE.H)+' تمام':'ساعت '+fa(CODE.H)+' و '+fa(CODE.M)+' دقیقه';
 /* ---- چراغ‌ها ---- */
 const Lh=plight(0xffb070,2.2,12,0,2.8,-2),Ll=plight(0xffa060,2.0,12,0,2.8,-10),Lc=plight(0x80ffb0,1.8,10,6.6,2.4,-10.5),Lx=plight(0xcfe3ff,0,8,6.8,1.8,-16);
 /* ---- اتاق‌ها ---- */
@@ -29,8 +30,8 @@ const halo=new THREE.Mesh(new THREE.RingGeometry(.2,.26,40),new THREE.MeshBasicM
 // شومینه و قاب عکس
 furn(.7,1.2,1.8,stone,-3.55,.6,-2.0,true);
 {const c=cv(320,420),g=c.getContext('2d');g.fillStyle='#1a1410';g.fillRect(0,0,320,420);g.strokeStyle='#b8924a';g.lineWidth=14;g.strokeRect(7,7,306,406);g.fillStyle='#3a3a42';g.beginPath();g.arc(160,140,60,0,7);g.fill();g.beginPath();g.ellipse(160,300,100,80,0,Math.PI,0);g.fill();
- putText(g,'پدربزرگ',160,215,280,34,'#e8dcb8',40,{weight:'bold'});putText(g,'در ساعت '+fa(CODE.H)+':'+fa(pad2(CODE.M))+' خانه خاموش شد',160,262,270,28,'#ffd9a0',36);
- const m=new THREE.Mesh(new THREE.PlaneGeometry(.64,.84),new THREE.MeshStandardMaterial({map:ctex(c),emissive:0x332a1c,emissiveMap:ctex(c),emissiveIntensity:.5}));m.position.set(-3.96,1.95,-2.0);m.rotation.y=Math.PI/2;world.add(m);mkObj('portrait',m,{kind:'press',label:'قاب عکس',use(){toast('روی قاب نوشته: «در ساعت '+fa(CODE.H)+':'+fa(pad2(CODE.M))+' خانه خاموش شد»',5000)}})}
+ putText(g,'پدربزرگ',160,215,280,34,'#e8dcb8',40,{weight:'bold'});putText(g,TSTR+' خانه خاموش شد',160,262,270,28,'#ffd9a0',36);
+ const m=new THREE.Mesh(new THREE.PlaneGeometry(.64,.84),new THREE.MeshStandardMaterial({map:ctex(c),emissive:0x332a1c,emissiveMap:ctex(c),emissiveIntensity:.5}));m.position.set(-3.96,1.95,-2.0);m.rotation.y=Math.PI/2;world.add(m);mkObj('portrait',m,{kind:'press',label:'قاب عکس',use(){toast('روی قاب نوشته: «'+TSTR+' خانه خاموش شد»',5000)}})}
 // ساعت
 let hh=12,mm=0;
 const cc=cv(256,256),cg=cc.getContext('2d'),ct=ctex(cc);
@@ -61,7 +62,7 @@ decor('lounge-armchair-5a72ca',{x:-2.4,z:1.2,h:.95,w:.8,d:.8,col:0x5a2a2a,ry:.6,
 decor('brass-candelabra-89ab76',{x:-3.55,y:1.2,z:-2.7,h:.45,w:.2,d:.2,col:0xb89a4b});
 decor('framed-wall-art-d2c8a2',{x:2.0,y:1.7,z:1.95,h:.7,w:.6,d:.04,col:0x3a3a50,ry:Math.PI});
 decor('table-lamp-e25998',{x:2.8,y:.9,z:1.2,h:.4,w:.25,d:.25,col:0xe8c27a});
-decor('wool-rug-ab2bd1',{x:0,z:-1.5,h:.02,w:3,d:2,col:0x5a1c1c});
+persianRug(0,-1.5,3.6,2.4);
 decor('crystal-chandelier-55d279',{x:0,y:2.5,z:-2,h:.7,w:.7,d:.7,col:0xdde6ff});
 /* ---- کتابخانه ---- */
 // میز
@@ -81,7 +82,7 @@ function onSlot(){if(S.shelfOk)return;if(bslots.every(s=>s.occ&&s.occ.rank===s.i
 const KP=makeKeypad('kp2',5,CODE.lib,new V3(3.95,1.3,-8.3),-Math.PI/2,()=>{S.door2=true;door2.openIt()},'در سردابه');
 decor('alcove-bookcase-83894d',{x:-3.5,z:-12.2,h:2.2,w:.5,d:1.4,col:0x4a2c1a,ry:Math.PI/2,solid:true});
 decor('iron-chandelier-1337dc',{x:0,y:2.4,z:-10,h:.8,w:.9,d:.9,col:0x222222});
-decor('area-rug-5c56e2',{x:0,z:-10,h:.02,w:3,d:2.4,col:0x3a1c3a});
+persianRug(0,-10,3.2,2.2,{red:'#4a1a3a',navy:'#10304a'});
 /* ---- سرداب ---- */
 decor('standing-brazier-c9e4ee',{x:8.2,z:-13,h:1.2,w:.5,d:.5,col:0x333333,solid:true});
 decor('oak-barrel-b65311',{x:8.4,z:-8.2,h:.9,w:.6,d:.6,col:0x5a3a1c,solid:true});
@@ -106,5 +107,5 @@ SC={id:'mansion',start:[0,1.0,0],endTitle:'از عمارت بیرون آمدی!'
  update(dt,now){halo.material.opacity=.25+.2*Math.sin(now*3);
   const f=lightFlick>0?(Math.random()>.45?1:.1):1;Lh.intensity=2.2*f*(.97+.03*Math.sin(now*37));Ll.intensity=2.0*f;Lc.intensity=1.8*(lightFlick>0?f:(.95+.05*Math.sin(now*13)));
   if(S.exitOpen)dawn.material.color.lerp(new THREE.Color(0xdbe8ff),.01)}};
-Object.assign(RVR,{CODE,key(id,code){for(const ch of code)KP.press(ch)},pressLevers(){CODE.order.forEach(l=>RVR.use('lv'+l.i))}});
+Object.assign(RVR,{clk:()=>[hh,mm],CODE,key(id,code){for(const ch of code)KP.press(ch)},pressLevers(){CODE.order.forEach(l=>RVR.use('lv'+l.i))}});
 })();

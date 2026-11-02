@@ -222,10 +222,10 @@ function mkRoom(c){
 function paperTex(lines,w,h,col,ink){
  const pw=620,ph=Math.round(620*h/w),c=cv(pw,ph),g=c.getContext('2d');g.fillStyle=col||'#e8dcb8';g.fillRect(0,0,pw,ph);
  for(let i=0;i<200;i++){g.fillStyle='rgba(90,60,20,'+Math.random()*.07+')';g.beginPath();g.arc(Math.random()*pw,Math.random()*ph,Math.random()*30,0,7);g.fill()}
- let y=40;for(const l of lines){const o=typeof l==='string'?{t:l}:l;y=putText(g,o.t,o.align==='right'?pw-40:pw/2,y,pw-80,o.size||32,o.color||ink||'#2a1d12',(o.size||32)*1.55,{weight:o.weight,align:o.align||(o.t.length<30?'center':'right')})+(o.gap||8)}
+ let y=40;for(const l of lines){const o=typeof l==='string'?{t:l}:l;const al=o.align||(o.t.length<30?'center':'right');y=putText(g,o.t,al==='right'?pw-40:al==='left'?40:pw/2,y,pw-80,o.size||32,o.color||ink||'#2a1d12',(o.size||32)*1.55,{weight:o.weight,align:al})+(o.gap||8)}
  return ctex(c)}
 function noteObj(id,o){
- const w=o.w||.21,h=o.h||.297,g=new THREE.Group(),m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshStandardMaterial({map:paperTex(o.lines,w,h,o.paper,o.ink),roughness:.95,side:THREE.DoubleSide,emissive:0x2a2418}));g.add(m);
+ const w=o.w||.21,h=o.h||.297,g=new THREE.Group(),m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),(()=>{const pt=paperTex(o.lines,w,h,o.paper,o.ink);return new THREE.MeshStandardMaterial({map:pt,roughness:.95,side:THREE.DoubleSide,emissive:0xffffff,emissiveMap:pt,emissiveIntensity:.5})})());g.add(m);
  g.position.set(o.pos[0],o.pos[1],o.pos[2]);if(o.flat){g.rotation.set(-Math.PI/2,0,o.rot||0,'YXZ')}else g.rotation.y=o.rot||0;world.add(g);
  return mkObj(id,g,{kind:'grab',flat:true,restH:.004,readScale:o.readScale||2,label:o.label||'کاغذ',enabled:o.enabled})}
 /* ---- کشو ---- */
@@ -233,18 +233,18 @@ function drawerObj(id,o){
  const g=new THREE.Group(),parts=new THREE.Group();g.add(parts);g.position.set(o.pos[0],o.pos[1],o.pos[2]);g.rotation.y=o.rotY||0;world.add(g);const w=o.w||.5;
  bx(w,.26,.04,M.woodD,0,0,0,parts);bx(w-.04,.03,.46,M.wood,0,-.1,-.25,parts);bx(w-.04,.12,.02,M.wood,0,-.04,-.46,parts);bx(.02,.12,.46,M.wood,w/2-.04,-.04,-.25,parts);bx(.02,.12,.46,M.wood,-w/2+.04,-.04,-.25,parts);bx(.16,.03,.03,M.gold,0,0,.03,parts);
  const d={open:false,g,base:g.position.clone()},dir=new V3(Math.sin(o.rotY||0),0,Math.cos(o.rotY||0));let off=0;
- if(o.item){g.add(o.item.g);o.item.g.position.set(0,-.07,-.25);o.item.g.rotation.set(-Math.PI/2,0,0);o.item.enabled=()=>d.open||o.item.out;o.item.drawer=d}
+ if(o.item){g.add(o.item.g);o.item.g.position.set(0,.1,-.2);o.item.g.rotation.set(-1.1,0,0);o.item.enabled=()=>d.open||o.item.out;o.item.drawer=d}
  d.toggle=()=>{d.open=!d.open;play('creak2',{v:.7,r:d.open?1:.85,pos:g.getWorldPosition(new V3())});const a=off,b=d.open?.4:0;tween(.7,e=>{off=a+(b-a)*e;g.position.copy(d.base).addScaledVector(dir,off)})};
- d.obj=mkObj(id,parts,{kind:'press',label:()=>d.open?'بستن کشو':(o.label||'کشو'),use(){d.toggle()}});return d}
+ d.obj=mkObj(id,parts,{kind:'press',label:()=>d.open?'بستن کشو':(o.locked&&o.locked()?(o.label||'کشو')+' (قفل است)':(o.label||'کشو')),use(){if(!d.open&&o.locked&&o.locked()){toast('کشو قفل است؛ رمزش را پیدا کن.',3000);play('click3');return}d.toggle()}});return d}
 /* ---- جابه‌جاشونده‌ها: گام‌شمار (ساعت، فرکانس…) ---- */
 function stepper(id,o){
  const g=new THREE.Group();g.position.set(o.pos[0],o.pos[1],o.pos[2]);g.rotation.y=o.rotY||0;world.add(g);
  const st={val:o.val,min:o.min,max:o.max,step:o.step||1};
- bx(.34,.2,.03,M.dark,0,0,0,g);const dc=cv(256,96),dg=dc.getContext('2d'),dt=ctex(dc);const dm=new THREE.Mesh(new THREE.PlaneGeometry(.26,.098),new THREE.MeshBasicMaterial({map:dt}));dm.position.set(0,.03,.017);g.add(dm);
+ bx(.4,.24,.03,M.dark,0,-.01,0,g);const dc=cv(256,96),dg=dc.getContext('2d'),dt=ctex(dc);const dm=new THREE.Mesh(new THREE.PlaneGeometry(.26,.098),new THREE.MeshBasicMaterial({map:dt}));dm.position.set(0,.03,.017);g.add(dm);
  st.draw=()=>{dg.fillStyle='#061008';dg.fillRect(0,0,256,96);dg.direction='ltr';dg.textAlign='center';dg.textBaseline='middle';dg.font='bold 44px '+FONT;dg.fillStyle='#7dffa0';dg.fillText((o.fmt?o.fmt(st.val):fa(st.val)),128,38);dg.font='20px '+FONT;dg.fillStyle='#ffcf7a';dg.direction='rtl';dg.fillText(o.label||'',128,78);dt.needsUpdate=true};
  const mkBtn=(txt,x,dv)=>{const c=cv(64,64),k=c.getContext('2d');k.fillStyle='#26303d';k.fillRect(0,0,64,64);k.strokeStyle='#8fa4bb';k.lineWidth=3;k.strokeRect(2,2,60,60);k.fillStyle='#fff';k.font='bold 40px '+FONT;k.textAlign='center';k.textBaseline='middle';k.fillText(txt,32,34);const t=ctex(c);
-  const m=new THREE.Mesh(new THREE.BoxGeometry(.07,.05,.02),[M.dark,M.dark,M.dark,M.dark,new THREE.MeshStandardMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.3}),M.dark]);m.position.set(x,-.07,.02);g.add(m);
-  mkObj(id+(dv>0?'-up':'-dn'),m,{kind:'press',label:(o.label||'')+(dv>0?' +':' −'),use(){st.val+=dv*st.step;if(st.val>st.max)st.val=st.min;if(st.val<st.min)st.val=st.max;play('click1',{v:.8,pos:g.getWorldPosition(new V3())});st.draw();o.onChange&&o.onChange(st.val)}})};
+  const m=new THREE.Mesh(new THREE.BoxGeometry(.12,.085,.03),[M.dark,M.dark,M.dark,M.dark,new THREE.MeshStandardMaterial({map:t,emissive:0xffffff,emissiveMap:t,emissiveIntensity:.3}),M.dark]);m.position.set(x*1.35,-.075,.03);g.add(m);
+  mkObj(id+(dv>0?'-up':'-dn'),m,{kind:'press',label:(o.label||'')+(dv>0?' +':' −'),use(){if(o.locked&&o.locked()){toast(o.lockMsg||'قفل است.',3000);return}st.val+=dv*st.step;if(st.val>st.max)st.val=st.min;if(st.val<st.min)st.val=st.max;play('click1',{v:.8,pos:g.getWorldPosition(new V3())});st.draw();o.onChange&&o.onChange(st.val)}})};
  mkBtn('−',-.09,-1);mkBtn('+',.09,1);st.draw();st.g=g;return st}
 /* ---- اهرم/کلید ---- */
 function leverObj(id,o){
@@ -266,6 +266,22 @@ function snap(o,s){s.occ=o;o.slot=s;const p=new V3(s.pos.x,s.pos.y+o.restH+.006,
 /* ---- وسیله‌ای که روی شیء دیگر به‌کار می‌رود (کلید روی قفل…) ---- */
 function useItemOn(item,target){if(target.accepts&&target.accepts(item)){item.held=null;scene.attach(item.g);target.take(item);return true}return false}
 
+/* ---- فرش ایرانی (بافت رویه‌ای) ---- */
+function persianRug(x,z,w,d,o){o=o||{};const R=o.red||'#7a1620',N=o.navy||'#14224a',G=o.gold||'#d9b36a',C=o.cream||'#e8d9b0';
+ const pw=512,ph=Math.round(512*d/w),c=cv(pw,ph),g=c.getContext('2d');g.fillStyle=R;g.fillRect(0,0,pw,ph);
+ const fr=(i,col,lw)=>{g.strokeStyle=col;g.lineWidth=lw;g.strokeRect(i,i,pw-2*i,ph-2*i)};
+ fr(8,G,6);fr(30,C,3);fr(52,N,40);fr(78,G,4);fr(92,C,2);
+ for(let t=60;t<pw-60;t+=34){for(const y of [72,ph-72]){g.fillStyle=G;g.beginPath();g.moveTo(t,y-12);g.lineTo(t+10,y);g.lineTo(t,y+12);g.lineTo(t-10,y);g.closePath();g.fill()}}
+ for(let t=76;t<ph-70;t+=34){for(const x of [72,pw-72]){g.fillStyle=G;g.beginPath();g.moveTo(x,t-12);g.lineTo(x+12,t);g.lineTo(x,t+12);g.lineTo(x-12,t);g.closePath();g.fill()}}
+ const cx=pw/2,cy=ph/2,rx=Math.min(pw,ph*1.4)*.26,ry=Math.min(ph,pw/1.4)*.34;
+ g.fillStyle=N;g.beginPath();g.ellipse(cx,cy,rx*1.5,ry,0,0,7);g.fill();g.strokeStyle=G;g.lineWidth=5;g.stroke();
+ g.fillStyle=C;g.beginPath();g.ellipse(cx,cy,rx*1.15,ry*.72,0,0,7);g.fill();g.fillStyle=R;g.beginPath();g.ellipse(cx,cy,rx*.8,ry*.5,0,0,7);g.fill();
+ g.fillStyle=G;for(let i=0;i<8;i++){const a=i/8*6.283;g.beginPath();g.ellipse(cx+Math.cos(a)*rx*.55,cy+Math.sin(a)*ry*.34,12,6,a,0,7);g.fill()}
+ g.fillStyle=N;g.beginPath();g.arc(cx,cy,ry*.18,0,7);g.fill();g.fillStyle=G;g.beginPath();g.arc(cx,cy,ry*.09,0,7);g.fill();
+ for(const [qx,qy] of [[120,150],[pw-120,150],[120,ph-150],[pw-120,ph-150]]){g.fillStyle=N;g.beginPath();g.arc(qx,qy,34,0,7);g.fill();g.fillStyle=G;g.beginPath();g.arc(qx,qy,18,0,7);g.fill();g.fillStyle=C;g.beginPath();g.arc(qx,qy,7,0,7);g.fill()}
+ for(let i=0;i<1400;i++){g.fillStyle='rgba(0,0,0,'+Math.random()*.08+')';g.fillRect(Math.random()*pw,Math.random()*ph,2,2)}
+ const t=ctex(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(w,d),new THREE.MeshStandardMaterial({map:t,roughness:.95}));m.rotation.x=-Math.PI/2;m.position.set(x,.003,z);world.add(m);
+ for(const sy of [-1,1]){const f=new THREE.Mesh(new THREE.PlaneGeometry(w,.08),new THREE.MeshStandardMaterial({color:0xe8d9b0,roughness:1}));f.rotation.x=-Math.PI/2;f.position.set(x,.0025,z+sy*(d/2+.04));world.add(f)}return m}
 /* ---- دکور: مدل polyfork با شکل جایگزین ---- */
 function decor(slug,o){
  const w=o.w||.5,d=o.d||.5,fb=new THREE.Mesh(new THREE.BoxGeometry(w,o.h,d),std(o.col||0x4a3a30));fb.position.y=o.h/2;
@@ -322,6 +338,7 @@ const hudEl=$('hud'),crossEl=$('cross');
 let mode='none',yaw=0,pitch=0;const keys=new Set();
 const held=[null,null];const hovCtrl=[null,null];let deskHeld=null,deskLow=false,deskHov=null;
 function pickRay(orig,dirv){ray.set(orig,dirv);const list=pickL.concat(occ);const hits=ray.intersectObjects(list,false);for(const h of hits){const o=h.object.userData.obj;if(o&&(!o.enabled||o.enabled())&&!(o===(held[0]||held[1]||deskHeld)))return {o,hit:h};if(o&&o.enabled&&!o.enabled())continue;if(h.object.userData.slot)return {slot:h.object.userData.slot,hit:h};if(!o)return {hit:h}}return null}
+function inSolid(x,z){return blocks.find(b=>x>b.x0&&x<b.x1&&z>b.z0&&z<b.z1&&(!b.act||b.act()))}
 function supportY(x,z,py){let y=0;for(const s of surfaces)if(x>=s.x0&&x<=s.x1&&z>=s.z0&&z<=s.z1&&s.y<=py+.25&&s.y>y)y=s.y;return y}
 function useObj(o){if(!o)return;if(o.use&&(o.kind==='press'||o.locked)){o.use(o);return true}return false}
 function grabObj(o,parent,pos){
@@ -332,6 +349,8 @@ function settleObj(o,p){
  o.held=null;o.g.scale.setScalar(1);const wp=p||o.g.getWorldPosition(new V3());scene.attach(o.g);o.g.position.copy(wp);
  for(const kk in objs){const ac2=objs[kk];if(ac2.accepts&&ac2.accepts(o)&&ac2.g.getWorldPosition(new V3()).distanceTo(wp)<(ac2.accR||.5)){ac2.take(o);return}}
  if(o.slotable){let best=null,bd=.28;for(const s of slots){if(s.occ)continue;const d=s.pos.distanceTo(wp);if(d<bd){bd=d;best=s}}if(best){snap(o,best);return}}
+ {const sb=inSolid(wp.x,wp.z);if(sb){let top=0;for(const s of surfaces)if(wp.x>=s.x0&&wp.x<=s.x1&&wp.z>=s.z0&&wp.z<=s.z1&&s.y>top&&s.y<=wp.y+1.2)top=s.y;
+  if(top>0)wp.y=Math.max(wp.y,top+.05);else{const dl=[[wp.x-sb.x0,-1,0],[sb.x1-wp.x,1,0],[wp.z-sb.z0,0,-1],[sb.z1-wp.z,0,1]].sort((p,q)=>p[0]-q[0])[0];wp.x+=dl[1]*(dl[0]+.3);wp.z+=dl[2]*(dl[0]+.3)}o.g.position.copy(wp)}}
  const y=supportY(wp.x,wp.z,wp.y);o.fall={y:y+o.restH,v:0};
  if(o.flat){const yw=camera.getWorldDirection(new V3());o.g.rotation.set(-Math.PI/2,0,Math.atan2(yw.x,yw.z),'YXZ')}else o.g.rotation.set(0,0,0);
  play('dropLeather',{v:.5,r:1.4,delay:.2})}

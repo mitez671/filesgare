@@ -5,7 +5,7 @@ const hullM=std(0xffffff,{map:patternTex('#3a4350','#4a5564','#6a7788',64),rough
 const NAMES=['ژنراتور','باتری','شبکه','فشار'],PCOLS=[0xff7a2a,0x3aa0ff,0x7aff7a,0xffd030];
 /* ---- کدها ---- */
 const CODE={};
-CODE.n=ri(35,48);CODE.F=CODE.n*2+3;CODE.air=''+ri(1,9)+ri(1,9)+ri(1,9)+ri(1,9);CODE.layout=[0,1,2,3].sort(()=>rnd()-.5);
+CODE.n=ri(35,48);CODE.F=ri(74,97);CODE.air=''+ri(1,9)+ri(1,9)+ri(1,9)+ri(1,9);CODE.layout=[0,1,2,3].sort(()=>rnd()-.5);
 /* ---- چراغ‌ها ---- */
 const Lq=plight(0xff3030,1.6,10,0,2.4,-1.5),Lc=plight(0x80c8ff,.5,14,0,2.6,-9),La=plight(0xfff0d0,1.2,8,6.5,2.2,-9),Lcap=plight(0xffffff,0,6,9.5,1.8,-9);
 /* ---- اتاق‌ها ---- */
@@ -55,15 +55,16 @@ const lock=new THREE.Group();lock.position.set(4.15,0,-6.3);world.add(lock);
 bx(.02,1.8,1.0,M.dark,.2,.9,0,lock);bx(.4,.02,1.0,M.dark,0,1.8,0,lock);bx(.4,.02,1.0,M.dark,0,.02,0,lock);bx(.4,1.8,.02,M.dark,0,.9,.5,lock);bx(.4,1.8,.02,M.dark,0,.9,-.5,lock);bx(.4,.02,1.0,M.dark,0,.9,0,lock);blk(3.9,-6.85,4.4,-5.75);
 const ldoor=new THREE.Group();ldoor.position.set(-.2,.9,-.5);lock.add(ldoor);bx(.04,1.76,1.0,M.metal,0,0,.5,ldoor);
 const lnote=noteObj('lnote',{pos:[4.15,.92,-6.3],flat:true,rot:1.2,label:'یادداشتِ داخل قفسه',paper:'#d4dae2',ink:'#10202e',enabled:()=>S.lockerOpen,lines:[
- {t:'فرکانس امدادِ زمین',size:34,color:'#a01c1c',weight:'bold'},'رادیو را روی «فرکانس نجات» تنظیم کن:','فرکانس = شمارهٔ ایستگاه × ۲ + ۳','(شمارهٔ ایستگاه روی پلاکِ بالای دیوارِ شمالی است)','وقتی سیگنال قفل شد، کدِ هوایی روی نمایشگر می‌آید.']});
+ {t:'ارتباط با زمین',size:34,color:'#a01c1c',weight:'bold'},'رادیوی اتاق فرمان را روشن کن؛ فرکانسِ امداد جایی بین ۷۰ تا ۱۰۰ است.','گیرنده هرچه به فرکانس درست نزدیک‌تر شود سیگنالِ قوی‌تری نشان می‌دهد و صدای بوقش تندتر می‌شود.','وقتی «سیگنال قفل شد» را دیدی، کدِ هوایی روی نمایشگر می‌آید.']});
 function onSlot(){if(S.lockerOpen)return;if(pslots.every(s=>s.occ&&s.occ.rank===s.idx)){S.lockerOpen=true;chime();pslots.forEach(s=>s.mesh.material.emissive.setHex(0x0b4a22));play('metalLatch');tween(.9,e=>{ldoor.rotation.y=-1.6*e});toast('ترتیب درست بود؛ قفسهٔ کنار در باز شد.',5000)}}
 // رادیو
 const mon=monitorObj('mon',{pos:[-1.6,1.8,-12.9],rotY:0,w:.9,h:.5,lines:[{t:'گیرندهٔ امداد',size:40},{t:'فرکانس را تنظیم کن',size:28,color:'#ffcf7a'}]});
-function radioUpd(v){const d=Math.abs(v-CODE.F),pct=Math.max(0,100-d*25);
+function radioUpd(v){const d=Math.abs(v-CODE.F),pct=Math.max(0,100-d*4);
  if(d===0){S.codeShown=true;mon.draw([{t:'سیگنال قفل شد!',size:40,color:'#7dffa0'},{t:'کد هوایی:',size:30,color:'#ffcf7a'},{t:fa(CODE.air),size:80,color:'#ffffff'}]);chime();for(let i=0;i<6;i++)tn(880,.18,.1,'square',null,null,i*.28)}
  else mon.draw([{t:'گیرندهٔ امداد',size:36},{t:'فرکانس: '+fa(v),size:34},{t:'سیگنال: '+fa(pct)+'٪',size:44,color:pct>60?'#ffcf7a':'#ff7a7a'}]);
- if(d>0)nb(.25,2000-d*40,500,Math.max(.03,.2-d*.02),'bandpass')}
-const rad=stepper('rad',{pos:[-1.6,1.25,-12.9],rotY:0,label:'فرکانس',min:70,max:100,step:1,val:70,onChange:radioUpd});
+ if(d>0){tn(500+pct*8,.08,.12,'sine');nb(.2,2000,500,.05,'bandpass')}}
+lnote.onGrab=()=>{S.radioOn=true;mon.draw([{t:'گیرندهٔ امداد',size:40},{t:'آمادهٔ تنظیم',size:30,color:'#7dffa0'}])};
+const rad=stepper('rad',{locked:()=>!S.radioOn,lockMsg:'گیرنده خاموش است؛ یادداشتِ داخل قفسه را بخوان.',pos:[-1.6,1.25,-12.9],rotY:0,label:'فرکانس',min:70,max:100,step:1,val:70,onChange:radioUpd});
 const KP=makeKeypad('kp3',4,CODE.air,new V3(4.45,1.3,-7.4),-Math.PI/2,()=>{S.airOpen=true;S.exitOpen=true;door3.openIt();Lcap.intensity=1.4;toast('قفل هوایی باز شد؛ به کپسول نجات برو.',5000)},'قفل هوایی');
 decor('field-console-a92adc',{x:-2.2,z:-12.3,h:1.0,w:1.2,d:.6,col:0x2a3440,solid:true});
 decor('comms-dish-7b129a',{x:3.4,z:-12.2,h:1.2,w:.8,d:.8,col:0xcccccc,solid:true});
@@ -76,10 +77,10 @@ SC={id:'station',start:[0,1.0,0],endTitle:'کپسول نجات جدا شد!',end
  omens:r=>['flick','step','whisper','creak','heart','knock'],
  hint(){const L=!S.power?['یادداشت را بخوان: کلیدهای برق به ترتیبِ وابستگی وصل می‌شوند.','اول ژنراتور، بعد باتری، بعد شبکه، آخر فشار.']
   :!S.lockerOpen?['سیاره‌ها روی میزِ وسط اتاق‌اند؛ روی قفسهٔ غربی از نزدیک‌ترین تا دورترین به خورشید بچین.','ترتیب: عطارد، زهره، زمین، مریخ، مشتری، زحل (نه اندازه، بلکه فاصله).']
-  :!S.codeShown?['یادداشت داخل قفسه را بخوان: فرکانس = شمارهٔ ایستگاه × ۲ + ۳. شمارهٔ ایستگاه روی پلاک بالای دیوار شمالی است.']
+  :!S.codeShown?['یادداشت داخل قفسه را بردار و بخوان؛ بعد رادیو را تنظیم کن.','دکمه‌های + و − را بزن و به درصدِ سیگنال نگاه کن؛ هرچه بالاتر برود نزدیک‌تری.']
   :['کدِ نمایشگر را روی قفلِ هوایی (دیوار شرقی) بزن.'];return L[Math.min(L.length-1,S.hintN++%L.length)]},
  onSlot,
  update(dt,now){halo.material.opacity=.25+.2*Math.sin(now*3);if(!S.power){const f=lightFlick>0?(Math.random()>.45?1:.1):1;Lq.intensity=1.6*f*(.8+.2*Math.sin(now*3))}else if(lightFlick>0){Lq.intensity=Math.random()>.45?2:.2}else Lq.intensity=2;
   if(S.exitOpen)dawn.material.color.lerp(new THREE.Color(0x3a7ac0),.01)}};
-Object.assign(RVR,{CODE,key(id,code){for(const ch of code)KP.press(ch)},powerOrder(){[0,1,2,3].forEach(i=>RVR.use('pw'+i))},setFreq(v){for(let i=70;i<v;i++)RVR.use('rad-up')}});
+Object.assign(RVR,{CODE,key(id,code){for(const ch of code)KP.press(ch)},powerOrder(){[0,1,2,3].forEach(i=>RVR.use('pw'+i))},setFreq(v){for(let i=70;i<v;i++)RVR.use('rad-up')},readLnote(){lnote.onGrab()}});
 })();

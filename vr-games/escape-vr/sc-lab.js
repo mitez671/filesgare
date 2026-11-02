@@ -21,22 +21,23 @@ plaque('آزمایشگاه مرکزی',new V3(0,2.65,-6.0),0,1.0,.22,'#9fe8ff');
 const note=noteObj('note',{pos:[-1.2,.006,-.9],flat:true,rot:-.5,label:'یادداشتِ افتاده روی زمین',paper:'#e4e6e8',ink:'#14202a',lines:[
  {t:'یادداشت شب‌کاریِ آخر',size:36,color:'#8a1c1c',weight:'bold'},
  'پروفسور رفت و کارتِ دسترسی را در کشوی میزِ پذیرش جا گذاشت.',
- 'کشو قفلِ چهاررقمی دارد: روی قفسهٔ شیشه‌ایِ کنار دیوار فلاسک‌ها را بشمار.',
- 'تعداد فلاسک‌های قرمز، آبی، سبز و زرد را به همین ترتیب پشت سر هم بزن.']});
+ 'کشو قفلِ چهاررقمی دارد.',
+ 'پروفسور همیشه می‌گفت: «همهٔ رمزهایم را با فلاسک‌های همین آزمایشگاه ست می‌کنم.»',
+ 'ترتیبِ رنگ‌ها همان است که او همیشه می‌گفت: قرمز، آبی، سبز، زرد.']});
 const halo=new THREE.Mesh(new THREE.RingGeometry(.2,.26,40),new THREE.MeshBasicMaterial({color:0xcfefff,transparent:true,opacity:.35,depthWrite:false,side:THREE.DoubleSide}));halo.rotation.x=-Math.PI/2;halo.position.set(-1.2,.012,-.9);world.add(halo);note.onGrab=()=>{halo.visible=false};
 // قفسهٔ فلاسک‌ها
 bx(.4,.04,1.8,M.metal,3.75,.95,-.7);bx(.4,.04,1.8,M.metal,3.75,1.45,-.7);bx(.04,1.9,1.8,M.dark,3.96,.95,-.7);blk(3.5,-1.6,4,.2);
 {const list=[];for(const k of CK)for(let i=0;i<CODE.cnt[k];i++)list.push(k);while(list.length<12)list.push('empty');list.sort(()=>rnd()-.5);
  list.forEach((k,i)=>{const lv=i<6?0:1,idx=i%6,y=lv?1.47:.97,z=-1.5+idx*.28;if(k==='empty')return;
   const g=new THREE.Group(),c=COL[k][0];const body=new THREE.Mesh(new THREE.CylinderGeometry(.015,.055,.12,14),std(c,{emissive:c,emissiveIntensity:.25,transparent:true,opacity:.9}));body.position.y=.06;const neck=new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.07,10),std(0xdddddd,{transparent:true,opacity:.6}));neck.position.y=.155;g.add(body,neck);g.position.set(3.75,y,z);world.add(g)})}
-plaque('بشمار!',new V3(3.93,1.9,-.7),-Math.PI/2,.5,.14,'#9fe8ff');
+plaque('فلاسک‌های پروفسور',new V3(3.93,1.9,-.7),-Math.PI/2,.5,.14,'#9fe8ff');
 // میز و کشو و کی‌پد
 furn(1.8,.8,.8,M.metal,0,.4,-3.3,true);furn(2.0,.05,.9,M.dark,0,.82,-3.3,false);surfaces.push({x0:-1,x1:1,z0:-3.75,z1:-2.85,y:.84});
 const card=tagItem('card',{w:.086,h:.054,d:.004,pos:[0,0,0],lines:[{t:'کارت دسترسی',size:30,weight:'bold'},{t:'مجاز: آزمایشگاه',size:24,color:'#9fe8ff'}],col:'#14323f',edge:'#9fe8ff',label:'کارت دسترسی',readScale:2.5});
 card.flat=true;card.restH=.004;
-const drw=drawerObj('drawer',{pos:[.4,.62,-2.9],rotY:0,w:.6,item:card,label:'کشوی میز پذیرش'});
+const drw=drawerObj('drawer',{pos:[.4,.62,-2.9],rotY:0,w:.6,item:card,label:'کشوی میز پذیرش',locked:()=>!S.drawerOk});
 bx(.34,1.0,.3,M.metal,-1.7,.5,-3.3);blk(-1.87,-3.45,-1.53,-3.15);
-const KP1=makeKeypad('kp1',4,CODE.drawer,new V3(-1.7,1.3,-3.14),0,()=>{drw.open||drw.toggle();toast('کشو باز شد.',3000)},'قفل کشو');
+const KP1=makeKeypad('kp1',4,CODE.drawer,new V3(-1.7,1.3,-3.14),0,()=>{S.drawerOk=true;drw.open||drw.toggle();toast('قفل کشو باز شد.',3000)},'قفل کشو');
 // زنگ
 {const b=new THREE.Group();b.position.set(-3.2,.62,-3.8);world.add(b);furn(1.0,.55,.7,M.metal,-3.2,.28,-3.8,true);const d=new THREE.Mesh(new THREE.SphereGeometry(.06,16,10,0,6.3,0,1.55),std(0xc9a24a,{metalness:.8,roughness:.3,emissive:0x221a06}));d.position.y=0;b.add(d);
  mkObj('bell',b,{kind:'press',label:'زنگِ پذیرش (راهنمایی)',use(){bellRing(b.getWorldPosition(new V3()));giveHint()}})}
@@ -91,7 +92,7 @@ SC={id:'lab',start:[0,1.0,0],endTitle:'از آزمایشگاه فرار کردی
  intro:'شب است و آزمایشگاه خالی و سرد. یادداشتی روی زمین افتاده…',
  room:()=>{const p=camera.getWorldPosition(new V3());return p.x>5.1?'cold':p.z<-6.1?'lab':'reception'},rain:r=>.015,
  omens:r=>['flick','step','whisper','creak','heart','knock'],
- hint(){const L=!S.labOpen?(drw.open?['کارت را بردار و به کارت‌خوانِ کنار در نزدیک کن (روی صفحه: روی کارت‌خوان کلیک کن).']:['یادداشت را بخوان و فلاسک‌های رنگیِ قفسهٔ شیشه‌ای را بشمار.','کد کشو = تعداد قرمز، آبی، سبز، زرد (به ترتیب). کی‌پد روی میز است.'])
+ hint(){const L=!S.labOpen?(drw.open?['کارت را بردار و به کارت‌خوانِ کنار در نزدیک کن (روی صفحه: روی کارت‌خوان کلیک کن).']:['یادداشت را بخوان: پروفسور گفته بود رمزهایش را با فلاسک‌های آزمایشگاه ست می‌کند.','ببین از هر رنگ چند فلاسک هست؛ ترتیب رنگ‌ها در یادداشت آمده. کی‌پدِ کشو کنار میز است.'])
   :!S.tubesOk?['لوله‌ها روی میزِ ته آزمایشگاه‌اند؛ آن‌ها را روی نیمکتِ انتهایی بچین.','ترتیب را از پوستر طیفِ نور بخوان: قرمز اول (سمت راستِ نیمکت).']
   :!S.coldOpen?['مانیتور ترتیبِ خواندنِ کپسول‌ها را می‌گوید؛ عددِ روی هر کپسول را به همان ترتیب روی قفلِ سردخانه بزن.']
   :['اهرمِ قرمزِ آزادسازی در سردخانه است.'];return L[Math.min(L.length-1,S.hintN++%L.length)]},
