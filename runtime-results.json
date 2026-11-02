@@ -3,9 +3,9 @@
   "results": [
     {
       "id": "escape-vr",
-      "nodes": 260,
-      "meshes": 221,
-      "triangles": 14102,
+      "nodes": 15,
+      "meshes": 4,
+      "triangles": 28,
       "textures": 0
     }
   ],
